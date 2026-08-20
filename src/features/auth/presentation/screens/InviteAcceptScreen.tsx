@@ -63,6 +63,9 @@ export function InviteAcceptScreen() {
   useEffect(() => {
     if (code && isSignedIn && userId) {
       acceptInvite(code);
+    } else if (code && !isSignedIn) {
+      // Have a code but user needs to sign in first
+      setStatus('needs_auth');
     }
   }, [code, isSignedIn, userId, acceptInvite]);
 

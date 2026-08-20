@@ -4,7 +4,8 @@ services:
     ports:
       - "8099:8099"
     environment:
-      - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
+      - REACT_NATIVE_PACKAGER_HOSTNAME=mobile.innotechlabssas.lat
+      - EXPO_PACKAGER_PROXY_URL=https://mobile.innotechlabssas.lat
     volumes:
       - /app/node_modules
       - .:/app
@@ -14,5 +15,6 @@ services:
     command: tunnel run
     environment:
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    network_mode: host
     depends_on:
       - expo
