@@ -1,8 +1,8 @@
-import type { Clerk } from '@clerk/clerk-expo';
+import type { BrowserClerk } from '@clerk/clerk-react';
 
-let clerkInstance: Clerk | null = null;
+let clerkInstance: BrowserClerk | null = null;
 
-export function setClerkInstance(clerk: Clerk) {
+export function setClerkInstance(clerk: BrowserClerk) {
   clerkInstance = clerk;
 }
 
