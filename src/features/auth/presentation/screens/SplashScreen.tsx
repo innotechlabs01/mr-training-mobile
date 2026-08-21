@@ -1,21 +1,24 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../../../navigation/Navigation';
+import { useAuth } from '@clerk/clerk-expo';
 import { darkTheme } from '../../../../shared/theme';
 
 /**
  * SplashScreen — "Elite Training Lab — Kinetic Energy"
  * Dark lab canvas, dual radial primary glows, geometric MR monogram
- * with kinetic pulse, editorial type and deterministic progress track.
+ * with kinetic pulse, editorial type and a short brand moment that
+ * gates the session into AthleteTabs (signed-in) or Welcome.
  */
 
-type Props = { onFinish: () => void };
+type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 
-export function SplashScreen({ onFinish }: Props) {
+export function SplashScreen({ navigation }: Props) {
+  const { isSignedIn } = useAuth();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const taglineOpacity = useRef(new Animated.Value(0)).current;
-  const skipOpacity = useRef(new Animated.Value(0)).current;
-  const progressWidth = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -31,20 +34,6 @@ export function SplashScreen({ onFinish }: Props) {
       useNativeDriver: true,
     }).start();
 
-    Animated.timing(skipOpacity, {
-      toValue: 1,
-      duration: 400,
-      delay: 800,
-      useNativeDriver: true,
-    }).start();
-
-    Animated.timing(progressWidth, {
-      toValue: 180,
-      duration: 3500,
-      delay: 300,
-      useNativeDriver: false,
-    }).start();
-
     const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.06, duration: 900, useNativeDriver: true }),
@@ -53,20 +42,16 @@ export function SplashScreen({ onFinish }: Props) {
     );
     pulse.start();
 
-    const timer = setTimeout(onFinish, 3800);
+    const timer = setTimeout(() => {
+      navigation.replace(isSignedIn ? 'AthleteTabs' : 'Welcome');
+    }, 1200);
     return () => { clearTimeout(timer); pulse.stop(); };
-  }, [fadeAnim, pulseAnim, taglineOpacity, skipOpacity, progressWidth, onFinish]);
+  }, [fadeAnim, pulseAnim, taglineOpacity, navigation, isSignedIn]);
 
   return (
     <View style={styles.container}>
       <View style={styles.glowTop} />
       <View style={styles.glowBottom} />
-
-      <Animated.View style={[styles.skipWrap, { opacity: skipOpacity }]}>
-        <Pressable onPress={onFinish} hitSlop={12} style={styles.skipHit}>
-          <Text style={styles.skipText}>Skip →</Text>
-        </Pressable>
-      </Animated.View>
 
       <Animated.View style={[styles.centerBlock, { opacity: fadeAnim }]}>
         <Text style={styles.eyebrow}>ELITE PERFORMANCE</Text>
@@ -82,13 +67,6 @@ export function SplashScreen({ onFinish }: Props) {
         <Animated.Text style={[styles.tagline, { opacity: taglineOpacity }]}>
           DISCIPLINA. FUERZA. LEGADO.
         </Animated.Text>
-
-        <View style={styles.progressWrap}>
-          <View style={styles.progressTrack}>
-            <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
-          </View>
-          <Text style={styles.progressLabel}>CARGANDO TU SESIÓN...</Text>
-        </View>
       </Animated.View>
 
       <View style={styles.footer}>
@@ -112,22 +90,6 @@ const styles = StyleSheet.create({
     position: 'absolute', bottom: -80, left: -80,
     width: 400, height: 400, borderRadius: 200,
     backgroundColor: `${darkTheme.colors.primary}14`,
-  },
-  skipWrap: {
-    position: 'absolute',
-    top: 60,
-    right: 24,
-    zIndex: 2,
-  },
-  skipHit: {
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-  },
-  skipText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: darkTheme.colors.textSecondary,
-    letterSpacing: 0.6,
   },
   centerBlock: {
     alignItems: 'center',
@@ -173,27 +135,6 @@ const styles = StyleSheet.create({
     color: darkTheme.colors.textSecondary,
     letterSpacing: 2.5,
     textAlign: 'center',
-  },
-  progressWrap: {
-    marginTop: 36,
-    alignItems: 'center',
-    gap: 10,
-  },
-  progressTrack: {
-    width: 180, height: 2, borderRadius: 1, backgroundColor: darkTheme.colors.surface,
-    borderWidth: 1, borderColor: darkTheme.colors.border, overflow: 'hidden',
-  },
-  progressFill: {
-    height: 2,
-    backgroundColor: darkTheme.colors.primary,
-    borderRadius: 1,
-  },
-  progressLabel: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: darkTheme.colors.textSecondary,
-    letterSpacing: 2,
-    opacity: 0.6,
   },
   footer: {
     position: 'absolute',

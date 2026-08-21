@@ -90,8 +90,18 @@ export function SignInScreen() {
         if (result.status === 'complete') {
           await setActiveSignUp({ session: result.createdSessionId });
           // Onboard athlete: create profile + 7-day trial — after setActive so isSignedIn flips
+          const onboarding = route.params?.onboardingData;
           try {
-            await apiClient.post('/athlete/onboard', {});
+            await apiClient.post('/athlete/onboard', {
+              sports: onboarding?.sports ?? [],
+              modality: onboarding?.modality ?? '',
+              experienceLevel: onboarding?.experienceLevel ?? '',
+              goal: onboarding?.goal ?? '',
+              sessionsPerWeek: onboarding?.sessionsPerWeek ?? 0,
+              sessionDuration: onboarding?.sessionDuration ?? 0,
+              equipment: onboarding?.equipment ?? '',
+              athleteRoutineAccepted: onboarding?.athleteRoutineAccepted ?? true,
+            });
           } catch (err) {
             console.error('[Auth] onboard failed on sign-up:', err);
           }
