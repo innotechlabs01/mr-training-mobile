@@ -24,10 +24,13 @@ type AthleteProfile = {
   email: string;
   plan: { name: string; price: number };
   schedule: { days: string; time: string };
+  schedule_days?: string;
+  schedule_time?: string;
   readiness: { score: number };
   modality?: string;
   service_type?: string;
   serviceType?: string;
+  emergency_contact?: string;
 };
 
 type Modality = 'virtual' | 'hibrido' | 'presencial';
@@ -37,6 +40,14 @@ const MODALITY_OPTIONS: Array<{ key: Modality; label: string; icon: string }> = 
   { key: 'hibrido', label: 'Híbrido', icon: '🔄' },
   { key: 'presencial', label: 'Presencial', icon: '🏢' },
 ];
+
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+const DAY_LABELS: Record<string, string> = {
+  mon: 'L', tue: 'M', wed: 'M', thu: 'J', fri: 'V', sat: 'S', sun: 'D',
+};
+const DAY_FULL: Record<string, string> = {
+  mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves', fri: 'Viernes', sat: 'Sábado', sun: 'Domingo',
+};
 
 function normalizeModality(value: unknown): Modality {
   const v = String(value ?? '').toLowerCase().trim();
@@ -78,19 +89,44 @@ export function ProfileScreen() {
   const [modality, setModality] = useState<Modality>('virtual');
   const [modalitySaving, setModalitySaving] = useState<Modality | null>(null);
 
+  // Emergency contact local state
+  const [emergencyContact, setEmergencyContact] = useState('');
+  const [emergencySaving, setEmergencySaving] = useState(false);
+
+  // Schedule local state
+  const [scheduleDays, setScheduleDays] = useState<Set<string>>(new Set());
+  const [scheduleTime, setScheduleTime] = useState('');
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+
   // Sync Clerk user names when they load
   useEffect(() => {
     if (user?.firstName) setFirstName(user.firstName);
     if (user?.lastName) setLastName(user.lastName);
   }, [user?.firstName, user?.lastName]);
 
-  // Sync modality from profile when available
+  // Sync modality + schedule + emergency contact from profile when available
   useEffect(() => {
     if (profile) {
       const raw = profile.modality ?? profile.service_type ?? profile.serviceType;
       setModality(normalizeModality(raw));
+      setEmergencyContact(profile.emergency_contact ?? '');
+      // Parse schedule days from "mon,tue,wed" or "Lunes,Martes" format
+      const rawDays = profile.schedule_days ?? profile.schedule?.days ?? '';
+      const daySet = new Set<string>();
+      if (rawDays) {
+        rawDays.split(',').map((d: string) => d.trim().toLowerCase()).forEach((d: string) => {
+          // Match by short key or by full Spanish name
+          const match = DAY_KEYS.find(k => k === d || DAY_FULL[k]?.toLowerCase() === d);
+          if (match) daySet.add(match);
+        });
+      }
+      setScheduleDays(daySet);
+      setScheduleTime(profile.schedule_time ?? profile.schedule?.time ?? '');
     } else {
       setModality('virtual');
+      setEmergencyContact('');
+      setScheduleDays(new Set());
+      setScheduleTime('');
     }
   }, [profile]);
 
@@ -137,6 +173,44 @@ export function ProfileScreen() {
       Alert.alert('Error', msg);
     } finally {
       setModalitySaving(null);
+    }
+  };
+
+  const handleSaveEmergency = async () => {
+    setEmergencySaving(true);
+    try {
+      await apiClient.put('/athlete/profile', { emergencyContact });
+      await queryClient.invalidateQueries({ queryKey: ['athlete-profile'] });
+      Alert.alert('Guardado', 'Contacto de emergencia actualizado');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update';
+      Alert.alert('Error', msg);
+    } finally {
+      setEmergencySaving(false);
+    }
+  };
+
+  const toggleDay = (day: string) => {
+    setScheduleDays(prev => {
+      const next = new Set(prev);
+      if (next.has(day)) next.delete(day);
+      else next.add(day);
+      return next;
+    });
+  };
+
+  const handleSaveSchedule = async () => {
+    setScheduleSaving(true);
+    try {
+      const daysStr = Array.from(scheduleDays).join(',');
+      await apiClient.put('/athlete/profile', { scheduleDays: daysStr, scheduleTime });
+      await queryClient.invalidateQueries({ queryKey: ['athlete-profile'] });
+      Alert.alert('Guardado', 'Horario de entrenamiento actualizado');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update';
+      Alert.alert('Error', msg);
+    } finally {
+      setScheduleSaving(false);
     }
   };
 
@@ -281,6 +355,98 @@ export function ProfileScreen() {
             </Text>
           </View>
 
+          {/* Card: Training Schedule */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Horario de Entrenamiento</Text>
+            <Text style={styles.cardSubtitle}>Seleccioná los días y horario</Text>
+
+            <View style={styles.dayRow}>
+              {DAY_KEYS.map((day) => {
+                const selected = scheduleDays.has(day);
+                return (
+                  <Pressable
+                    key={day}
+                    style={({ pressed }) => [
+                      styles.dayChip,
+                      selected ? styles.dayChipSelected : styles.dayChipUnselected,
+                      pressed && styles.pressed,
+                    ]}
+                    onPress={() => toggleDay(day)}
+                    accessibilityLabel={DAY_FULL[day]}
+                    accessibilityState={{ selected }}
+                  >
+                    <Text style={[styles.dayChipText, selected && styles.dayChipTextSelected]}>
+                      {DAY_LABELS[day]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={styles.label}>Horario</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="08:00"
+              placeholderTextColor={darkTheme.colors.textSecondary}
+              value={scheduleTime}
+              onChangeText={setScheduleTime}
+              keyboardType="numbers-and-punctuation"
+              maxLength={5}
+              accessibilityLabel="Training time"
+            />
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.saveButton,
+                pressed && styles.pressed,
+                scheduleSaving && styles.buttonDisabled,
+              ]}
+              onPress={handleSaveSchedule}
+              disabled={scheduleSaving}
+              accessibilityLabel="Save training schedule"
+            >
+              {scheduleSaving ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.saveButtonText}>Guardar Horario</Text>
+              )}
+            </Pressable>
+          </View>
+
+          {/* Card: Emergency Contact */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Contacto de Emergencia</Text>
+            <Text style={styles.cardSubtitle}>Nombre y teléfono de tu contacto</Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Nombre — Teléfono"
+              placeholderTextColor={darkTheme.colors.textSecondary}
+              value={emergencyContact}
+              onChangeText={setEmergencyContact}
+              autoCapitalize="words"
+              autoCorrect={false}
+              accessibilityLabel="Emergency contact"
+            />
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.saveButton,
+                pressed && styles.pressed,
+                emergencySaving && styles.buttonDisabled,
+              ]}
+              onPress={handleSaveEmergency}
+              disabled={emergencySaving}
+              accessibilityLabel="Save emergency contact"
+            >
+              {emergencySaving ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.saveButtonText}>Guardar Contacto</Text>
+              )}
+            </Pressable>
+          </View>
+
           {/* Card 3: Membership / Plan */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Membership</Text>
@@ -302,8 +468,23 @@ export function ProfileScreen() {
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Schedule</Text>
                   <Text style={styles.infoValue}>
-                    {profile.schedule?.days || '—'} {profile.schedule?.time || ''}
+                    {(() => {
+                      const days = profile.schedule_days ?? profile.schedule?.days ?? '';
+                      const time = profile.schedule_time ?? profile.schedule?.time ?? '';
+                      if (!days && !time) return '—';
+                      // Expand day keys to full names
+                      const expanded = days.split(',').map((d: string) => {
+                        const key = d.trim().toLowerCase();
+                        return DAY_FULL[key] ?? d.trim();
+                      }).filter(Boolean).join(', ');
+                      return `${expanded}${time ? ' · ' + time : ''}`;
+                    })()}
                   </Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Emergency</Text>
+                  <Text style={styles.infoValue}>{profile.emergency_contact || '—'}</Text>
                 </View>
                 <View style={styles.divider} />
                 <View style={styles.infoRow}>
@@ -435,6 +616,36 @@ const styles = StyleSheet.create({
   pillLoader: { marginTop: 2 },
   modalityHint: { fontSize: 12, color: darkTheme.colors.textSecondary, marginTop: 12, textAlign: 'center' },
   modalityHintStrong: { color: darkTheme.colors.text, fontWeight: '600' },
+  dayRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  dayChip: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  dayChipSelected: {
+    backgroundColor: darkTheme.colors.primary,
+    borderColor: darkTheme.colors.primary,
+  },
+  dayChipUnselected: {
+    backgroundColor: '#2C2C2E',
+    borderColor: darkTheme.colors.border,
+  },
+  dayChipText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: darkTheme.colors.text,
+  },
+  dayChipTextSelected: {
+    color: '#FFF',
+  },
   membershipContent: { gap: 0 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, alignItems: 'center' },
   divider: { height: 1, backgroundColor: darkTheme.colors.border },
