@@ -12,9 +12,12 @@ import { AthleteTabs } from './AthleteTabs';
 // Extract coach code from deep link URL
 // Supports: mrtraining://invite?code=MR-A3X9
 //           https://app.mrtraining.com/invite?code=MR-A3X9
+//           exp://localhost/--/invite?code=MR-A3X9 (Expo Go)
 function extractCodeFromUrl(url: string): string | null {
   try {
-    const urlObj = new URL(url);
+    // Handle Expo Go URLs with /--/ prefix
+    const normalizedUrl = url.replace('/--/', '/');
+    const urlObj = new URL(normalizedUrl);
     return urlObj.searchParams.get('code');
   } catch {
     const match = url.match(/[?&]code=([^&]+)/);
@@ -24,13 +27,14 @@ function extractCodeFromUrl(url: string): string | null {
 
 const linking = {
   prefixes: [
+    // Custom scheme (installed app + development builds)
     'mrtraining://',
+    // Expo Go (development only)
     'exp://',
     'exp+mrtraining://',
-    'exp://mobile.innotechlabssas.lat',
+    'exp://localhost',
+    // Universal Links (production + development builds)
     'https://mobile.innotechlabssas.lat',
-    'https://app.mrtraining.com',
-    'https://mr-training.vercel.app',
   ],
   config: {
     screens: {
@@ -48,7 +52,9 @@ const linking = {
     return () => sub.remove();
   },
   getStateFromPath(path: string) {
-    const code = extractCodeFromUrl(path);
+    // Normalize Expo Go /--/ prefix
+    const normalizedPath = path.replace('/--/', '/');
+    const code = extractCodeFromUrl(normalizedPath);
     if (code) {
       return {
         routes: [

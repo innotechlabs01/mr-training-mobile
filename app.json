@@ -22,14 +22,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.innotechlabssas.mrtraining",
+      "associatedDomains": [
+        "applinks:mobile.innotechlabssas.lat"
+      ],
       "infoPlist": {
-        "CFBundleURLTypes": [
-          {
-            "CFBundleURLSchemes": [
-              "mrtraining"
-            ]
-          }
-        ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
