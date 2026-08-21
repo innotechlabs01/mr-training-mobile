@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getClerkToken } from '@infrastructure/auth/clerk';
+import { getClerkToken } from '../auth/clerk';
 import Constants from 'expo-constants';
 
 declare const __DEV__: boolean;
@@ -24,10 +24,22 @@ apiClient.interceptors.request.use(async (config) => {
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // session expired - Clerk handles re-auth
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      // Try to get a fresh token and retry once
+      const token = await getClerkToken();
+      if (token && originalRequest.headers) {
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        return apiClient(originalRequest);
+      }
+
+      // Token refresh failed — caller should handle redirect to auth
     }
+
     return Promise.reject(error);
   },
 );

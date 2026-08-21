@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
+import { darkTheme } from '../../../../shared/theme';
 
 type Props = {
   onFinish: () => void;
@@ -30,7 +31,7 @@ export function SplashScreen({ onFinish }: Props) {
 
     const timer = setTimeout(onFinish, 4000);
     return () => { clearTimeout(timer); pulse.stop(); };
-  }, []);
+  }, [fadeAnim, pulseAnim, taglineOpacity, skipOpacity, onFinish]);
 
   return (
     <View style={styles.container}>
@@ -75,35 +76,35 @@ export function SplashScreen({ onFinish }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: darkTheme.colors.background, justifyContent: 'center', alignItems: 'center' },
   bgGlow: {
     position: 'absolute', top: -100, right: -100,
     width: 300, height: 300, borderRadius: 150,
-    backgroundColor: '#FF8C3D15',
+    backgroundColor: `${darkTheme.colors.primary}15`,
   },
   content: { alignItems: 'center', paddingHorizontal: 40 },
   iconCircle: {
     width: 100, height: 100, borderRadius: 50,
-    backgroundColor: '#FF8C3D15', borderWidth: 2, borderColor: '#FF8C3D30',
+    backgroundColor: `${darkTheme.colors.primary}15`, borderWidth: 2, borderColor: `${darkTheme.colors.primary}30`,
     justifyContent: 'center', alignItems: 'center', marginBottom: 24,
   },
   iconText: { fontSize: 44 },
   brandText: {
-    fontSize: 32, fontWeight: '900', color: '#F5F5F7',
+    fontSize: 32, fontWeight: '900', color: darkTheme.colors.text,
     letterSpacing: 4, marginBottom: 8,
   },
-  tagline: { fontSize: 15, color: '#98989D', letterSpacing: 1, marginBottom: 32 },
+  tagline: { fontSize: 15, color: darkTheme.colors.textSecondary, letterSpacing: 1, marginBottom: 32 },
   videoPlaceholder: {
     width: '100%', height: 160, borderRadius: 16,
-    backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#38383A',
+    backgroundColor: darkTheme.colors.surface, borderWidth: 1, borderColor: darkTheme.colors.border,
     justifyContent: 'center', alignItems: 'center', marginBottom: 32,
   },
   videoText: { fontSize: 48 },
   statsRow: { flexDirection: 'row', gap: 32 },
   statItem: { alignItems: 'center' },
-  statValue: { fontSize: 18, fontWeight: '800', color: '#FF8C3D' },
-  statLabel: { fontSize: 11, color: '#98989D', marginTop: 2 },
+  statValue: { fontSize: 18, fontWeight: '800', color: darkTheme.colors.primaryLight },
+  statLabel: { fontSize: 11, color: darkTheme.colors.textSecondary, marginTop: 2 },
   skipWrap: { position: 'absolute', top: 60, right: 24 },
-  skipBtn: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#38383A' },
-  skipText: { fontSize: 13, color: '#98989D', fontWeight: '600' },
+  skipBtn: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: darkTheme.colors.surface, borderWidth: 1, borderColor: darkTheme.colors.border },
+  skipText: { fontSize: 13, color: darkTheme.colors.textSecondary, fontWeight: '600' },
 });

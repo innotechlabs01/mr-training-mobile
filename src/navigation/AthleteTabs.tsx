@@ -6,6 +6,7 @@ import { HistoryScreen } from '../features/training/presentation/screens/History
 import { NutritionScreen } from '../features/nutrition/presentation/screens/NutritionScreen';
 import { RecoveryScreen } from '../features/recovery/presentation/screens/RecoveryScreen';
 import { ProfileScreen } from '../features/auth/presentation/screens/ProfileScreen';
+import { darkTheme } from '../shared/theme';
 
 type AthleteTabParamList = {
   Today: undefined;
@@ -19,9 +20,20 @@ const Tab = createBottomTabNavigator<AthleteTabParamList>();
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const icons: Record<string, string> = {
-    Today: '🏋️', Training: '📊', Nutrition: '🥗', Recovery: '💤', Profile: '👤',
+    Today: '🏋️',
+    Training: '📊',
+    Nutrition: '🥗',
+    Recovery: '💤',
+    Profile: '👤',
   };
-  return <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>{icons[label] ?? '•'}</Text>;
+  return (
+    <Text
+      style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}
+      accessibilityLabel={label}
+    >
+      {icons[label] ?? '•'}
+    </Text>
+  );
 }
 
 export function AthleteTabs() {
@@ -30,11 +42,11 @@ export function AthleteTabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ focused }) => <TabIcon label={route.name} focused={focused} />,
-        tabBarActiveTintColor: '#FF6B00',
-        tabBarInactiveTintColor: '#98989D',
+        tabBarActiveTintColor: darkTheme.colors.primary,
+        tabBarInactiveTintColor: darkTheme.colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: '#1C1C1E',
-          borderTopColor: '#38383A',
+          backgroundColor: darkTheme.colors.surface,
+          borderTopColor: darkTheme.colors.border,
           paddingBottom: 8,
           paddingTop: 8,
           height: 60,

@@ -1,73 +1,81 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Pressable, TextInput } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Constants from 'expo-constants';
+import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
-
-const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl as string;
+import { apiClient } from '../../../../infrastructure/api/client';
+import { darkTheme } from '../../../../shared/theme';
 
 type InviteAcceptNavigationProp = NativeStackNavigationProp<RootStackParamList, 'InviteAccept'>;
+type InviteAcceptRouteProp = RouteProp<RootStackParamList, 'InviteAccept'>;
 
 export function InviteAcceptScreen() {
-  const { userId, isSignedIn } = useAuth();
+  const { isSignedIn } = useAuth();
   const navigation = useNavigation<InviteAcceptNavigationProp>();
-  const route = useRoute();
+  const route = useRoute<InviteAcceptRouteProp>();
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'needs_auth'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [coachName, setCoachName] = useState('');
   const [code, setCode] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState('');
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const routeCode = (route.params as { code?: string })?.code;
+    const routeCode = route.params?.code;
     if (routeCode) {
       setCode(routeCode);
       setManualCode(routeCode);
     }
   }, [route.params]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
   const acceptInvite = useCallback(async (coachCode: string) => {
-    if (!isSignedIn || !userId) {
+    if (!isSignedIn) {
       setStatus('needs_auth');
+      return;
+    }
+
+    // Validate code format
+    if (!coachCode.trim() || coachCode.length < 4) {
+      setStatus('error');
+      setErrorMessage('Please enter a valid invite code');
       return;
     }
 
     setStatus('loading');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/athlete/accept-invite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: coachCode }),
+      const { data } = await apiClient.post('/athlete/accept-invite', {
+        code: coachCode.trim(),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to accept invitation');
-      }
 
       setCoachName(data.coachName || '');
       setStatus('success');
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         navigation.navigate('AthleteTabs');
       }, 2000);
     } catch (err) {
       setStatus('error');
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to accept invitation');
+      const message = err instanceof Error ? err.message : 'Failed to accept invitation';
+      setErrorMessage(message);
     }
-  }, [isSignedIn, userId, navigation]);
+  }, [isSignedIn, navigation]);
 
   useEffect(() => {
-    if (code && isSignedIn && userId) {
+    if (code && isSignedIn) {
       acceptInvite(code);
     } else if (code && !isSignedIn) {
-      // Have a code but user needs to sign in first
       setStatus('needs_auth');
     }
-  }, [code, isSignedIn, userId, acceptInvite]);
+  }, [code, isSignedIn, acceptInvite]);
 
   const handleSignIn = () => {
     navigation.navigate('Auth', { code: (code ?? manualCode) || undefined });
@@ -76,28 +84,28 @@ export function InviteAcceptScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.brand}>MR Training</Text>
+        <Text style={styles.brand}>MR TRAINING</Text>
 
         {status === 'idle' && (code ? (
           <>
-            <ActivityIndicator size="large" color="#FF6B00" style={styles.loader} />
+            <ActivityIndicator size="large" color={darkTheme.colors.primary} style={styles.loader} />
             <Text style={styles.title}>Preparing...</Text>
           </>
         ) : (
           <>
-            <Text style={styles.title}>Conecta con tu coach</Text>
+            <Text style={styles.title}>Connect with your coach</Text>
             <Text style={styles.subtitle}>
-              Ingresa o pega el código que te compartió tu coach
+              Enter the code your coach shared with you
             </Text>
             <TextInput
               style={styles.input}
-              placeholder="Ej. MR-A3X9"
-              placeholderTextColor="#6E6E73"
+              placeholder="e.g. MR-A3X9"
+              placeholderTextColor={darkTheme.colors.textSecondary}
               value={manualCode}
               onChangeText={setManualCode}
               autoCapitalize="characters"
               autoCorrect={false}
-              testID="invite-code-input"
+              accessibilityLabel="Invite code"
             />
             <Pressable
               style={({ pressed }) => [
@@ -108,14 +116,14 @@ export function InviteAcceptScreen() {
               disabled={!manualCode.trim()}
               onPress={() => acceptInvite(manualCode.trim())}
             >
-              <Text style={styles.buttonText}>Conectar con mi coach</Text>
+              <Text style={styles.buttonText}>Connect with my coach</Text>
             </Pressable>
           </>
         ))}
 
         {status === 'loading' && (
           <>
-            <ActivityIndicator size="large" color="#FF6B00" style={styles.loader} />
+            <ActivityIndicator size="large" color={darkTheme.colors.primary} style={styles.loader} />
             <Text style={styles.title}>Connecting to your coach...</Text>
             <Text style={styles.subtitle}>Please wait while we set up your account</Text>
           </>
@@ -171,22 +179,22 @@ export function InviteAcceptScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: darkTheme.colors.background },
   content: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
-  brand: { fontSize: 14, fontWeight: '700', color: '#FF8C3D', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 32 },
+  brand: { fontSize: 14, fontWeight: '700', color: darkTheme.colors.primaryLight, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 32 },
   loader: { marginBottom: 24 },
-  title: { fontSize: 24, fontWeight: '700', color: '#F5F5F7', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#98989D', textAlign: 'center', lineHeight: 22 },
-  hint: { fontSize: 14, color: '#6E6E73', textAlign: 'center', marginTop: 16, lineHeight: 20 },
-  button: { backgroundColor: '#FF6B00', height: 52, borderRadius: 12, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32, marginTop: 24, width: '100%' },
+  title: { fontSize: 24, fontWeight: '700', color: darkTheme.colors.text, textAlign: 'center', marginBottom: 8 },
+  subtitle: { fontSize: 16, color: darkTheme.colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  hint: { fontSize: 14, color: darkTheme.colors.textSecondary, textAlign: 'center', marginTop: 16, lineHeight: 20 },
+  button: { backgroundColor: darkTheme.colors.primary, height: 52, borderRadius: 12, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32, marginTop: 24, width: '100%' },
   buttonDisabled: { opacity: 0.5 },
   buttonPressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
   buttonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  input: { backgroundColor: '#1C1C1E', height: 52, borderRadius: 12, paddingHorizontal: 16, color: '#F5F5F7', fontSize: 18, fontWeight: '600', letterSpacing: 2, textAlign: 'center', width: '100%', marginTop: 24 },
-  successIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#34C759', justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
+  input: { backgroundColor: darkTheme.colors.surface, height: 52, borderRadius: 12, paddingHorizontal: 16, color: darkTheme.colors.text, fontSize: 18, fontWeight: '600', letterSpacing: 2, textAlign: 'center', width: '100%', marginTop: 24, borderWidth: 1, borderColor: darkTheme.colors.border },
+  successIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: darkTheme.colors.success, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
   successText: { fontSize: 32, color: '#FFF', fontWeight: '700' },
-  errorIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FF3B30', justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
+  errorIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: darkTheme.colors.destructive, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
   errorText: { fontSize: 32, color: '#FFF', fontWeight: '700' },
-  authIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#1C1C1E', justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
+  authIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: darkTheme.colors.surface, justifyContent: 'center', alignItems: 'center', marginBottom: 24, borderWidth: 1, borderColor: darkTheme.colors.border },
   authIconText: { fontSize: 32 },
 });

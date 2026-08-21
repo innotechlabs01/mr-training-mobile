@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Pressable, ScrollView, Animated,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useUser } from '@clerk/clerk-expo';
+import { darkTheme } from '../../../../shared/theme';
 import { CoachScheduleModal } from './CoachScheduleModal';
 
 type Props = {
@@ -21,8 +23,6 @@ export type OnboardingData = {
   athleteRoutineAccepted?: boolean;
 };
 
-const { width: screenW } = Dimensions.get('window');
-
 const SPORTS = [
   { id: 'gym', label: 'Gym', emoji: '🏋️', desc: 'Strength & hypertrophy' },
   { id: 'running', label: 'Running', emoji: '🏃', desc: 'Speed & endurance' },
@@ -35,8 +35,8 @@ const SPORTS = [
 ];
 
 const MODALITIES = [
-  { id: 'presencial', label: 'Presencial', emoji: '🏢', desc: 'Train at the gym or with your coach in person' },
-  { id: 'hibrido', label: 'Hibrido', emoji: '🔄', desc: 'Mix of in-person sessions and remote coaching' },
+  { id: 'in-person', label: 'In Person', emoji: '🏢', desc: 'Train at the gym or with your coach in person' },
+  { id: 'hybrid', label: 'Hybrid', emoji: '🔄', desc: 'Mix of in-person sessions and remote coaching' },
   { id: 'virtual', label: 'Virtual', emoji: '📱', desc: 'Fully remote with digital workout plans' },
 ];
 
@@ -67,6 +67,8 @@ const STEP_TITLES = ['Your Sport', 'How & Level', 'Your Goal', 'Schedule', 'Equi
 const STEP_COUNT = 7;
 
 export function OnboardingScreen({ onComplete }: Props) {
+  const { width: screenW } = useWindowDimensions();
+  const { user } = useUser();
   const [step, setStep] = useState(0);
   const [sports, setSports] = useState<string[]>([]);
   const [modality, setModality] = useState('');
@@ -75,7 +77,7 @@ export function OnboardingScreen({ onComplete }: Props) {
   const [frequency, setFrequency] = useState(4);
   const [duration, setDuration] = useState(60);
   const [equipment, setEquipment] = useState('');
-  const [showModal, setShowModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -84,7 +86,7 @@ export function OnboardingScreen({ onComplete }: Props) {
       duration: 300,
       useNativeDriver: false,
     }).start();
-  }, [step]);
+  }, [step, progressAnim]);
 
   const toggle = (list: string[], item: string, setter: (v: string[]) => void) => {
     setter(list.includes(item) ? list.filter((s) => s !== item) : [...list, item]);
@@ -100,13 +102,25 @@ export function OnboardingScreen({ onComplete }: Props) {
   };
 
   const goNext = () => {
-    if (step < STEP_COUNT - 1) setStep((s) => s + 1);
-    else onComplete({ sports, modality, experienceLevel: level, goal, sessionsPerWeek: frequency, sessionDuration: duration, equipment });
+    if (step < STEP_COUNT - 1) {
+      setStep((s) => s + 1);
+    } else {
+      onComplete({
+        sports, modality, experienceLevel: level, goal,
+        sessionsPerWeek: frequency, sessionDuration: duration,
+        equipment, athleteRoutineAccepted: true,
+      });
+    }
   };
 
   const goBack = () => { if (step > 0) setStep((s) => s - 1); };
 
-  const progressWidth = progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, screenW - 48],
+  });
+
+  const cardWidth = (screenW - 68) / 2;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -127,7 +141,7 @@ export function OnboardingScreen({ onComplete }: Props) {
               const active = sports.includes(s.id);
               return (
                 <Pressable key={s.id} onPress={() => toggle(sports, s.id, setSports)}
-                  style={[styles.sportCard, active && styles.sportCardActive]}>
+                  style={[styles.sportCard, { width: cardWidth }, active && styles.sportCardActive]}>
                   <Text style={styles.sportEmoji}>{s.emoji}</Text>
                   <Text style={[styles.sportLabel, active && styles.sportLabelActive]}>{s.label}</Text>
                   <Text style={styles.sportDesc}>{s.desc}</Text>
@@ -290,17 +304,19 @@ export function OnboardingScreen({ onComplete }: Props) {
             <Text style={styles.subtitle}>We have created a routine based on your profile.</Text>
             <Text style={styles.desc}>What would you like to do?</Text>
 
-            <Pressable onPress={() => setShowModal(true)}
-              style={[styles.choiceCard, { borderColor: '#FF8C3D30' }]}>
+            <Pressable
+              onPress={() => setShowScheduleModal(true)}
+              style={[styles.choiceCard, { borderColor: `${darkTheme.colors.primary}30` }]}>
               <View style={styles.choiceIcon}><Text style={styles.choiceEmoji}>📅</Text></View>
               <View style={styles.choiceContent}>
                 <Text style={styles.choiceTitle}>Schedule with your Coach</Text>
-                <Text style={styles.choiceDesc}>Book a video call to review and personalize your routine together</Text>
+                <Text style={styles.choiceDesc}>Book a call to review and personalize your routine together</Text>
               </View>
               <Text style={styles.choiceArrow}>→</Text>
             </Pressable>
 
-            <Pressable onPress={() => onComplete({ sports, modality, experienceLevel: level, goal, sessionsPerWeek: frequency, sessionDuration: duration, equipment, athleteRoutineAccepted: true } as OnboardingData)}
+            <Pressable
+              onPress={() => onComplete({ sports, modality, experienceLevel: level, goal, sessionsPerWeek: frequency, sessionDuration: duration, equipment, athleteRoutineAccepted: true })}
               style={styles.choiceCard}>
               <View style={styles.choiceIcon}><Text style={styles.choiceEmoji}>✅</Text></View>
               <View style={styles.choiceContent}>
@@ -327,112 +343,114 @@ export function OnboardingScreen({ onComplete }: Props) {
       </View>
 
       <CoachScheduleModal
-        visible={showModal}
+        visible={showScheduleModal}
         coachId=""
-        athleteId=""
-        athleteName=""
-        onboardingData={{ sports, modality, goal, experienceLevel: level, sessionsPerWeek: frequency, sessionDuration: duration, equipment }}
-        onScheduled={() => { setShowModal(false); onComplete({ sports, modality, experienceLevel: level, goal, sessionsPerWeek: frequency, sessionDuration: duration, equipment }); }}
-        onClose={() => setShowModal(false)}
+        athleteId={user?.id ?? ''}
+        athleteName={user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Athlete'}
+        onScheduled={() => {
+          setShowScheduleModal(false);
+          onComplete({ sports, modality, experienceLevel: level, goal, sessionsPerWeek: frequency, sessionDuration: duration, equipment, athleteRoutineAccepted: true });
+        }}
+        onClose={() => setShowScheduleModal(false)}
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: darkTheme.colors.background },
   topBar: { paddingHorizontal: 24, paddingTop: 8 },
-  progressTrack: { height: 4, borderRadius: 2, backgroundColor: '#1C1C1E', overflow: 'hidden', marginBottom: 8 },
-  progressFill: { height: 4, borderRadius: 2, backgroundColor: '#FF8C3D' },
-  stepLabel: { fontSize: 12, color: '#98989D', fontWeight: '600', textAlign: 'right' },
+  progressTrack: { height: 4, borderRadius: 2, backgroundColor: darkTheme.colors.surface, overflow: 'hidden', marginBottom: 8 },
+  progressFill: { height: 4, borderRadius: 2, backgroundColor: darkTheme.colors.primary },
+  stepLabel: { fontSize: 12, color: darkTheme.colors.textSecondary, fontWeight: '600', textAlign: 'right' },
   scroll: { padding: 24, flexGrow: 1 },
-  title: { fontSize: 30, fontWeight: '800', color: '#F5F5F7', marginBottom: 24 },
-  subtitle: { fontSize: 17, fontWeight: '700', color: '#F5F5F7', marginBottom: 16 },
+  title: { fontSize: 30, fontWeight: '800', color: darkTheme.colors.text, marginBottom: 24 },
+  subtitle: { fontSize: 17, fontWeight: '700', color: darkTheme.colors.text, marginBottom: 16 },
   grid2: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   sportCard: {
-    width: (screenW - 68) / 2, padding: 18, borderRadius: 18,
-    backgroundColor: '#1C1C1E', borderWidth: 1.5, borderColor: '#1C1C1E',
+    padding: 18, borderRadius: 18,
+    backgroundColor: darkTheme.colors.surface, borderWidth: 1.5, borderColor: darkTheme.colors.surface,
     alignItems: 'center', position: 'relative',
   },
-  sportCardActive: { borderColor: '#FF8C3D', backgroundColor: '#FF8C3D10' },
+  sportCardActive: { borderColor: darkTheme.colors.primary, backgroundColor: `${darkTheme.colors.primary}10` },
   sportEmoji: { fontSize: 32, marginBottom: 8 },
-  sportLabel: { fontSize: 15, fontWeight: '700', color: '#98989D' },
-  sportLabelActive: { color: '#FF8C3D' },
-  sportDesc: { fontSize: 11, color: '#6E6E73', marginTop: 2, textAlign: 'center' },
-  activeDot: { position: 'absolute', top: 10, right: 10, width: 22, height: 22, borderRadius: 11, backgroundColor: '#FF8C3D', justifyContent: 'center', alignItems: 'center' },
+  sportLabel: { fontSize: 15, fontWeight: '700', color: darkTheme.colors.textSecondary },
+  sportLabelActive: { color: darkTheme.colors.primary },
+  sportDesc: { fontSize: 11, color: darkTheme.colors.textSecondary, marginTop: 2, textAlign: 'center' },
+  activeDot: { position: 'absolute', top: 10, right: 10, width: 22, height: 22, borderRadius: 11, backgroundColor: darkTheme.colors.primary, justifyContent: 'center', alignItems: 'center' },
   activeDotText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
   optionRow: {
     flexDirection: 'row', alignItems: 'center', gap: 16, padding: 18,
-    borderRadius: 16, borderWidth: 1.5, borderColor: '#1C1C1E',
-    backgroundColor: '#1C1C1E', marginBottom: 10,
+    borderRadius: 16, borderWidth: 1.5, borderColor: darkTheme.colors.surface,
+    backgroundColor: darkTheme.colors.surface, marginBottom: 10,
   },
-  optionRowActive: { borderColor: '#FF8C3D', backgroundColor: '#FF8C3D08' },
+  optionRowActive: { borderColor: darkTheme.colors.primary, backgroundColor: `${darkTheme.colors.primary}08` },
   optionEmoji: { fontSize: 28 },
   optionContent: { flex: 1 },
-  optionLabel: { fontSize: 16, fontWeight: '700', color: '#F5F5F7' },
-  optionLabelActive: { color: '#FF8C3D' },
-  optionDesc: { fontSize: 13, color: '#6E6E73', marginTop: 2 },
-  check: { fontSize: 20, color: '#FF8C3D', fontWeight: '700' },
+  optionLabel: { fontSize: 16, fontWeight: '700', color: darkTheme.colors.text },
+  optionLabelActive: { color: darkTheme.colors.primary },
+  optionDesc: { fontSize: 13, color: darkTheme.colors.textSecondary, marginTop: 2 },
+  check: { fontSize: 20, color: darkTheme.colors.primary, fontWeight: '700' },
   goalCard: {
     flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20,
-    borderRadius: 18, borderWidth: 1.5, borderColor: '#1C1C1E',
-    backgroundColor: '#1C1C1E', marginBottom: 12,
+    borderRadius: 18, borderWidth: 1.5, borderColor: darkTheme.colors.surface,
+    backgroundColor: darkTheme.colors.surface, marginBottom: 12,
   },
-  goalCardActive: { borderColor: '#FF8C3D', backgroundColor: '#FF8C3D08' },
-  goalIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: '#FF8C3D10', justifyContent: 'center', alignItems: 'center' },
-  goalIconActive: { backgroundColor: '#FF8C3D20' },
+  goalCardActive: { borderColor: darkTheme.colors.primary, backgroundColor: `${darkTheme.colors.primary}08` },
+  goalIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: `${darkTheme.colors.primary}10`, justifyContent: 'center', alignItems: 'center' },
+  goalIconActive: { backgroundColor: `${darkTheme.colors.primary}20` },
   goalEmoji: { fontSize: 26 },
   goalContent: { flex: 1 },
-  goalLabel: { fontSize: 17, fontWeight: '700', color: '#F5F5F7' },
-  goalLabelActive: { color: '#FF8C3D' },
-  goalDesc: { fontSize: 13, color: '#6E6E73', marginTop: 2 },
-  goalCheck: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#FF8C3D', justifyContent: 'center', alignItems: 'center' },
+  goalLabel: { fontSize: 17, fontWeight: '700', color: darkTheme.colors.text },
+  goalLabelActive: { color: darkTheme.colors.primary },
+  goalDesc: { fontSize: 13, color: darkTheme.colors.textSecondary, marginTop: 2 },
+  goalCheck: { width: 28, height: 28, borderRadius: 14, backgroundColor: darkTheme.colors.primary, justifyContent: 'center', alignItems: 'center' },
   checkText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
   chipRow: { flexDirection: 'row', gap: 10 },
   freqChip: {
     width: 52, height: 72, borderRadius: 14, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: '#1C1C1E', borderWidth: 1.5, borderColor: '#1C1C1E',
+    backgroundColor: darkTheme.colors.surface, borderWidth: 1.5, borderColor: darkTheme.colors.surface,
   },
-  freqChipActive: { borderColor: '#FF8C3D', backgroundColor: '#FF8C3D10' },
-  freqText: { fontSize: 20, fontWeight: '800', color: '#98989D' },
-  freqTextActive: { color: '#FF8C3D' },
-  freqSub: { fontSize: 10, color: '#6E6E73', marginTop: 2 },
-  freqSubActive: { color: '#FF8C3D' },
+  freqChipActive: { borderColor: darkTheme.colors.primary, backgroundColor: `${darkTheme.colors.primary}10` },
+  freqText: { fontSize: 20, fontWeight: '800', color: darkTheme.colors.textSecondary },
+  freqTextActive: { color: darkTheme.colors.primary },
+  freqSub: { fontSize: 10, color: darkTheme.colors.textSecondary, marginTop: 2 },
+  freqSubActive: { color: darkTheme.colors.primary },
   freqBar: { flexDirection: 'row', gap: 7, marginTop: 16, paddingHorizontal: 2 },
-  freqBarDot: { flex: 1, height: 4, borderRadius: 2, backgroundColor: '#1C1C1E' },
-  freqBarDotActive: { backgroundColor: '#FF8C3D' },
+  freqBarDot: { flex: 1, height: 4, borderRadius: 2, backgroundColor: darkTheme.colors.surface },
+  freqBarDotActive: { backgroundColor: darkTheme.colors.primary },
   durChip: {
     flex: 1, height: 72, borderRadius: 14, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: '#1C1C1E', borderWidth: 1.5, borderColor: '#1C1C1E',
+    backgroundColor: darkTheme.colors.surface, borderWidth: 1.5, borderColor: darkTheme.colors.surface,
   },
-  durChipActive: { borderColor: '#FF8C3D', backgroundColor: '#FF8C3D10' },
-  durText: { fontSize: 20, fontWeight: '800', color: '#98989D' },
-  durTextActive: { color: '#FF8C3D' },
-  durSub: { fontSize: 10, color: '#6E6E73', marginTop: 2 },
-  durSubActive: { color: '#FF8C3D' },
+  durChipActive: { borderColor: darkTheme.colors.primary, backgroundColor: `${darkTheme.colors.primary}10` },
+  durText: { fontSize: 20, fontWeight: '800', color: darkTheme.colors.textSecondary },
+  durTextActive: { color: darkTheme.colors.primary },
+  durSub: { fontSize: 10, color: darkTheme.colors.textSecondary, marginTop: 2 },
+  durSubActive: { color: darkTheme.colors.primary },
   summaryHero: { alignItems: 'center', marginBottom: 28 },
   summaryEmoji: { fontSize: 48, marginBottom: 12 },
-  summaryTitle: { fontSize: 24, fontWeight: '800', color: '#F5F5F7' },
-  summaryCard: { backgroundColor: '#1C1C1E', borderRadius: 20, padding: 24, borderWidth: 1, borderColor: '#38383A' },
+  summaryTitle: { fontSize: 24, fontWeight: '800', color: darkTheme.colors.text },
+  summaryCard: { backgroundColor: darkTheme.colors.surface, borderRadius: 20, padding: 24, borderWidth: 1, borderColor: darkTheme.colors.border },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 12 },
-  summaryDivider: { height: 1, backgroundColor: '#38383A' },
-  summaryKey: { fontSize: 15, color: '#98989D', fontWeight: '600', width: 90 },
-  summaryVal: { fontSize: 15, color: '#F5F5F7', fontWeight: '600', flex: 1, textAlign: 'right' },
+  summaryDivider: { height: 1, backgroundColor: darkTheme.colors.border },
+  summaryKey: { fontSize: 15, color: darkTheme.colors.textSecondary, fontWeight: '600', width: 90 },
+  summaryVal: { fontSize: 15, color: darkTheme.colors.text, fontWeight: '600', flex: 1, textAlign: 'right' },
   summaryChips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6 },
-  miniChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: '#FF8C3D10' },
-  miniChipText: { fontSize: 12, color: '#FF8C3D', fontWeight: '600' },
-  bottom: { padding: 24, paddingBottom: 40, alignItems: 'center', backgroundColor: '#000' },
-  nextBtn: { width: '100%', height: 56, borderRadius: 18, backgroundColor: '#FF6B00', justifyContent: 'center', alignItems: 'center' },
+  miniChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: `${darkTheme.colors.primary}10` },
+  miniChipText: { fontSize: 12, color: darkTheme.colors.primary, fontWeight: '600' },
+  bottom: { padding: 24, paddingBottom: 40, alignItems: 'center', backgroundColor: darkTheme.colors.background },
+  nextBtn: { width: '100%', height: 56, borderRadius: 18, backgroundColor: darkTheme.colors.primary, justifyContent: 'center', alignItems: 'center' },
   nextDisabled: { opacity: 0.35 },
   nextText: { fontSize: 17, fontWeight: '700', color: '#FFF' },
   backLink: { paddingVertical: 8, marginTop: 4 },
-  backText: { fontSize: 15, color: '#98989D', fontWeight: '600' },
-  desc: { fontSize: 15, color: '#98989D', marginBottom: 24, lineHeight: 22 },
-  choiceCard: { flexDirection: "row", alignItems: "center", gap: 16, padding: 20, borderRadius: 18, borderWidth: 1.5, borderColor: "#1C1C1E", backgroundColor: "#1C1C1E", marginBottom: 12 },
-  choiceIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: "#FF8C3D10", justifyContent: "center", alignItems: "center" },
+  backText: { fontSize: 15, color: darkTheme.colors.textSecondary, fontWeight: '600' },
+  desc: { fontSize: 15, color: darkTheme.colors.textSecondary, marginBottom: 24, lineHeight: 22 },
+  choiceCard: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20, borderRadius: 18, borderWidth: 1.5, borderColor: darkTheme.colors.border, backgroundColor: darkTheme.colors.surface, marginBottom: 12 },
+  choiceIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: `${darkTheme.colors.primary}10`, justifyContent: 'center', alignItems: 'center' },
   choiceEmoji: { fontSize: 24 },
   choiceContent: { flex: 1 },
-  choiceTitle: { fontSize: 16, fontWeight: "700", color: "#F5F5F7", marginBottom: 2 },
-  choiceDesc: { fontSize: 13, color: "#6E6E73", lineHeight: 18 },
-  choiceArrow: { fontSize: 20, color: "#FF8C3D", fontWeight: "600" },
+  choiceTitle: { fontSize: 16, fontWeight: '700', color: darkTheme.colors.text, marginBottom: 2 },
+  choiceDesc: { fontSize: 13, color: darkTheme.colors.textSecondary, lineHeight: 18 },
+  choiceArrow: { fontSize: 20, color: darkTheme.colors.primary, fontWeight: '600' },
 });

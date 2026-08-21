@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { darkTheme } from '../../../shared/theme';
 
 type Props = {
   appointment?: {
@@ -11,10 +12,11 @@ type Props = {
   onContactCoach: () => void;
 };
 
-export function PendingApprovalScreen({ appointment, onContactCoach }: Props) {
+export function PendingApprovalScreen({ appointment }: Props) {
   const formatDate = (dateStr: string) => {
-    const d = new Date(`${dateStr}T00:00:00Z`);
-    return d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+    if (!dateStr) return 'TBD';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
   };
 
   return (
@@ -24,9 +26,9 @@ export function PendingApprovalScreen({ appointment, onContactCoach }: Props) {
           <Text style={styles.statusEmoji}>⏳</Text>
         </View>
 
-        <Text style={styles.title}>Waiting for Coach Approval</Text>
+        <Text style={styles.title}>Waiting for Approval</Text>
         <Text style={styles.body}>
-          Your profile has been created and your coach will review your routine before activating your account.
+          Your profile has been created. Your coach will review your routine before activating your account.
         </Text>
 
         {appointment && (
@@ -39,7 +41,7 @@ export function PendingApprovalScreen({ appointment, onContactCoach }: Props) {
             <View style={styles.cardDivider} />
             <View style={styles.cardRow}>
               <Text style={styles.cardLabel}>Time</Text>
-              <Text style={styles.cardValue}>{appointment.startTime}</Text>
+              <Text style={styles.cardValue}>{appointment.startTime || 'TBD'}</Text>
             </View>
             <View style={styles.cardDivider} />
             <View style={styles.cardRow}>
@@ -51,33 +53,27 @@ export function PendingApprovalScreen({ appointment, onContactCoach }: Props) {
 
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
-            💡 Your coach will review your sport selections, goals, and experience level during the call and activate your personalized plan.
+            Your coach will review your sport selections, goals, and experience level and activate your personalized plan.
           </Text>
         </View>
-
-        <Pressable onPress={onContactCoach} style={styles.contactBtn}>
-          <Text style={styles.contactText}>Contact Coach</Text>
-        </Pressable>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: darkTheme.colors.background },
   content: { flex: 1, justifyContent: 'center', padding: 24 },
-  statusCircle: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#FF8C3D15', borderWidth: 2, borderColor: '#FF8C3D30', justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginBottom: 24 },
+  statusCircle: { width: 90, height: 90, borderRadius: 45, backgroundColor: `${darkTheme.colors.primary}15`, borderWidth: 2, borderColor: `${darkTheme.colors.primary}30`, justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginBottom: 24 },
   statusEmoji: { fontSize: 40 },
-  title: { fontSize: 26, fontWeight: '800', color: '#F5F5F7', textAlign: 'center', marginBottom: 12 },
-  body: { fontSize: 16, color: '#98989D', textAlign: 'center', lineHeight: 24, marginBottom: 32 },
-  appointmentCard: { backgroundColor: '#1C1C1E', borderRadius: 18, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#38383A' },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: '#FF8C3D', marginBottom: 12 },
+  title: { fontSize: 26, fontWeight: '800', color: darkTheme.colors.text, textAlign: 'center', marginBottom: 12 },
+  body: { fontSize: 16, color: darkTheme.colors.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: 32 },
+  appointmentCard: { backgroundColor: darkTheme.colors.surface, borderRadius: 18, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: darkTheme.colors.border },
+  cardTitle: { fontSize: 15, fontWeight: '700', color: darkTheme.colors.primary, marginBottom: 12 },
   cardRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
-  cardDivider: { height: 1, backgroundColor: '#38383A' },
-  cardLabel: { fontSize: 14, color: '#98989D' },
-  cardValue: { fontSize: 14, color: '#F5F5F7', fontWeight: '600' },
-  infoBox: { backgroundColor: '#FF8C3D08', borderRadius: 14, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: '#FF8C3D15' },
-  infoText: { fontSize: 14, color: '#98989D', lineHeight: 20 },
-  contactBtn: { backgroundColor: '#1C1C1E', height: 52, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#38383A' },
-  contactText: { fontSize: 16, fontWeight: '600', color: '#F5F5F7' },
+  cardDivider: { height: 1, backgroundColor: darkTheme.colors.border },
+  cardLabel: { fontSize: 14, color: darkTheme.colors.textSecondary },
+  cardValue: { fontSize: 14, color: darkTheme.colors.text, fontWeight: '600' },
+  infoBox: { backgroundColor: `${darkTheme.colors.primary}08`, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: `${darkTheme.colors.primary}15` },
+  infoText: { fontSize: 14, color: darkTheme.colors.textSecondary, lineHeight: 20 },
 });

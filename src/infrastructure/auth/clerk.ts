@@ -1,9 +1,11 @@
-import type { BrowserClerk } from '@clerk/clerk-react';
+let clerkInstance: any = null;
 
-let clerkInstance: BrowserClerk | null = null;
-
-export function setClerkInstance(clerk: BrowserClerk) {
+export function setClerkInstance(clerk: any) {
   clerkInstance = clerk;
+}
+
+export function getClerkInstance(): any {
+  return clerkInstance;
 }
 
 export async function getClerkToken(): Promise<string | null> {

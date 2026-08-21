@@ -2,10 +2,10 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { apiClient } from '../../../infrastructure/api/client';
 import { PaymentScreen } from './PaymentScreen';
-import { PendingApprovalScreen } from './PendingApprovalScreen';
+import { darkTheme } from '../../../shared/theme';
 
 type MembershipState = {
-  status: 'loading' | 'active' | 'grace_period' | 'suspended' | 'pending_approval' | 'no_membership' | 'error';
+  status: 'loading' | 'active' | 'grace_period' | 'suspended' | 'pending_approval' | 'no_membership';
   membership?: {
     id: string;
     planName: string;
@@ -27,40 +27,64 @@ export function MembershipGate({ children, athleteId }: { children: React.ReactN
   const [state, setState] = useState<MembershipState>({ status: 'loading' });
 
   useEffect(() => {
-    if (!athleteId) { setState({ status: 'no_membership' }); return; }
+    if (!athleteId) {
+      // No athlete ID yet — still loading from Clerk
+      return;
+    }
     let cancelled = false;
     async function check() {
       try {
-        const { data } = await apiClient.get(`/membership?athleteId=${athleteId}`);
+        const { data } = await apiClient.get('/athlete/membership');
         if (cancelled) return;
-        if (!data || data.error) { setState({ status: 'no_membership' }); return; }
-        setState({
-          status: data.status,
-          membership: {
-            id: data.id, planName: data.planName, planPrice: data.planPrice,
-            paymentDueDate: data.paymentDueDate, currentPeriodEnd: data.currentPeriodEnd,
-            athleteId: data.athleteId, coachId: data.coachId,
-          },
-        });
-      } catch { if (!cancelled) setState({ status: 'error' }); }
+
+        // New athlete or no membership — let them in
+        if (!data || data.error || data.status === 'no_membership') {
+          setState({ status: 'active' });
+          return;
+        }
+
+        // Suspended membership — show payment screen
+        if (data.status === 'suspended') {
+          setState({
+            status: 'suspended',
+            membership: {
+              id: data.id, planName: data.planName, planPrice: data.planPrice,
+              paymentDueDate: data.paymentDueDate, currentPeriodEnd: data.currentPeriodEnd,
+              athleteId: data.athleteId, coachId: data.coachId,
+            },
+          });
+          return;
+        }
+
+        // All other statuses — let them in
+        setState({ status: data.status || 'active' });
+      } catch {
+        // API error — don't block the user
+        if (!cancelled) setState({ status: 'active' });
+      }
     }
     check();
     return () => { cancelled = true; };
   }, [athleteId]);
 
   if (state.status === 'loading') {
-    return <View style={styles.centered}><ActivityIndicator size="large" color="#FF6B00" /><Text style={styles.text}>Verifying membership...</Text></View>;
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={darkTheme.colors.primary} />
+        <Text style={styles.text}>Loading...</Text>
+      </View>
+    );
   }
-  if (state.status === 'pending_approval') {
-    return <PendingApprovalScreen appointment={state.membership ? { date: state.membership.currentPeriodEnd, startTime: '', coachName: 'Your Coach' } : undefined} onContactCoach={() => {}} />;
+
+  if (state.status === 'suspended' && state.membership) {
+    return <PaymentScreen membership={state.membership} />;
   }
-  if (state.status === 'suspended') {
-    return <PaymentScreen membership={state.membership!} />;
-  }
+
+  // All other states — let the user through
   return <MembershipContext.Provider value={state}>{children}</MembershipContext.Provider>;
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
-  text: { color: '#98989D', marginTop: 16, fontSize: 15 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: darkTheme.colors.background },
+  text: { color: darkTheme.colors.textSecondary, marginTop: 16, fontSize: 15 },
 });
