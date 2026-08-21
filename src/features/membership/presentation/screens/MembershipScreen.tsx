@@ -6,13 +6,15 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
-  Pressable,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../../infrastructure/api/client';
-import { darkTheme } from '../../../../shared/theme';
+import { colors } from '../../../../shared/theme/tokens';
+import { ScreenHeader } from '../../../../shared/components/ui/ScreenHeader';
+import { PrimaryButton } from '../../../../shared/components/ui/PrimaryButton';
 
 type MembershipResponse = {
   membership?: {
@@ -51,10 +53,10 @@ type MembershipResponse = {
 
 function getStatusColor(status: string): string {
   const s = status.toLowerCase();
-  if (s === 'active') return darkTheme.colors.success;
-  if (s === 'grace_period' || s === 'grace') return darkTheme.colors.warning;
-  if (s === 'suspended' || s === 'expired' || s === 'past_due') return darkTheme.colors.destructive;
-  return darkTheme.colors.textSecondary;
+  if (s === 'active') return colors.success;
+  if (s === 'grace_period' || s === 'grace') return colors.warning;
+  if (s === 'suspended' || s === 'expired' || s === 'past_due') return colors.error;
+  return colors.textSecondary;
 }
 
 function getStatusLabel(status: string): string {
@@ -81,6 +83,8 @@ function formatCurrency(amount: number): string {
 }
 
 export function MembershipScreen() {
+  const navigation = useNavigation();
+
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['athlete-membership'],
     queryFn: async () => {
@@ -98,14 +102,9 @@ export function MembershipScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.content}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerText}>
-              <Text style={styles.eyebrow}>MEMBRESIA</Text>
-              <Text style={styles.title}>Tu Plan</Text>
-            </View>
-          </View>
+          <ScreenHeader title="Tu Plan" onBack={() => navigation.goBack()} />
           <View style={styles.centerBox}>
-            <ActivityIndicator size="large" color={darkTheme.colors.primary} />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>Cargando membresia...</Text>
           </View>
         </View>
@@ -146,17 +145,11 @@ export function MembershipScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} tintColor={darkTheme.colors.primary} />
+          <RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} tintColor={colors.primary} />
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <View style={styles.headerText}>
-            <Text style={styles.eyebrow}>MEMBRESIA</Text>
-            <Text style={styles.title}>Tu Plan</Text>
-          </View>
-        </View>
+        <ScreenHeader title="Tu Plan" onBack={() => navigation.goBack()} />
 
         {/* Hero card */}
         {!hasMembership ? (
@@ -226,21 +219,15 @@ export function MembershipScreen() {
         </View>
 
         {/* Pay button */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.payBtn,
-            !isPayable && styles.payBtnDisabled,
-            pressed && isPayable && { opacity: 0.85 },
-          ]}
+        <PrimaryButton
+          label={
+            isPayable
+              ? 'Pay Now'
+              : `Al dia - Proximo vencimiento ${formatDate(effectiveDueDate ?? undefined)}`
+          }
           onPress={handlePay}
           disabled={!isPayable}
-          accessibilityLabel="Pay now"
-          accessibilityState={{ disabled: !isPayable }}
-        >
-          <Text style={styles.payBtnText}>
-            {isPayable ? 'Pay Now' : `Al dia - Proximo vencimiento ${formatDate(effectiveDueDate ?? undefined)}`}
-          </Text>
-        </Pressable>
+        />
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -249,39 +236,35 @@ export function MembershipScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkTheme.colors.background },
+  container: { flex: 1, backgroundColor: colors.base },
   content: { padding: 24, flex: 1 },
   scrollContent: { padding: 24, paddingBottom: 40 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 24 },
-  headerText: { flex: 1, gap: 4 },
-  eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 2.5, color: darkTheme.colors.primary },
-  title: { fontSize: 28, lineHeight: 34, fontWeight: '700', color: darkTheme.colors.text },
   centerBox: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, gap: 12 },
-  loadingText: { fontSize: 13, fontWeight: '500', color: darkTheme.colors.textSecondary },
+  loadingText: { fontSize: 13, fontWeight: '500', color: colors.textSecondary },
 
   card: {
-    backgroundColor: darkTheme.colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: darkTheme.colors.border,
+    borderColor: colors.border,
     padding: 20,
   },
-  emptyTitle: { fontSize: 16, fontWeight: '600', color: darkTheme.colors.text, marginBottom: 8 },
-  emptyText: { fontSize: 14, fontWeight: '400', color: darkTheme.colors.textSecondary, lineHeight: 20 },
+  emptyTitle: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 8 },
+  emptyText: { fontSize: 14, fontWeight: '400', color: colors.textSecondary, lineHeight: 20 },
 
   heroCard: {
-    backgroundColor: darkTheme.colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: darkTheme.colors.border,
+    borderColor: colors.border,
     borderLeftWidth: 4,
     padding: 20,
     overflow: 'hidden',
     position: 'relative',
   },
   heroAccent: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4 },
-  planName: { fontSize: 20, fontWeight: '700', color: darkTheme.colors.text, lineHeight: 26 },
-  planPrice: { fontSize: 16, fontWeight: '700', color: darkTheme.colors.primary, marginTop: 6 },
+  planName: { fontSize: 20, fontWeight: '700', color: colors.text, lineHeight: 26 },
+  planPrice: { fontSize: 16, fontWeight: '700', color: colors.primary, marginTop: 6 },
   statusPillRow: { flexDirection: 'row', marginTop: 12 },
   statusPill: {
     flexDirection: 'row',
@@ -295,59 +278,47 @@ const styles = StyleSheet.create({
   statusDot: { width: 7, height: 7, borderRadius: 3.5 },
   statusPillText: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5 },
   datesBlock: { marginTop: 14, gap: 4 },
-  dateText: { fontSize: 12, fontWeight: '400', color: darkTheme.colors.textSecondary, lineHeight: 16 },
+  dateText: { fontSize: 12, fontWeight: '400', color: colors.textSecondary, lineHeight: 16 },
 
   section: { marginTop: 24 },
-  sectionEyebrow: { fontSize: 11, fontWeight: '600', letterSpacing: 1.2, color: darkTheme.colors.textSecondary, marginBottom: 12 },
+  sectionEyebrow: { fontSize: 11, fontWeight: '600', letterSpacing: 1.2, color: colors.textSecondary, marginBottom: 12 },
   historyEmpty: {
-    backgroundColor: darkTheme.colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: darkTheme.colors.border,
+    borderColor: colors.border,
     padding: 20,
     alignItems: 'center',
   },
-  historyEmptyText: { fontSize: 13, fontWeight: '500', color: darkTheme.colors.textSecondary },
+  historyEmptyText: { fontSize: 13, fontWeight: '500', color: colors.textSecondary },
   paymentsList: { gap: 8 },
   paymentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: darkTheme.colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: darkTheme.colors.border,
+    borderColor: colors.border,
     padding: 14,
     gap: 12,
   },
   paymentLeft: { gap: 2 },
-  paymentAmount: { fontSize: 14, fontWeight: '700', color: darkTheme.colors.text },
-  paymentDate: { fontSize: 12, fontWeight: '400', color: darkTheme.colors.textSecondary },
+  paymentAmount: { fontSize: 14, fontWeight: '700', color: colors.text },
+  paymentDate: { fontSize: 12, fontWeight: '400', color: colors.textSecondary },
   paymentRight: { alignItems: 'flex-end', gap: 4, flexShrink: 1 },
   miniPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: `${darkTheme.colors.border}33`,
+    backgroundColor: `${colors.border}33`,
     borderRadius: 9999,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderWidth: 1,
-    borderColor: `${darkTheme.colors.border}66`,
+    borderColor: `${colors.border}66`,
   },
   miniDot: { width: 6, height: 6, borderRadius: 3 },
-  miniPillText: { fontSize: 11, fontWeight: '600', color: darkTheme.colors.textSecondary, textTransform: 'capitalize' },
-  txnText: { fontSize: 11, fontWeight: '400', color: darkTheme.colors.textSecondary, maxWidth: 120 },
-
-  payBtn: {
-    marginTop: 24,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: darkTheme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  payBtnDisabled: { opacity: 0.5 },
-  payBtnText: { fontSize: 16, fontWeight: '700', color: '#FFF', textAlign: 'center' },
+  miniPillText: { fontSize: 11, fontWeight: '600', color: colors.textSecondary, textTransform: 'capitalize' },
+  txnText: { fontSize: 11, fontWeight: '400', color: colors.textSecondary, maxWidth: 120 },
 });

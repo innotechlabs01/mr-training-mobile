@@ -5,14 +5,16 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  ActivityIndicator,
-  Pressable,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../../infrastructure/api/client';
-import { darkTheme } from '../../../../shared/theme';
+import { colors } from '../../../../shared/theme/tokens';
+import { ScreenHeader } from '../../../../shared/components/ui/ScreenHeader';
+import { PrimaryButton } from '../../../../shared/components/ui/PrimaryButton';
+import { EmptyState } from '../../../../shared/components/ui/EmptyState';
 
 type Product = {
   id: string;
@@ -26,6 +28,7 @@ type Product = {
 
 export function StoreScreen() {
   const queryClient = useQueryClient();
+  const navigation = useNavigation();
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['athlete-store'],
@@ -67,31 +70,16 @@ export function StoreScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} tintColor={darkTheme.colors.primary} />
+          <RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} tintColor={colors.primary} />
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <View style={styles.headerText}>
-            <Text style={styles.eyebrow}>TIENDA</Text>
-            <Text style={styles.title}>Store</Text>
-          </View>
-        </View>
+        <ScreenHeader title="Store" onBack={() => navigation.goBack()} />
 
         {isLoading ? (
-          <View style={styles.centerBox}>
-            <ActivityIndicator size="large" color={darkTheme.colors.primary} />
-            <Text style={styles.loadingText}>Cargando productos...</Text>
-          </View>
+          <EmptyState variant="loading" message="Cargando productos..." />
         ) : isEmpty ? (
-          <View style={styles.emptyCenter}>
-            <View style={styles.emptyCircle}>
-              <Text style={styles.emptyDash}>—</Text>
-            </View>
-            <Text style={styles.emptyTitle}>Tienda vacia</Text>
-            <Text style={styles.emptyText}>Tu coach habilitara productos aqui cuando esten disponibles.</Text>
-          </View>
+          <EmptyState variant="empty" message="Tu coach habilitara productos aqui cuando esten disponibles." />
         ) : (
           <View style={styles.grid}>
             {products.map((p) => (
@@ -115,22 +103,11 @@ export function StoreScreen() {
                     <Text style={styles.priceText}>${Number(p.price).toFixed(2)}</Text>
                     <Text style={styles.stockText}>Stock: {p.stock ?? '—'}</Text>
                   </View>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.addBtn,
-                      pressed && { opacity: 0.8 },
-                      (purchaseMutation.isPending || (p.stock ?? 1) <= 0) && styles.addBtnDisabled,
-                    ]}
+                  <PrimaryButton
+                    label={(p.stock ?? 1) <= 0 ? 'Sin stock' : 'Agregar'}
                     onPress={() => purchaseMutation.mutate(p.id)}
                     disabled={purchaseMutation.isPending || (p.stock ?? 1) <= 0}
-                    accessibilityLabel={`Agregar ${p.name}`}
-                  >
-                    {purchaseMutation.isPending ? (
-                      <ActivityIndicator size="small" color={darkTheme.colors.primary} />
-                    ) : (
-                      <Text style={styles.addBtnText}>{(p.stock ?? 1) <= 0 ? 'Sin stock' : 'Agregar'}</Text>
-                    )}
-                  </Pressable>
+                  />
                 </View>
               </View>
             ))}
@@ -142,49 +119,22 @@ export function StoreScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkTheme.colors.background },
+  container: { flex: 1, backgroundColor: colors.base },
   content: { padding: 24, paddingBottom: 40 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 24 },
-  headerText: { flex: 1, gap: 4 },
-  eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 2.5, color: darkTheme.colors.primary },
-  title: { fontSize: 28, lineHeight: 34, fontWeight: '700', color: darkTheme.colors.text },
-  centerBox: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, gap: 12 },
-  loadingText: { fontSize: 13, fontWeight: '500', color: darkTheme.colors.textSecondary },
-  emptyCenter: { alignItems: 'center', paddingVertical: 48, gap: 12 },
-  emptyCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: darkTheme.colors.surface,
-    borderWidth: 1,
-    borderColor: darkTheme.colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyDash: { fontSize: 22, fontWeight: '400', color: darkTheme.colors.textSecondary, lineHeight: 22 },
-  emptyTitle: { fontSize: 16, fontWeight: '600', color: darkTheme.colors.text, marginTop: 4 },
-  emptyText: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: darkTheme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 24,
-  },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
   card: {
     width: '48%',
-    backgroundColor: darkTheme.colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: darkTheme.colors.border,
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   imageArea: {
     height: 120,
-    backgroundColor: '#151515',
+    backgroundColor: colors.base,
     borderBottomWidth: 1,
-    borderBottomColor: darkTheme.colors.border,
+    borderBottomColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -192,30 +142,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,140,61,0.15)',
+    backgroundColor: `${colors.primary}15`,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,140,61,0.25)',
+    borderColor: `${colors.primary}30`,
   },
-  imagePlaceholderText: { fontSize: 20, fontWeight: '400', color: darkTheme.colors.textSecondary, lineHeight: 20 },
+  imagePlaceholderText: { fontSize: 20, fontWeight: '400', color: colors.textSecondary, lineHeight: 20 },
   cardBody: { padding: 12, gap: 4 },
-  productName: { fontSize: 14, fontWeight: '600', color: darkTheme.colors.text, lineHeight: 18 },
-  brandText: { fontSize: 11, fontWeight: '400', color: darkTheme.colors.textSecondary },
+  productName: { fontSize: 14, fontWeight: '600', color: colors.text, lineHeight: 18 },
+  brandText: { fontSize: 11, fontWeight: '400', color: colors.textSecondary },
   priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
-  priceText: { fontSize: 16, fontWeight: '700', color: darkTheme.colors.primary },
-  stockText: { fontSize: 11, fontWeight: '400', color: darkTheme.colors.textSecondary },
-  addBtn: {
-    marginTop: 10,
-    height: 28,
-    borderRadius: 9999,
-    backgroundColor: 'rgba(255,140,61,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,140,61,0.30)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  addBtnDisabled: { opacity: 0.5 },
-  addBtnText: { fontSize: 12, fontWeight: '600', color: darkTheme.colors.primary },
+  priceText: { fontSize: 16, fontWeight: '700', color: colors.primary },
+  stockText: { fontSize: 11, fontWeight: '400', color: colors.textSecondary },
 });
