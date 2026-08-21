@@ -139,6 +139,7 @@ function RootNavigator() {
       ) : (
         // Signed-in stack
         <>
+          <Stack.Screen name="Splash" component={SplashScreen} />
           <Stack.Screen name="AthleteTabs" component={AthleteTabsWithGate} />
           <Stack.Screen name="Membership" component={MembershipScreen} />
           <Stack.Screen name="Store" component={StoreScreen} />
