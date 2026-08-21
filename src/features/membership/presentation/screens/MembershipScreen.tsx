@@ -10,22 +10,9 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../../infrastructure/api/client';
 import { darkTheme } from '../../../../shared/theme';
-
-type AthleteDrawerParamList = {
-  Today: undefined;
-  Training: undefined;
-  Nutrition: undefined;
-  Recovery: undefined;
-  Events: undefined;
-  Store: undefined;
-  Membership: undefined;
-  Profile: undefined;
-};
 
 type MembershipResponse = {
   membership?: {
@@ -93,25 +80,7 @@ function formatCurrency(amount: number): string {
   return `$${Number(amount).toFixed(2)}`;
 }
 
-function HamburgerButton({ onPress }: { onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-      style={({ pressed }) => [styles.hamburgerBtn, pressed && { opacity: 0.7 }]}
-      accessibilityLabel="Open menu"
-      accessibilityRole="button"
-    >
-      <View style={styles.hamburgerBar} />
-      <View style={styles.hamburgerBar} />
-      <View style={styles.hamburgerBar} />
-    </Pressable>
-  );
-}
-
 export function MembershipScreen() {
-  const navigation = useNavigation<DrawerNavigationProp<AthleteDrawerParamList>>();
-
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['athlete-membership'],
     queryFn: async () => {
@@ -130,7 +99,6 @@ export function MembershipScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.content}>
           <View style={styles.headerRow}>
-            <HamburgerButton onPress={() => navigation.openDrawer()} />
             <View style={styles.headerText}>
               <Text style={styles.eyebrow}>MEMBRESIA</Text>
               <Text style={styles.title}>Tu Plan</Text>
@@ -184,7 +152,6 @@ export function MembershipScreen() {
       >
         {/* Header */}
         <View style={styles.headerRow}>
-          <HamburgerButton onPress={() => navigation.openDrawer()} />
           <View style={styles.headerText}>
             <Text style={styles.eyebrow}>MEMBRESIA</Text>
             <Text style={styles.title}>Tu Plan</Text>
@@ -286,18 +253,6 @@ const styles = StyleSheet.create({
   content: { padding: 24, flex: 1 },
   scrollContent: { padding: 24, paddingBottom: 40 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 24 },
-  hamburgerBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: darkTheme.colors.surface,
-    borderWidth: 1,
-    borderColor: darkTheme.colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  hamburgerBar: { width: 18, height: 2, borderRadius: 1, backgroundColor: darkTheme.colors.primary },
   headerText: { flex: 1, gap: 4 },
   eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 2.5, color: darkTheme.colors.primary },
   title: { fontSize: 28, lineHeight: 34, fontWeight: '700', color: darkTheme.colors.text },
