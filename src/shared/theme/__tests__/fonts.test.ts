@@ -38,8 +38,16 @@ describe('fonts', () => {
   });
 
   it('declares every family referenced by tokens', () => {
+    // Real package exports are numeric asset ids, not strings — bind each
+    // family name to the exact resource exported under that name instead of
+    // comparing against the name itself.
+    const archivo = jest.requireMock('@expo-google-fonts/archivo') as Record<string, unknown>;
+    const inter = jest.requireMock('@expo-google-fonts/inter') as Record<string, unknown>;
+    const resources = { ...archivo, ...inter };
+
     for (const family of Object.values(fontFamilies)) {
       expect(FONT_FAMILIES_TO_LOAD).toHaveProperty(family);
+      expect(FONT_FAMILIES_TO_LOAD[family]).toBe(resources[family]);
     }
   });
 

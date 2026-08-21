@@ -32,18 +32,20 @@ export const FONT_FAMILIES_TO_LOAD = {
  * see FontGate in src/navigation/App.tsx.
  */
 export function useAppFonts(): boolean {
-  const [archivoLoaded] = useFonts({
+  const [archivoLoaded, archivoError] = useFonts({
     Archivo_600SemiBold,
     Archivo_700Bold,
     Archivo_800ExtraBold,
     Archivo_900Black,
   });
-  const [interLoaded] = useInterFonts({
+  const [interLoaded, interError] = useInterFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
     Inter_800ExtraBold,
   });
+  if (archivoError) console.error('[fonts] Archivo load failed', archivoError);
+  if (interError) console.error('[fonts] Inter load failed', interError);
   return archivoLoaded === true && interLoaded === true;
 }
