@@ -9,7 +9,7 @@ import { InviteAcceptScreen } from '../features/auth/presentation/screens/Invite
 import { AuthFlowScreen } from '../features/auth/presentation/screens/AuthFlowScreen';
 import { OnboardingScreen, OnboardingData } from '../features/auth/presentation/screens/OnboardingScreen';
 import { MembershipGate } from '../features/membership/presentation/MembershipGate';
-import { AthleteTabs } from './AthleteTabs';
+import { AthleteDrawer } from './AthleteDrawer';
 import { darkTheme } from '../shared/theme';
 
 // --- Onboarding Data Context ---
@@ -91,7 +91,7 @@ function AthleteTabsWithGate() {
   const { user } = useUser();
   return (
     <MembershipGate athleteId={user?.id ?? null}>
-      <AthleteTabs />
+      <AthleteDrawer />
     </MembershipGate>
   );
 }
