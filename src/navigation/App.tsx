@@ -8,6 +8,7 @@ import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { AppNavigator } from './Navigation';
 import { setClerkInstance } from '../infrastructure/auth/clerk';
+import { useAppFonts } from '../shared/theme/fonts';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,21 +58,29 @@ const tokenCache = {
   deleteToken: async (key: string) => SecureStore.deleteItemAsync(key),
 };
 
+function FontGate({ children }: { children: React.ReactNode }) {
+  const fontsReady = useAppFonts();
+  if (!fontsReady) {
+    // Native splash stays visible until every brand font resolves.
+    return null;
+  }
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ClerkProvider
-        publishableKey={CLERK_KEY}
-        tokenCache={tokenCache}
-      >
-        <QueryClientProvider client={queryClient}>
-          <SafeAreaProvider>
-            <ClerkInstanceSetter />
-            <AppStateRefresh />
-            <AppNavigator />
-          </SafeAreaProvider>
-        </QueryClientProvider>
-      </ClerkProvider>
+      <FontGate>
+        <ClerkProvider publishableKey={CLERK_KEY} tokenCache={tokenCache}>
+          <QueryClientProvider client={queryClient}>
+            <SafeAreaProvider>
+              <ClerkInstanceSetter />
+              <AppStateRefresh />
+              <AppNavigator />
+            </SafeAreaProvider>
+          </QueryClientProvider>
+        </ClerkProvider>
+      </FontGate>
     </GestureHandlerRootView>
   );
 }
