@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ClerkProvider, useClerk } from '@clerk/clerk-expo';
@@ -34,6 +35,22 @@ function ClerkInstanceSetter() {
   return null;
 }
 
+function AppStateRefresh() {
+  const clerk = useClerk();
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active' && clerk.session) {
+        // Silent pre-emptive refresh, ignore errors
+        clerk.session.getToken({ skipCache: true }).catch(() => {});
+      }
+    });
+    return () => sub.remove();
+  }, [clerk]);
+
+  return null;
+}
+
 const tokenCache = {
   getToken: async (key: string) => SecureStore.getItemAsync(key),
   saveToken: async (key: string, value: string) => SecureStore.setItemAsync(key, value),
@@ -50,6 +67,7 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
           <SafeAreaProvider>
             <ClerkInstanceSetter />
+            <AppStateRefresh />
             <AppNavigator />
           </SafeAreaProvider>
         </QueryClientProvider>
