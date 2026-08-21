@@ -44,13 +44,6 @@ function getScoreStatus(score: number): string {
   return 'Recovery Needed';
 }
 
-function getStatusDotColor(status: string): string {
-  const s = status.toLowerCase();
-  if (s === 'completed' || s === 'confirmed' || s === 'active') return colors.success;
-  if (s === 'pending' || s === 'scheduled') return colors.warning;
-  return colors.textSecondary;
-}
-
 function toneForStatus(status: string): BadgeTone {
   const s = status.toLowerCase();
   if (s === 'completed' || s === 'confirmed' || s === 'active') return 'success';
