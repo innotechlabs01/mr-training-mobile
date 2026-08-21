@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSignIn, useSignUp, useUser } from '@clerk/clerk-expo';
+import { useSignIn, useSignUp } from '@clerk/clerk-expo';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -19,7 +19,6 @@ export function SignInScreen() {
   const route = useRoute<AuthRouteProp>();
   const { signIn, setActive, isLoaded: signInLoaded } = useSignIn();
   const { signUp, setActive: setActiveSignUp, isLoaded: signUpLoaded } = useSignUp();
-  const { user } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [coachCode, setCoachCode] = useState(route.params?.code ?? '');
@@ -47,6 +46,8 @@ export function SignInScreen() {
       return;
     }
 
+    const normalizedCode = coachCode.trim().toUpperCase();
+
     if (mode === 'signin') {
       if (!signInLoaded) {
         Alert.alert('Please wait', 'Authentication is loading...');
@@ -60,17 +61,12 @@ export function SignInScreen() {
         });
         if (result.status === 'complete') {
           await setActive({ session: result.createdSessionId });
-          // Coach code association after setActive — non-blocking; RootNavigator will remount to AthleteTabs via isSignedIn
-          const code = coachCode.trim().toUpperCase();
+          // Coach code association via direct API - primary path for sign-in (user already exists, webhook user.created won't fire)
+          // Server updates Clerk public_metadata atomically, webhook user.updated is fallback
           try {
-            await user?.update({ unsafeMetadata: { coachCode: code } });
-          } catch {
-            // Non-blocking
-          }
-          try {
-            await apiClient.post('/athlete/accept-invite', { code });
-          } catch {
-            // Non-blocking — code association is best-effort on signin
+            await apiClient.post('/athlete/accept-invite', { code: normalizedCode });
+          } catch (err) {
+            console.error('[Auth] accept-invite failed on sign-in:', err);
           }
         }
       } catch (err: unknown) {
@@ -89,27 +85,21 @@ export function SignInScreen() {
         const result = await signUp.create({
           emailAddress: email.trim(),
           password,
+          unsafeMetadata: { coachCode: normalizedCode },
         });
         if (result.status === 'complete') {
           await setActiveSignUp({ session: result.createdSessionId });
           // Onboard athlete: create profile + 7-day trial — after setActive so isSignedIn flips
           try {
             await apiClient.post('/athlete/onboard', {});
-          } catch {
-            // Non-blocking
-          }
-          const code = coachCode.trim().toUpperCase();
-          try {
-            // Store code in user metadata (writable from client)
-            await user?.update({ unsafeMetadata: { coachCode: code } });
-          } catch {
-            // Non-blocking — metadata is best-effort
+          } catch (err) {
+            console.error('[Auth] onboard failed on sign-up:', err);
           }
           try {
-            // Also create the association in the database
-            await apiClient.post('/athlete/accept-invite', { code });
-          } catch {
-            // Non-blocking
+            // Direct DB association as backup — webhook user.created with unsafeMetadata is primary
+            await apiClient.post('/athlete/accept-invite', { code: normalizedCode });
+          } catch (err) {
+            console.error('[Auth] accept-invite failed on sign-up:', err);
           }
         } else {
           Alert.alert('Check your email', 'We sent you a verification link');
