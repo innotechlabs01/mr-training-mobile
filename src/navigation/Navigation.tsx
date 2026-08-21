@@ -9,7 +9,9 @@ import { InviteAcceptScreen } from '../features/auth/presentation/screens/Invite
 import { AuthFlowScreen } from '../features/auth/presentation/screens/AuthFlowScreen';
 import { OnboardingScreen, OnboardingData } from '../features/auth/presentation/screens/OnboardingScreen';
 import { MembershipGate } from '../features/membership/presentation/MembershipGate';
-import { AthleteDrawer } from './AthleteDrawer';
+import { MembershipScreen } from '../features/membership/presentation/screens/MembershipScreen';
+import { StoreScreen } from '../features/store/presentation/screens/StoreScreen';
+import { AthleteTabs } from './AthleteTabs';
 import { darkTheme } from '../shared/theme';
 
 // --- Onboarding Data Context ---
@@ -82,6 +84,8 @@ export type RootStackParamList = {
   Onboarding: undefined;
   InviteAccept: { code: string } | undefined;
   AthleteTabs: undefined;
+  Membership: undefined;
+  Store: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -91,7 +95,7 @@ function AthleteTabsWithGate() {
   const { user } = useUser();
   return (
     <MembershipGate athleteId={user?.id ?? null}>
-      <AthleteDrawer />
+      <AthleteTabs />
     </MembershipGate>
   );
 }
@@ -138,6 +142,8 @@ function RootNavigator() {
         // Signed-in stack
         <>
           <Stack.Screen name="AthleteTabs" component={AthleteTabsWithGate} />
+          <Stack.Screen name="Membership" component={MembershipScreen} />
+          <Stack.Screen name="Store" component={StoreScreen} />
           <Stack.Screen name="InviteAccept" component={InviteAcceptScreen} />
         </>
       )}
