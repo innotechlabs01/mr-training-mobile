@@ -21,32 +21,9 @@ export function SignInScreen() {
   const { signUp, setActive: setActiveSignUp, isLoaded: signUpLoaded } = useSignUp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [coachCode, setCoachCode] = useState(route.params?.code ?? '');
   const [mode, setMode] = useState<'signin' | 'signup'>(route.params?.mode ?? 'signin');
   const [loading, setLoading] = useState(false);
-
-  const NAME_REGEX = /^[A-Za-zÀ-ÿ\s'-]+$/;
-
-  const validateNames = (): boolean => {
-    if (mode !== 'signup') return true;
-    const fn = firstName.trim();
-    const ln = lastName.trim();
-    if (!fn || !ln) {
-      Alert.alert('Error', 'First name and last name are required');
-      return false;
-    }
-    if (fn.length < 2 || ln.length < 2) {
-      Alert.alert('Error', 'Name must be at least 2 characters');
-      return false;
-    }
-    if (!NAME_REGEX.test(fn) || !NAME_REGEX.test(ln)) {
-      Alert.alert('Error', 'Names can only contain letters');
-      return false;
-    }
-    return true;
-  };
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -63,8 +40,6 @@ export function SignInScreen() {
       Alert.alert('Error', 'Password must be at least 8 characters');
       return;
     }
-
-    if (mode === 'signup' && !validateNames()) return;
 
     if (!coachCode.trim()) {
       Alert.alert('Error', 'El código de coach es obligatorio');
@@ -107,15 +82,11 @@ export function SignInScreen() {
       }
       setLoading(true);
       try {
-        const trimmedFirst = firstName.trim();
-        const trimmedLast = lastName.trim();
         const result = await signUp.create({
           emailAddress: email.trim(),
           password,
-          firstName: trimmedFirst,
-          lastName: trimmedLast,
-          unsafeMetadata: { coachCode: normalizedCode, firstName: trimmedFirst, lastName: trimmedLast },
-        } as unknown as Parameters<NonNullable<typeof signUp>['create']>[0]);
+          unsafeMetadata: { coachCode: normalizedCode },
+        });
         if (result.status === 'complete') {
           await setActiveSignUp({ session: result.createdSessionId });
           // Onboard athlete: create profile + 7-day trial — after setActive so isSignedIn flips
@@ -126,11 +97,7 @@ export function SignInScreen() {
           }
           try {
             // Direct DB association as backup — webhook user.created with unsafeMetadata is primary
-            await apiClient.post('/athlete/accept-invite', {
-              code: normalizedCode,
-              firstName: trimmedFirst,
-              lastName: trimmedLast,
-            });
+            await apiClient.post('/athlete/accept-invite', { code: normalizedCode });
           } catch (err) {
             console.error('[Auth] accept-invite failed on sign-up:', err);
           }
@@ -195,39 +162,6 @@ export function SignInScreen() {
               autoCapitalize="none"
               accessibilityLabel="Password"
             />
-
-            {mode === 'signup' && (
-              <>
-                <View style={styles.row}>
-                  <View style={styles.half}>
-                    <Text style={styles.label}>First Name *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="John"
-                      placeholderTextColor={darkTheme.colors.textSecondary}
-                      value={firstName}
-                      onChangeText={setFirstName}
-                      autoCapitalize="words"
-                      autoCorrect={false}
-                      accessibilityLabel="First name"
-                    />
-                  </View>
-                  <View style={styles.half}>
-                    <Text style={styles.label}>Last Name *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Doe"
-                      placeholderTextColor={darkTheme.colors.textSecondary}
-                      value={lastName}
-                      onChangeText={setLastName}
-                      autoCapitalize="words"
-                      autoCorrect={false}
-                      accessibilityLabel="Last name"
-                    />
-                  </View>
-                </View>
-              </>
-            )}
 
             {/* Coach Code — mandatory */}
             <Text style={styles.label}>Coach Code *</Text>
