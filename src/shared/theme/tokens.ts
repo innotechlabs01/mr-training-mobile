@@ -56,7 +56,7 @@ export const spacing = {
 } as const;
 
 export const radius = {
-  sm: 8,
+  sm: 8, // intentional redesign value; supersedes legacy 6 from designTokens.ts (becomes a shim in Phase A Task 8)
   md: 12,
   lg: 16,
   xl: 24,

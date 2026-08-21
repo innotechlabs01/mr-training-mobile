@@ -31,7 +31,13 @@ describe('tokens', () => {
     }
   });
 
-  it('exposes spacing and radius scales matching existing conventions', () => {
+  it('exposes shadow presets', () => {
+    expect(shadows.sm).toMatchObject({ shadowOpacity: 0.2, elevation: 2 });
+    expect(shadows.md).toMatchObject({ shadowOpacity: 0.3, elevation: 4 });
+    expect(Object.keys(shadows.sm)).toContain('shadowColor');
+  });
+
+  it('exposes spacing and radius scales', () => {
     expect(spacing).toMatchObject({ xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48, xxxl: 64 });
     expect(radius).toMatchObject({ sm: 8, md: 12, lg: 16, xl: 24, full: 9999 });
   });
