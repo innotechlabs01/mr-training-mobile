@@ -1,8 +1,19 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Alert,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth, useUser } from '@clerk/clerk-expo';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../../infrastructure/api/client';
 import { darkTheme } from '../../../../shared/theme';
 
@@ -14,103 +25,430 @@ type AthleteProfile = {
   plan: { name: string; price: number };
   schedule: { days: string; time: string };
   readiness: { score: number };
+  modality?: string;
+  service_type?: string;
+  serviceType?: string;
 };
+
+type Modality = 'virtual' | 'hibrido' | 'presencial';
+
+const MODALITY_OPTIONS: Array<{ key: Modality; label: string; icon: string }> = [
+  { key: 'virtual', label: 'Virtual', icon: '🌐' },
+  { key: 'hibrido', label: 'Híbrido', icon: '🔄' },
+  { key: 'presencial', label: 'Presencial', icon: '🏢' },
+];
+
+function normalizeModality(value: unknown): Modality {
+  const v = String(value ?? '').toLowerCase().trim();
+  if (v === 'hibrido' || v === 'híbrido' || v === 'hybrid') return 'hibrido';
+  if (v === 'presencial' || v === 'onsite' || v === 'in_person') return 'presencial';
+  return 'virtual';
+}
 
 export function ProfileScreen() {
   const { signOut } = useAuth();
   const { user } = useUser();
+  const queryClient = useQueryClient();
 
-  const initials = user?.firstName && user?.lastName
-    ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
-    : 'AT';
+  const initials =
+    user?.firstName && user?.lastName
+      ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+      : user?.firstName
+        ? user.firstName[0].toUpperCase()
+        : 'AT';
 
   const email = user?.emailAddresses?.[0]?.emailAddress ?? '';
 
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['athlete-profile'],
     queryFn: async () => {
       const { data } = await apiClient.get('/athlete/profile');
-      return data.profile as AthleteProfile | null;
+      // API returns { profile, coaches } — profile may be null
+      return (data.profile ?? data ?? null) as AthleteProfile | null;
     },
     staleTime: 10 * 60 * 1000,
   });
 
+  // Personal info local state
+  const [firstName, setFirstName] = useState(user?.firstName ?? '');
+  const [lastName, setLastName] = useState(user?.lastName ?? '');
+  const [saving, setSaving] = useState(false);
+
+  // Modality local state — default virtual for new users
+  const [modality, setModality] = useState<Modality>('virtual');
+  const [modalitySaving, setModalitySaving] = useState<Modality | null>(null);
+
+  // Sync Clerk user names when they load
+  useEffect(() => {
+    if (user?.firstName) setFirstName(user.firstName);
+    if (user?.lastName) setLastName(user.lastName);
+  }, [user?.firstName, user?.lastName]);
+
+  // Sync modality from profile when available
+  useEffect(() => {
+    if (profile) {
+      const raw = profile.modality ?? profile.service_type ?? profile.serviceType;
+      setModality(normalizeModality(raw));
+    } else {
+      setModality('virtual');
+    }
+  }, [profile]);
+
+  const handleSavePersonalInfo = async () => {
+    const fn = firstName.trim();
+    const ln = lastName.trim();
+    if (!fn || !ln) {
+      Alert.alert('Error', 'First name and last name are required');
+      return;
+    }
+    if (fn.length < 2 || ln.length < 2) {
+      Alert.alert('Error', 'Name must be at least 2 characters');
+      return;
+    }
+    setSaving(true);
+    try {
+      // Update Clerk
+      if (user) {
+        await user.update({ firstName: fn, lastName: ln });
+      }
+      // Update backend
+      await apiClient.put('/athlete/profile', { firstName: fn, lastName: ln });
+      await queryClient.invalidateQueries({ queryKey: ['athlete-profile'] });
+      Alert.alert('Success', 'Your profile has been updated');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update profile';
+      Alert.alert('Error', msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleModalitySelect = async (next: Modality) => {
+    if (next === modality) return;
+    const prev = modality;
+    setModality(next);
+    setModalitySaving(next);
+    try {
+      await apiClient.put('/athlete/profile', { modality: next });
+      await queryClient.invalidateQueries({ queryKey: ['athlete-profile'] });
+    } catch (err: unknown) {
+      setModality(prev);
+      const msg = err instanceof Error ? err.message : 'Failed to update training mode';
+      Alert.alert('Error', msg);
+    } finally {
+      setModalitySaving(null);
+    }
+  };
+
   const handleSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
-      ],
-    );
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
+    ]);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials}</Text>
-        </View>
-        <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
-        {email ? <Text style={styles.email}>{email}</Text> : null}
-
-        {profile && (
-          <>
-            <View style={styles.infoCard}>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Sport</Text>
-                <Text style={styles.infoValue}>{profile.sport}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Plan</Text>
-                <Text style={styles.infoValue}>{profile.plan?.name || 'No plan'}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Schedule</Text>
-                <Text style={styles.infoValue}>{profile.schedule?.days || '—'} {profile.schedule?.time || ''}</Text>
-              </View>
-            </View>
-
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>{profile.readiness?.score ?? '—'}</Text>
-                <Text style={styles.statLabel}>Readiness</Text>
-              </View>
-            </View>
-          </>
-        )}
-
-        <Pressable
-          style={({ pressed }) => [styles.signOutButton, pressed && { opacity: 0.8 }]}
-          onPress={handleSignOut}
-          accessibilityLabel="Sign out of your account"
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </Pressable>
-      </View>
+          {/* Hero */}
+          <View style={styles.hero}>
+            <View style={styles.avatarLarge}>
+              <Text style={styles.avatarLargeText}>{initials}</Text>
+            </View>
+            <View style={styles.heroText}>
+              <View style={styles.heroNameRow}>
+                <Text style={styles.heroName} numberOfLines={1}>
+                  {user?.firstName} {user?.lastName}
+                </Text>
+                <Text style={styles.heroEditIcon} accessibilityLabel="Edit profile">
+                  ✎
+                </Text>
+              </View>
+              {email ? (
+                <Text style={styles.heroEmail} numberOfLines={1}>
+                  {email}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          {/* Card 1: Personal Info */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Personal Info</Text>
+            <Text style={styles.cardSubtitle}>Update your personal details</Text>
+
+            <Text style={styles.label}>First Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="John"
+              placeholderTextColor={darkTheme.colors.textSecondary}
+              value={firstName}
+              onChangeText={setFirstName}
+              autoCapitalize="words"
+              autoCorrect={false}
+              accessibilityLabel="First name"
+              returnKeyType="next"
+            />
+
+            <Text style={styles.label}>Last Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Doe"
+              placeholderTextColor={darkTheme.colors.textSecondary}
+              value={lastName}
+              onChangeText={setLastName}
+              autoCapitalize="words"
+              autoCorrect={false}
+              accessibilityLabel="Last name"
+              returnKeyType="next"
+            />
+
+            <Text style={styles.label}>Email</Text>
+            <View style={styles.readOnlyWrap}>
+              <Text style={styles.readOnlyText} numberOfLines={1}>
+                {email || '—'}
+              </Text>
+              <Text style={styles.readOnlyHint}>Read-only</Text>
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.saveButton,
+                pressed && styles.pressed,
+                saving && styles.buttonDisabled,
+              ]}
+              onPress={handleSavePersonalInfo}
+              disabled={saving}
+              accessibilityLabel="Save personal info"
+              accessibilityState={{ busy: saving }}
+            >
+              {saving ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save</Text>
+              )}
+            </Pressable>
+          </View>
+
+          {/* Card 2: Training Mode */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Training Mode</Text>
+            <Text style={styles.cardSubtitle}>Choose how you train with your coach</Text>
+
+            <View style={styles.segmentedRow}>
+              {MODALITY_OPTIONS.map((opt) => {
+                const selected = modality === opt.key;
+                const isSaving = modalitySaving === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key}
+                    style={({ pressed }) => [
+                      styles.pill,
+                      selected ? styles.pillSelected : styles.pillUnselected,
+                      pressed && styles.pressed,
+                    ]}
+                    onPress={() => handleModalitySelect(opt.key)}
+                    disabled={!!modalitySaving}
+                    accessibilityLabel={`Training mode ${opt.label}`}
+                    accessibilityState={{ selected }}
+                  >
+                    <Text style={styles.pillIcon}>{opt.icon}</Text>
+                    <Text style={[styles.pillText, selected ? styles.pillTextSelected : styles.pillTextUnselected]}>
+                      {opt.label}
+                    </Text>
+                    {isSaving ? (
+                      <ActivityIndicator size="small" color={selected ? '#FFF' : darkTheme.colors.primary} style={styles.pillLoader} />
+                    ) : selected ? (
+                      <Text style={styles.pillCheck}>✓</Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={styles.modalityHint}>
+              Current: <Text style={styles.modalityHintStrong}>{MODALITY_OPTIONS.find((o) => o.key === modality)?.label ?? 'Virtual'}</Text>
+            </Text>
+          </View>
+
+          {/* Card 3: Membership / Plan */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Membership</Text>
+            <Text style={styles.cardSubtitle}>Your current plan</Text>
+            {profileLoading ? (
+              <ActivityIndicator color={darkTheme.colors.primary} style={{ marginTop: 12 }} />
+            ) : profile ? (
+              <View style={styles.membershipContent}>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Plan</Text>
+                  <Text style={styles.infoValue}>{profile.plan?.name || 'No plan'}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Sport</Text>
+                  <Text style={styles.infoValue}>{profile.sport || '—'}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Schedule</Text>
+                  <Text style={styles.infoValue}>
+                    {profile.schedule?.days || '—'} {profile.schedule?.time || ''}
+                  </Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Readiness</Text>
+                  <Text style={[styles.infoValue, { color: darkTheme.colors.primary }]}>
+                    {profile.readiness?.score ?? '—'}
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.emptyText}>No membership information available</Text>
+            )}
+          </View>
+
+          {/* Card 4: Actions */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Actions</Text>
+            <Pressable
+              style={({ pressed }) => [styles.signOutButton, pressed && styles.pressed]}
+              onPress={handleSignOut}
+              accessibilityLabel="Sign out of your account"
+              accessibilityRole="button"
+            >
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.bottomSpacer} />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: darkTheme.colors.background },
-  content: { flex: 1, alignItems: 'center', padding: 24, paddingTop: 48 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: darkTheme.colors.primary, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  avatarText: { color: '#FFF', fontSize: 28, fontWeight: '700' },
-  name: { fontSize: 22, lineHeight: 28, color: darkTheme.colors.text, fontWeight: '700' },
-  email: { fontSize: 17, color: darkTheme.colors.textSecondary, marginTop: 4, marginBottom: 24 },
-  infoCard: { backgroundColor: darkTheme.colors.surface, borderRadius: 16, padding: 20, width: '100%', marginBottom: 16, borderWidth: 1, borderColor: darkTheme.colors.border },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12 },
+  flex: { flex: 1 },
+  scrollContent: { padding: 16, paddingTop: 24, gap: 16 },
+  hero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    backgroundColor: darkTheme.colors.surface,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: darkTheme.colors.border,
+  },
+  avatarLarge: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: darkTheme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarLargeText: { color: '#FFF', fontSize: 26, fontWeight: '700' },
+  heroText: { flex: 1, gap: 2 },
+  heroNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  heroName: { fontSize: 20, lineHeight: 26, color: darkTheme.colors.text, fontWeight: '700', flexShrink: 1 },
+  heroEditIcon: { fontSize: 16, color: darkTheme.colors.textSecondary },
+  heroEmail: { fontSize: 14, color: darkTheme.colors.textSecondary, marginTop: 2 },
+  card: {
+    backgroundColor: darkTheme.colors.surface,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: darkTheme.colors.border,
+    gap: 0,
+  },
+  cardTitle: { fontSize: 17, fontWeight: '700', color: darkTheme.colors.text },
+  cardSubtitle: { fontSize: 13, color: darkTheme.colors.textSecondary, marginTop: 4, marginBottom: 16 },
+  label: { fontSize: 13, fontWeight: '600', color: darkTheme.colors.textSecondary, marginBottom: 6, marginTop: 12 },
+  input: {
+    backgroundColor: '#2C2C2E',
+    borderRadius: 10,
+    height: 48,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: darkTheme.colors.text,
+    borderWidth: 1,
+    borderColor: darkTheme.colors.border,
+  },
+  readOnlyWrap: {
+    backgroundColor: '#2C2C2E',
+    borderRadius: 10,
+    height: 48,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: darkTheme.colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    opacity: 0.85,
+  },
+  readOnlyText: { fontSize: 15, color: darkTheme.colors.textSecondary, flex: 1 },
+  readOnlyHint: { fontSize: 11, color: darkTheme.colors.textSecondary, marginLeft: 8, fontWeight: '600' },
+  saveButton: {
+    backgroundColor: darkTheme.colors.primary,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  saveButtonText: { fontSize: 16, color: '#FFF', fontWeight: '700' },
+  buttonDisabled: { opacity: 0.6 },
+  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
+  segmentedRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  pill: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    minHeight: 72,
+  },
+  pillSelected: { backgroundColor: darkTheme.colors.primary, borderColor: darkTheme.colors.primary },
+  pillUnselected: { backgroundColor: '#2C2C2E', borderColor: darkTheme.colors.border },
+  pillIcon: { fontSize: 18 },
+  pillText: { fontSize: 12, fontWeight: '700', textAlign: 'center' },
+  pillTextSelected: { color: '#FFF' },
+  pillTextUnselected: { color: darkTheme.colors.text },
+  pillCheck: { fontSize: 12, color: '#FFF', fontWeight: '700', marginTop: 2 },
+  pillLoader: { marginTop: 2 },
+  modalityHint: { fontSize: 12, color: darkTheme.colors.textSecondary, marginTop: 12, textAlign: 'center' },
+  modalityHintStrong: { color: darkTheme.colors.text, fontWeight: '600' },
+  membershipContent: { gap: 0 },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, alignItems: 'center' },
   divider: { height: 1, backgroundColor: darkTheme.colors.border },
   infoLabel: { fontSize: 15, color: darkTheme.colors.textSecondary },
-  infoValue: { fontSize: 15, color: darkTheme.colors.text, fontWeight: '600' },
-  statsRow: { flexDirection: 'row', gap: 8, width: '100%', marginBottom: 32 },
-  statCard: { flex: 1, backgroundColor: darkTheme.colors.surface, borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: darkTheme.colors.border },
-  statValue: { fontSize: 20, color: darkTheme.colors.primary, fontWeight: '700' },
-  statLabel: { fontSize: 12, color: darkTheme.colors.textSecondary, marginTop: 4 },
-  signOutButton: { backgroundColor: darkTheme.colors.destructive, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
+  infoValue: { fontSize: 15, color: darkTheme.colors.text, fontWeight: '600', maxWidth: '60%', textAlign: 'right' },
+  emptyText: { fontSize: 14, color: darkTheme.colors.textSecondary, marginTop: 8 },
+  signOutButton: {
+    backgroundColor: darkTheme.colors.destructive,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
   signOutText: { fontSize: 16, color: '#FFF', fontWeight: '600' },
+  bottomSpacer: { height: 24 },
 });
