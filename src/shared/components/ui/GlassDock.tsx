@@ -43,7 +43,7 @@ export function GlassDock({ state, descriptors, navigation, insets }: BottomTabB
             >
               <meta.Icon size={24} color={isFocused ? colors.primary : colors.textSecondary} />
               <Text style={[styles.label, isFocused && styles.labelFocused]}>{String(label)}</Text>
-              {isFocused && <GlassDockIndicatorProto focused={isFocused} />}
+              <GlassDockIndicatorProto focused={isFocused} />
             </Pressable>
           );
         })}

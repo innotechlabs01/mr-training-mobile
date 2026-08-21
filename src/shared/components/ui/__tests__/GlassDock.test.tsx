@@ -3,7 +3,7 @@ import { fireEvent, render } from '@testing-library/react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { GlassDock, GlassDockIndicatorProto } from '../GlassDock';
 
-function makeProps(active: string): BottomTabBarProps {
+function makeProps(active: string, nav?: { navigate?: jest.Mock }): BottomTabBarProps {
   const routes = [
     { key: 'Today', name: 'Today' },
     { key: 'Plan', name: 'Plan' },
@@ -15,7 +15,7 @@ function makeProps(active: string): BottomTabBarProps {
     descriptors: Object.fromEntries(
       routes.map((r) => [r.key, { options: { tabBarLabel: { Today: 'Hoy', Plan: 'Plan', Events: 'Eventos', Profile: 'Perfil' }[r.name] } }]),
     ) as BottomTabBarProps['descriptors'],
-    navigation: { emit: jest.fn(() => ({ defaultPrevented: false }) as any), navigate: jest.fn() } as unknown as BottomTabBarProps['navigation'],
+    navigation: { emit: jest.fn(() => ({ defaultPrevented: false }) as any), navigate: nav?.navigate ?? jest.fn() } as unknown as BottomTabBarProps['navigation'],
     insets: { top: 0, bottom: 0, left: 0, right: 0 },
   };
 }
@@ -31,13 +31,16 @@ describe('GlassDock', () => {
   });
 
   it('navigates to a non-active tab on press', () => {
-    const { getByRole } = render(<GlassDock {...makeProps('Today')} />);
+    const navigate = jest.fn();
+    const { getByRole } = render(<GlassDock {...makeProps('Today', { navigate })} />);
     fireEvent.press(getByRole('tab', { name: 'Plan' }));
-    expect(getByRole('tab', { name: 'Plan' })).toBeTruthy();
+    expect(navigate).toHaveBeenCalledWith('Plan');
   });
 
-  it('shows exactly one active dot indicator under the focused tab', () => {
+  it('marks exactly one tab focused and all four dots render', () => {
     const { UNSAFE_getAllByType } = render(<GlassDock {...makeProps('Events')} />);
-    expect(UNSAFE_getAllByType(GlassDockIndicatorProto).length).toBe(1);
+    const all = UNSAFE_getAllByType(GlassDockIndicatorProto);
+    expect(all.length).toBe(4);
+    expect(all.filter((n: any) => n.props.focused).length).toBe(1);
   });
 });
