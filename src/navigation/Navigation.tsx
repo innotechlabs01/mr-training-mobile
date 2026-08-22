@@ -12,6 +12,8 @@ import { OnboardingScreen, OnboardingData } from '../features/auth/presentation/
 import { MembershipGate } from '../features/membership/presentation/MembershipGate';
 import { MembershipScreen } from '../features/membership/presentation/screens/MembershipScreen';
 import { StoreScreen } from '../features/store/presentation/screens/StoreScreen';
+import { WorkoutDetailScreen } from '../features/training/presentation/screens/WorkoutDetailScreen';
+import { WorkoutExecutionScreen } from '../features/training/presentation/screens/WorkoutExecutionScreen';
 import { AthleteTabs } from './AthleteTabs';
 import { darkTheme } from '../shared/theme';
 
@@ -146,6 +148,8 @@ function RootNavigator() {
           <Stack.Screen name="Membership" component={MembershipScreen} />
           <Stack.Screen name="Store" component={StoreScreen} />
           <Stack.Screen name="InviteAccept" component={InviteAcceptScreen} />
+          <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
+          <Stack.Screen name="WorkoutExecution" component={WorkoutExecutionScreen} options={{ presentation: 'modal' }} />
         </>
       )}
     </Stack.Navigator>

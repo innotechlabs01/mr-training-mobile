@@ -1,6 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, typography, radius } from '../../../../shared/theme/tokens';
@@ -8,6 +11,8 @@ import { EmptyState } from '../../../../shared/components/ui/EmptyState';
 import { ProgressBar } from '../../../../shared/components/ui/ProgressBar';
 import { Card } from '../../../../shared/components/ui/Card';
 import { Badge } from '../../../../shared/components/ui/Badge';
+import type { AthleteTabParamList } from '../../../../navigation/AthleteTabs';
+import type { RootStackParamList } from '../../../../navigation/Navigation';
 
 type Workout = {
   id: string;
@@ -21,6 +26,11 @@ type Workout = {
 
 type Filter = 'all' | 'completed' | 'pending';
 
+type HistoryNav = CompositeNavigationProp<
+  BottomTabNavigationProp<AthleteTabParamList, 'Plan'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
+
 type BadgeTone = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
 
 function toneForStatus(status: string): BadgeTone {
@@ -31,6 +41,7 @@ function toneForStatus(status: string): BadgeTone {
 }
 
 export function HistoryScreen() {
+  const navigation = useNavigation<HistoryNav>();
   const [filter, setFilter] = useState<Filter>('all');
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
@@ -86,22 +97,32 @@ export function HistoryScreen() {
             const completed = w.status === 'completed';
             const dotColor = completed ? colors.success : colors.warning;
             return (
-              <Card key={w.id} style={styles.card}>
-                <View style={styles.cardTop}>
-                  <View style={styles.cardLeft}>
-                    <View style={styles.nameRow}>
-                      <View style={[styles.dot, { backgroundColor: dotColor }]} />
-                      <Text style={styles.workoutName} numberOfLines={1}>
-                        {w.contentName}
-                      </Text>
+              <Pressable
+                key={w.id}
+                onPress={() =>
+                  navigation
+                    .getParent<NativeStackNavigationProp<RootStackParamList>>()
+                    ?.navigate('WorkoutDetail', { workoutId: w.id })
+                }
+                style={({ pressed }) => (pressed ? styles.pressed : undefined)}
+              >
+                <Card style={styles.card}>
+                  <View style={styles.cardTop}>
+                    <View style={styles.cardLeft}>
+                      <View style={styles.nameRow}>
+                        <View style={[styles.dot, { backgroundColor: dotColor }]} />
+                        <Text style={styles.workoutName} numberOfLines={1}>
+                          {w.contentName}
+                        </Text>
+                      </View>
+                      <Text style={styles.workoutDate}>{w.startDate}</Text>
                     </View>
-                    <Text style={styles.workoutDate}>{w.startDate}</Text>
+                    <Badge text={w.status} tone={toneForStatus(w.status)} />
                   </View>
-                  <Badge text={w.status} tone={toneForStatus(w.status)} />
-                </View>
 
-                <ProgressBar progress={completed ? 1 : w.progress / 100} />
-              </Card>
+                  <ProgressBar progress={completed ? 1 : w.progress / 100} />
+                </Card>
+              </Pressable>
             );
           })
         )}
@@ -138,6 +159,7 @@ const styles = StyleSheet.create({
   pillTextInactive: { color: colors.textSecondary },
 
   card: { marginBottom: spacing.sm },
+  pressed: { opacity: 0.8 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.md, marginBottom: spacing.md },
   cardLeft: { flex: 1, gap: spacing.xs },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
