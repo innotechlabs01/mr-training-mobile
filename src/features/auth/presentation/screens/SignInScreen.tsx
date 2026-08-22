@@ -6,7 +6,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
-import { darkTheme } from '../../../../shared/theme';
+import { colors, spacing, typography, radius } from '../../../../shared/theme/tokens';
 import { apiClient } from '../../../../infrastructure/api/client';
 
 type AuthNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Auth'>;
@@ -90,8 +90,18 @@ export function SignInScreen() {
         if (result.status === 'complete') {
           await setActiveSignUp({ session: result.createdSessionId });
           // Onboard athlete: create profile + 7-day trial — after setActive so isSignedIn flips
+          const onboarding = route.params?.onboardingData;
           try {
-            await apiClient.post('/athlete/onboard', {});
+            await apiClient.post('/athlete/onboard', {
+              sports: onboarding?.sports ?? [],
+              modality: onboarding?.modality ?? '',
+              experienceLevel: onboarding?.experienceLevel ?? '',
+              goal: onboarding?.goal ?? '',
+              sessionsPerWeek: onboarding?.sessionsPerWeek ?? 0,
+              sessionDuration: onboarding?.sessionDuration ?? 0,
+              equipment: onboarding?.equipment ?? '',
+              athleteRoutineAccepted: onboarding?.athleteRoutineAccepted ?? true,
+            });
           } catch (err) {
             console.error('[Auth] onboard failed on sign-up:', err);
           }
@@ -142,7 +152,7 @@ export function SignInScreen() {
             <TextInput
               style={styles.input}
               placeholder="your@email.com"
-              placeholderTextColor={darkTheme.colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -155,7 +165,7 @@ export function SignInScreen() {
             <TextInput
               style={styles.input}
               placeholder="At least 8 characters"
-              placeholderTextColor={darkTheme.colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -168,7 +178,7 @@ export function SignInScreen() {
             <TextInput
               style={styles.input}
               placeholder="e.g. MR-YH9R"
-              placeholderTextColor={darkTheme.colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={coachCode}
               onChangeText={setCoachCode}
               autoCapitalize="characters"
@@ -212,33 +222,33 @@ export function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkTheme.colors.background },
+  container: { flex: 1, backgroundColor: colors.base },
   flex: { flex: 1 },
-  content: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  header: { alignItems: 'center', marginBottom: 32 },
-  brand: { fontSize: 12, color: darkTheme.colors.primary, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 },
-  title: { fontSize: 28, lineHeight: 34, color: darkTheme.colors.text, textAlign: 'center', fontWeight: '700' },
-  subtitle: { fontSize: 17, color: darkTheme.colors.textSecondary, textAlign: 'center', marginTop: 8 },
-  card: { backgroundColor: darkTheme.colors.surface, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: darkTheme.colors.border },
-  label: { fontSize: 13, fontWeight: '600', color: darkTheme.colors.textSecondary, marginBottom: 6 },
+  content: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
+  header: { alignItems: 'center', marginBottom: spacing.xl },
+  brand: { ...typography.label, fontSize: 12, color: colors.primary, marginBottom: spacing.md },
+  title: { ...typography.title, fontSize: 28, lineHeight: 34, color: colors.text, textAlign: 'center' },
+  subtitle: { ...typography.body, fontSize: 17, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm },
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  label: { ...typography.caption, fontWeight: '600', color: colors.textSecondary, marginBottom: spacing.xs },
   input: {
-    backgroundColor: '#2C2C2E',
-    borderRadius: 10,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radius.md,
     height: 48,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
     fontSize: 16,
-    color: darkTheme.colors.text,
-    marginBottom: 12,
+    color: colors.text,
+    marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: darkTheme.colors.border,
+    borderColor: colors.border,
   },
-  button: { backgroundColor: darkTheme.colors.primary, height: 52, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
+  button: { backgroundColor: colors.primary, height: 52, borderRadius: radius.md, justifyContent: 'center', alignItems: 'center', marginTop: spacing.sm },
   buttonPressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
   buttonDisabled: { opacity: 0.5 },
-  buttonText: { fontSize: 16, color: '#FFFFFF', fontWeight: '700' },
-  switchButton: { marginTop: 16, alignItems: 'center' },
-  switchText: { fontSize: 14, color: darkTheme.colors.primaryLight },
-  codeHint: { fontSize: 11, color: darkTheme.colors.textSecondary, marginBottom: 12, marginTop: -6 },
-  row: { flexDirection: 'row', gap: 12 },
+  buttonText: { ...typography.bodyStrong, color: colors.base },
+  switchButton: { marginTop: spacing.md, alignItems: 'center' },
+  switchText: { ...typography.bodyStrong, fontSize: 14, color: colors.primary },
+  codeHint: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm, marginTop: -spacing.xs },
+  row: { flexDirection: 'row', gap: spacing.sm },
   half: { flex: 1 },
 });

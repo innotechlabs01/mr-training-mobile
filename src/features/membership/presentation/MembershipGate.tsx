@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { apiClient } from '../../../infrastructure/api/client';
 import { PaymentScreen } from './PaymentScreen';
-import { darkTheme } from '../../../shared/theme';
+import { colors } from '../../../shared/theme/tokens';
 
 type MembershipState = {
   status: 'loading' | 'active' | 'grace_period' | 'suspended' | 'pending_approval' | 'no_membership';
@@ -70,7 +70,7 @@ export function MembershipGate({ children, athleteId }: { children: React.ReactN
   if (state.status === 'loading') {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={darkTheme.colors.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.text}>Loading...</Text>
       </View>
     );
@@ -85,6 +85,6 @@ export function MembershipGate({ children, athleteId }: { children: React.ReactN
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: darkTheme.colors.background },
-  text: { color: darkTheme.colors.textSecondary, marginTop: 16, fontSize: 15 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.base },
+  text: { color: colors.textSecondary, marginTop: 16, fontSize: 15 },
 });

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
 import { apiClient } from '../../../../infrastructure/api/client';
-import { darkTheme } from '../../../../shared/theme';
+import { colors, spacing, typography, radius } from '../../../../shared/theme/tokens';
 
 type Props = {
   visible: boolean;
@@ -111,7 +111,7 @@ export function CoachScheduleModal({ visible, coachId, athleteId, athleteName, o
 
           {fetching ? (
             <View style={styles.loadingCard}>
-              <ActivityIndicator size="large" color={darkTheme.colors.primary} />
+              <ActivityIndicator size="large" color={colors.primary} />
               <Text style={styles.loadingText}>Loading availability...</Text>
             </View>
           ) : availability.length === 0 ? (
@@ -186,35 +186,35 @@ export function CoachScheduleModal({ visible, coachId, athleteId, athleteName, o
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkTheme.colors.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24, paddingBottom: 0 },
-  title: { fontSize: 22, fontWeight: '700', color: darkTheme.colors.text },
-  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: darkTheme.colors.surface, justifyContent: 'center', alignItems: 'center' },
-  closeText: { fontSize: 16, color: darkTheme.colors.textSecondary },
-  content: { padding: 24 },
-  subtitle: { fontSize: 15, color: darkTheme.colors.textSecondary, lineHeight: 22, marginBottom: 24 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: darkTheme.colors.text, marginBottom: 12 },
-  daysScroll: { marginBottom: 24 },
-  dayChip: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, backgroundColor: darkTheme.colors.surface, borderWidth: 1, borderColor: darkTheme.colors.border, marginRight: 8 },
-  dayChipActive: { borderColor: darkTheme.colors.primary, backgroundColor: `${darkTheme.colors.primary}10` },
+  container: { flex: 1, backgroundColor: colors.base },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, paddingBottom: 0 },
+  title: { ...typography.title, fontSize: 22, color: colors.text },
+  closeBtn: { width: 32, height: 32, borderRadius: radius.md, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' },
+  closeText: { ...typography.caption, fontSize: 16, color: colors.textSecondary },
+  content: { padding: spacing.lg },
+  subtitle: { ...typography.body, color: colors.textSecondary, lineHeight: 22, marginBottom: spacing.lg },
+  sectionTitle: { ...typography.bodyStrong, fontSize: 16, color: colors.text, marginBottom: spacing.sm },
+  daysScroll: { marginBottom: spacing.lg },
+  dayChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginRight: spacing.sm },
+  dayChipActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}10` },
   dayChipDisabled: { opacity: 0.4 },
-  dayLabel: { fontSize: 14, color: darkTheme.colors.text, fontWeight: '600' },
-  dayLabelActive: { color: darkTheme.colors.primary },
-  slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },
-  slotChip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: darkTheme.colors.surface, borderWidth: 1, borderColor: darkTheme.colors.border },
-  slotChipActive: { borderColor: darkTheme.colors.primary, backgroundColor: `${darkTheme.colors.primary}10` },
-  slotTime: { fontSize: 15, color: darkTheme.colors.text, fontWeight: '600' },
-  slotTimeActive: { color: darkTheme.colors.primary },
-  noSlots: { fontSize: 14, color: darkTheme.colors.textSecondary, marginBottom: 24 },
-  scheduleBtn: { backgroundColor: darkTheme.colors.primary, height: 52, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
+  dayLabel: { ...typography.bodyStrong, fontSize: 14, color: colors.text },
+  dayLabelActive: { color: colors.primary },
+  slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
+  slotChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  slotChipActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}10` },
+  slotTime: { ...typography.bodyStrong, fontSize: 15, color: colors.text },
+  slotTimeActive: { color: colors.primary },
+  noSlots: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+  scheduleBtn: { backgroundColor: colors.primary, height: 52, borderRadius: radius.md, justifyContent: 'center', alignItems: 'center', marginTop: spacing.sm },
   scheduleBtnDisabled: { opacity: 0.5 },
-  scheduleBtnText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
-  loadingCard: { backgroundColor: darkTheme.colors.surface, borderRadius: 16, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: darkTheme.colors.border },
-  loadingText: { fontSize: 15, color: darkTheme.colors.textSecondary, marginTop: 12 },
-  emptyCard: { backgroundColor: darkTheme.colors.surface, borderRadius: 16, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: darkTheme.colors.border },
-  emptyEmoji: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: 18, color: darkTheme.colors.text, fontWeight: '700', marginBottom: 8 },
-  emptyText: { fontSize: 14, color: darkTheme.colors.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: 16 },
-  laterBtn: { backgroundColor: darkTheme.colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
-  laterBtnText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
+  scheduleBtnText: { ...typography.bodyStrong, fontSize: 16, color: colors.base },
+  loadingCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  loadingText: { ...typography.body, color: colors.textSecondary, marginTop: spacing.sm },
+  emptyCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  emptyEmoji: { fontSize: 48, marginBottom: spacing.sm },
+  emptyTitle: { ...typography.title, fontSize: 18, color: colors.text, marginBottom: spacing.sm },
+  emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: spacing.md },
+  laterBtn: { backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.md },
+  laterBtnText: { ...typography.bodyStrong, fontSize: 15, color: colors.base },
 });

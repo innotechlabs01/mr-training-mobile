@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { darkTheme } from '../../../../shared/theme';
+import { colors, spacing, typography, radius } from '../../../../shared/theme/tokens';
 
 type Props = {
   onNewUser: () => void;
@@ -67,33 +67,33 @@ export function WelcomeScreen({ onNewUser, onExistingUser }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkTheme.colors.background },
-  content: { flex: 1, justifyContent: 'space-between', padding: 24 },
-  header: { alignItems: 'center', marginTop: 40 },
+  container: { flex: 1, backgroundColor: colors.base },
+  content: { flex: 1, justifyContent: 'space-between', padding: spacing.xl },
+  header: { alignItems: 'center', marginTop: spacing.xl },
   iconCircle: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: `${darkTheme.colors.primary}15`, borderWidth: 2, borderColor: `${darkTheme.colors.primary}30`,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 24,
+    width: 72, height: 72, borderRadius: radius.full,
+    backgroundColor: `${colors.primary}15`, borderWidth: 2, borderColor: `${colors.primary}30`,
+    justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg,
   },
   iconText: { fontSize: 32 },
-  title: { fontSize: 32, fontWeight: '800', color: darkTheme.colors.text, textAlign: 'center', lineHeight: 40, marginBottom: 12 },
-  subtitle: { fontSize: 16, color: darkTheme.colors.textSecondary, textAlign: 'center', lineHeight: 24, paddingHorizontal: 16 },
-  cards: { gap: 12, marginTop: 24 },
+  title: { ...typography.display, fontSize: 32, lineHeight: 40, color: colors.text, textAlign: 'center', marginBottom: spacing.sm },
+  subtitle: { ...typography.body, fontSize: 16, lineHeight: 24, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.md },
+  cards: { gap: spacing.sm, marginTop: spacing.lg },
   card: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: darkTheme.colors.surface, borderRadius: 16, padding: 20,
-    borderWidth: 1, borderColor: darkTheme.colors.border, gap: 16,
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg,
+    borderWidth: 1, borderColor: colors.border, gap: spacing.md,
   },
   cardPressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
   cardIcon: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: `${darkTheme.colors.primary}15`, justifyContent: 'center', alignItems: 'center',
+    width: 48, height: 48, borderRadius: radius.full,
+    backgroundColor: `${colors.primary}15`, justifyContent: 'center', alignItems: 'center',
   },
   cardEmoji: { fontSize: 22 },
   cardContent: { flex: 1 },
-  cardTitle: { fontSize: 17, fontWeight: '700', color: darkTheme.colors.text, marginBottom: 2 },
-  cardDesc: { fontSize: 13, color: darkTheme.colors.textSecondary, lineHeight: 18 },
-  cardArrow: { fontSize: 20, color: darkTheme.colors.primaryLight, fontWeight: '600' },
-  hint: { fontSize: 13, color: darkTheme.colors.textSecondary, textAlign: 'center', marginTop: 16 },
-  footer: { fontSize: 12, color: darkTheme.colors.textSecondary, textAlign: 'center' },
+  cardTitle: { ...typography.title, fontSize: 17, color: colors.text, marginBottom: spacing.xs },
+  cardDesc: { ...typography.caption, fontSize: 13, lineHeight: 18, color: colors.textSecondary },
+  cardArrow: { ...typography.bodyStrong, fontSize: 20, color: colors.primary },
+  hint: { ...typography.caption, fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md },
+  footer: { ...typography.caption, fontSize: 12, color: colors.textSecondary, textAlign: 'center' },
 });

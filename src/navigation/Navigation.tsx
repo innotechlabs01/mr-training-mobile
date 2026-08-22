@@ -1,31 +1,19 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import * as Linking from 'expo-linking';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth, useUser, ClerkLoaded } from '@clerk/clerk-expo';
+import { SplashScreen } from '../features/auth/presentation/screens/SplashScreen';
+import { WelcomeScreen } from '../features/auth/presentation/screens/WelcomeScreen';
 import { SignInScreen } from '../features/auth/presentation/screens/SignInScreen';
 import { InviteAcceptScreen } from '../features/auth/presentation/screens/InviteAcceptScreen';
-import { AuthFlowScreen } from '../features/auth/presentation/screens/AuthFlowScreen';
 import { OnboardingScreen, OnboardingData } from '../features/auth/presentation/screens/OnboardingScreen';
 import { MembershipGate } from '../features/membership/presentation/MembershipGate';
-import { AthleteDrawer } from './AthleteDrawer';
+import { MembershipScreen } from '../features/membership/presentation/screens/MembershipScreen';
+import { StoreScreen } from '../features/store/presentation/screens/StoreScreen';
+import { AthleteTabs } from './AthleteTabs';
 import { darkTheme } from '../shared/theme';
-
-// --- Onboarding Data Context ---
-type OnboardingContextType = {
-  onboardingData: OnboardingData | null;
-  saveOnboarding: (data: OnboardingData) => void;
-};
-
-const OnboardingContext = createContext<OnboardingContextType>({
-  onboardingData: null,
-  saveOnboarding: () => {},
-});
-
-export function useOnboardingData() {
-  return useContext(OnboardingContext);
-}
 
 // --- Deep Linking ---
 function extractCodeFromUrl(url: string): string | null {
@@ -49,10 +37,14 @@ const linking = {
   ],
   config: {
     screens: {
-      AuthFlow: '',
-      InviteAccept: 'invite',
+      Splash: '',
+      Welcome: 'welcome',
       Auth: 'auth',
+      Onboarding: 'onboarding',
+      InviteAccept: 'invite',
       AthleteTabs: 'home',
+      Membership: 'membership',
+      Store: 'store',
     },
   },
   async getInitialURL(): Promise<string> {
@@ -77,11 +69,14 @@ const linking = {
 
 // --- Types ---
 export type RootStackParamList = {
-  AuthFlow: undefined;
-  Auth: { code?: string; mode?: 'signin' | 'signup' } | undefined;
+  Splash: undefined;
+  Welcome: undefined;
+  Auth: { code?: string; mode?: 'signin' | 'signup'; onboardingData?: OnboardingData } | undefined;
   Onboarding: undefined;
   InviteAccept: { code: string } | undefined;
   AthleteTabs: undefined;
+  Membership: undefined;
+  Store: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -91,19 +86,25 @@ function AthleteTabsWithGate() {
   const { user } = useUser();
   return (
     <MembershipGate athleteId={user?.id ?? null}>
-      <AthleteDrawer />
+      <AthleteTabs />
     </MembershipGate>
   );
 }
 
+function WelcomeScreenWrapper({ navigation }: any) {
+  return (
+    <WelcomeScreen
+      onNewUser={() => navigation.navigate('Onboarding')}
+      onExistingUser={() => navigation.navigate('Auth', { mode: 'signin' })}
+    />
+  );
+}
+
 function OnboardingScreenWrapper({ navigation }: any) {
-  const { saveOnboarding } = useOnboardingData();
-
-  const handleComplete = useCallback((data: OnboardingData) => {
-    saveOnboarding(data);
-    navigation.navigate('Auth', { mode: 'signup' });
-  }, [saveOnboarding, navigation]);
-
+  const handleComplete = useCallback(
+    (data: OnboardingData) => navigation.navigate('Auth', { mode: 'signup', onboardingData: data }),
+    [navigation],
+  );
   return <OnboardingScreen onComplete={handleComplete} />;
 }
 
@@ -129,7 +130,8 @@ function RootNavigator() {
       {!isSignedIn ? (
         // Auth stack
         <>
-          <Stack.Screen name="AuthFlow" component={AuthFlowScreen} />
+          <Stack.Screen name="Splash" component={SplashScreen} />
+          <Stack.Screen name="Welcome" component={WelcomeScreenWrapper} />
           <Stack.Screen name="Auth" component={SignInScreen} />
           <Stack.Screen name="Onboarding" component={OnboardingScreenWrapper} />
           <Stack.Screen name="InviteAccept" component={InviteAcceptScreen} />
@@ -137,7 +139,10 @@ function RootNavigator() {
       ) : (
         // Signed-in stack
         <>
+          <Stack.Screen name="Splash" component={SplashScreen} />
           <Stack.Screen name="AthleteTabs" component={AthleteTabsWithGate} />
+          <Stack.Screen name="Membership" component={MembershipScreen} />
+          <Stack.Screen name="Store" component={StoreScreen} />
           <Stack.Screen name="InviteAccept" component={InviteAcceptScreen} />
         </>
       )}
@@ -147,19 +152,11 @@ function RootNavigator() {
 
 // --- Main Navigator ---
 export function AppNavigator() {
-  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
-
-  const saveOnboarding = useCallback((data: OnboardingData) => {
-    setOnboardingData(data);
-  }, []);
-
   return (
-    <OnboardingContext.Provider value={{ onboardingData, saveOnboarding }}>
-      <ClerkLoaded>
-        <NavigationContainer linking={linking} theme={darkTheme}>
-          <RootNavigator />
-        </NavigationContainer>
-      </ClerkLoaded>
-    </OnboardingContext.Provider>
+    <ClerkLoaded>
+      <NavigationContainer linking={linking} theme={darkTheme}>
+        <RootNavigator />
+      </NavigationContainer>
+    </ClerkLoaded>
   );
 }

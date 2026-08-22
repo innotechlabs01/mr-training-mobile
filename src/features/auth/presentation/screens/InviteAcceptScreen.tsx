@@ -6,7 +6,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 import { apiClient } from '../../../../infrastructure/api/client';
-import { darkTheme } from '../../../../shared/theme';
+import { colors, spacing, typography, radius } from '../../../../shared/theme/tokens';
 
 type InviteAcceptNavigationProp = NativeStackNavigationProp<RootStackParamList, 'InviteAccept'>;
 type InviteAcceptRouteProp = RouteProp<RootStackParamList, 'InviteAccept'>;
@@ -88,7 +88,7 @@ export function InviteAcceptScreen() {
 
         {status === 'idle' && (code ? (
           <>
-            <ActivityIndicator size="large" color={darkTheme.colors.primary} style={styles.loader} />
+            <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
             <Text style={styles.title}>Preparing...</Text>
           </>
         ) : (
@@ -100,7 +100,7 @@ export function InviteAcceptScreen() {
             <TextInput
               style={styles.input}
               placeholder="e.g. MR-A3X9"
-              placeholderTextColor={darkTheme.colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={manualCode}
               onChangeText={setManualCode}
               autoCapitalize="characters"
@@ -123,7 +123,7 @@ export function InviteAcceptScreen() {
 
         {status === 'loading' && (
           <>
-            <ActivityIndicator size="large" color={darkTheme.colors.primary} style={styles.loader} />
+            <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
             <Text style={styles.title}>Connecting to your coach...</Text>
             <Text style={styles.subtitle}>Please wait while we set up your account</Text>
           </>
@@ -179,22 +179,22 @@ export function InviteAcceptScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkTheme.colors.background },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
-  brand: { fontSize: 14, fontWeight: '700', color: darkTheme.colors.primaryLight, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 32 },
-  loader: { marginBottom: 24 },
-  title: { fontSize: 24, fontWeight: '700', color: darkTheme.colors.text, textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: darkTheme.colors.textSecondary, textAlign: 'center', lineHeight: 22 },
-  hint: { fontSize: 14, color: darkTheme.colors.textSecondary, textAlign: 'center', marginTop: 16, lineHeight: 20 },
-  button: { backgroundColor: darkTheme.colors.primary, height: 52, borderRadius: 12, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32, marginTop: 24, width: '100%' },
+  container: { flex: 1, backgroundColor: colors.base },
+  content: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.lg },
+  brand: { ...typography.label, fontSize: 14, color: colors.primary, marginBottom: spacing.xl },
+  loader: { marginBottom: spacing.lg },
+  title: { ...typography.title, fontSize: 24, color: colors.text, textAlign: 'center', marginBottom: spacing.sm },
+  subtitle: { ...typography.body, fontSize: 16, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  hint: { ...typography.body, fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md, lineHeight: 20 },
+  button: { backgroundColor: colors.primary, height: 52, borderRadius: radius.md, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl, marginTop: spacing.lg, width: '100%' },
   buttonDisabled: { opacity: 0.5 },
   buttonPressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
-  buttonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  input: { backgroundColor: darkTheme.colors.surface, height: 52, borderRadius: 12, paddingHorizontal: 16, color: darkTheme.colors.text, fontSize: 18, fontWeight: '600', letterSpacing: 2, textAlign: 'center', width: '100%', marginTop: 24, borderWidth: 1, borderColor: darkTheme.colors.border },
-  successIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: darkTheme.colors.success, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
-  successText: { fontSize: 32, color: '#FFF', fontWeight: '700' },
-  errorIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: darkTheme.colors.destructive, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
-  errorText: { fontSize: 32, color: '#FFF', fontWeight: '700' },
-  authIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: darkTheme.colors.surface, justifyContent: 'center', alignItems: 'center', marginBottom: 24, borderWidth: 1, borderColor: darkTheme.colors.border },
+  buttonText: { ...typography.bodyStrong, fontSize: 16, color: colors.base },
+  input: { backgroundColor: colors.surface, height: 52, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text, fontSize: 18, fontWeight: '600', letterSpacing: 2, textAlign: 'center', width: '100%', marginTop: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  successIcon: { width: 64, height: 64, borderRadius: radius.full, backgroundColor: colors.success, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
+  successText: { fontSize: 32, color: colors.text, fontWeight: '700' },
+  errorIcon: { width: 64, height: 64, borderRadius: radius.full, backgroundColor: colors.error, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
+  errorText: { fontSize: 32, color: colors.text, fontWeight: '700' },
+  authIcon: { width: 64, height: 64, borderRadius: radius.full, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border },
   authIconText: { fontSize: 32 },
 });

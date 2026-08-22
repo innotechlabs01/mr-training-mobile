@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { darkTheme } from '../../../shared/theme';
+import { colors } from '../../../shared/theme/tokens';
 
 type Props = {
   membership: {
@@ -60,18 +60,18 @@ export function PaymentScreen({ membership }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkTheme.colors.background },
+  container: { flex: 1, backgroundColor: colors.base },
   content: { flex: 1, justifyContent: 'center', padding: 24 },
-  iconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: `${darkTheme.colors.destructive}20`, justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginBottom: 24 },
+  iconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: `${colors.error}20`, justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginBottom: 24 },
   iconText: { fontSize: 36 },
-  title: { fontSize: 28, color: darkTheme.colors.text, fontWeight: '700', textAlign: 'center', marginBottom: 12 },
-  subtitle: { fontSize: 16, color: darkTheme.colors.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: 32 },
-  highlight: { color: darkTheme.colors.primary, fontWeight: '600' },
-  infoCard: { backgroundColor: darkTheme.colors.surface, borderRadius: 16, padding: 20, marginBottom: 32, borderWidth: 1, borderColor: `${darkTheme.colors.destructive}40` },
+  title: { fontSize: 28, color: colors.text, fontWeight: '700', textAlign: 'center', marginBottom: 12 },
+  subtitle: { fontSize: 16, color: colors.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: 32 },
+  highlight: { color: colors.primary, fontWeight: '600' },
+  infoCard: { backgroundColor: colors.surface, borderRadius: 16, padding: 20, marginBottom: 32, borderWidth: 1, borderColor: `${colors.error}40` },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12 },
-  divider: { height: 1, backgroundColor: darkTheme.colors.border },
-  infoLabel: { fontSize: 15, color: darkTheme.colors.textSecondary },
-  infoValue: { fontSize: 15, color: darkTheme.colors.text, fontWeight: '600' },
-  payBtn: { backgroundColor: darkTheme.colors.primary, height: 56, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  payText: { fontSize: 17, color: '#FFF', fontWeight: '700' },
+  divider: { height: 1, backgroundColor: colors.border },
+  infoLabel: { fontSize: 15, color: colors.textSecondary },
+  infoValue: { fontSize: 15, color: colors.text, fontWeight: '600' },
+  payBtn: { backgroundColor: colors.primary, height: 56, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  payText: { fontSize: 17, color: colors.base, fontWeight: '700' },
 });
