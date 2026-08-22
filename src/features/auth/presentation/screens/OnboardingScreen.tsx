@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '@clerk/clerk-expo';
-import { colors, typography, radius } from '../../../../shared/theme';
+import { colors, typography, radius } from '../../../../shared/theme/tokens';
 import { CoachScheduleModal } from './CoachScheduleModal';
 
 type Props = {
