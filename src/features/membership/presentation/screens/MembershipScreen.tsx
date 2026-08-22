@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,12 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  Linking,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../../infrastructure/api/client';
 import { colors } from '../../../../shared/theme/tokens';
 import { ScreenHeader } from '../../../../shared/components/ui/ScreenHeader';
@@ -84,6 +86,8 @@ function formatCurrency(amount: number): string {
 
 export function MembershipScreen() {
   const navigation = useNavigation();
+  const queryClient = useQueryClient();
+  const [isPaying, setIsPaying] = useState(false);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['athlete-membership'],
@@ -97,6 +101,16 @@ export function MembershipScreen() {
   const handleRefresh = useCallback(() => {
     refetch();
   }, [refetch]);
+
+  // Refresh membership after returning from the external Polar checkout browser.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') {
+        queryClient.invalidateQueries({ queryKey: ['athlete-membership'] });
+      }
+    });
+    return () => sub.remove();
+  }, [queryClient]);
 
   if (isLoading) {
     return (
@@ -126,18 +140,26 @@ export function MembershipScreen() {
 
   const statusColor = getStatusColor(effectiveStatus);
 
-  const handlePay = () => {
-    Alert.alert(
-      'Pay Membership',
-      `Pay ${effectivePlanPrice ? formatCurrency(effectivePlanPrice) : ''} for ${effectivePlanName ?? 'your plan'}. This will open Paddle checkout.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Pay now',
-          onPress: () => Alert.alert('Checkout', 'Redirecting to Paddle checkout...'),
-        },
-      ],
-    );
+  const handlePay = async () => {
+    const membershipId = rawMembership?.id ?? data?.id;
+    if (!membershipId) {
+      Alert.alert('Pay Membership', 'Membership is not available. Please contact your coach.');
+      return;
+    }
+    setIsPaying(true);
+    try {
+      const { data: res } = await apiClient.post('/polar/checkout', { membershipId });
+      if (res?.url) {
+        await Linking.openURL(res.url);
+      } else {
+        Alert.alert('Checkout', 'Unable to start secure checkout.');
+      }
+    } catch (e) {
+      console.error('Failed to start checkout', e);
+      Alert.alert('Checkout', 'Something went wrong. Please try again.');
+    } finally {
+      setIsPaying(false);
+    }
   };
 
   return (
@@ -226,7 +248,7 @@ export function MembershipScreen() {
               : `Al dia - Proximo vencimiento ${formatDate(effectiveDueDate ?? undefined)}`
           }
           onPress={handlePay}
-          disabled={!isPayable}
+          disabled={!isPayable || isPaying}
         />
 
         <View style={{ height: 24 }} />

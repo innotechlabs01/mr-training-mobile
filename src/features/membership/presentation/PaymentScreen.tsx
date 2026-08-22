@@ -1,6 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Alert, Linking, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../../infrastructure/api/client';
 import { colors } from '../../../shared/theme/tokens';
 
 type Props = {
@@ -12,11 +14,34 @@ type Props = {
 };
 
 export function PaymentScreen({ membership }: Props) {
-  const handlePay = () => {
-    Alert.alert('Pay Membership', `Pay $${membership.planPrice} USD for ${membership.planName}. This will open Paddle checkout.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Pay now', onPress: () => Alert.alert('Payment', 'Redirecting to Paddle checkout...') },
-    ]);
+  const queryClient = useQueryClient();
+  const [isPaying, setIsPaying] = useState(false);
+
+  // Refresh after returning from the external Polar checkout browser.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') {
+        queryClient.invalidateQueries({ queryKey: ['athlete-membership'] });
+      }
+    });
+    return () => sub.remove();
+  }, [queryClient]);
+
+  const handlePay = async () => {
+    setIsPaying(true);
+    try {
+      const { data: res } = await apiClient.post('/polar/checkout', { membershipId: membership.id });
+      if (res?.url) {
+        await Linking.openURL(res.url);
+      } else {
+        Alert.alert('Checkout', 'Unable to start secure checkout.');
+      }
+    } catch (e) {
+      console.error('Failed to start checkout', e);
+      Alert.alert('Checkout', 'Something went wrong. Please try again.');
+    } finally {
+      setIsPaying(false);
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -51,8 +76,8 @@ export function PaymentScreen({ membership }: Props) {
             <Text style={styles.infoValue}>{formatDate(membership.paymentDueDate)}</Text>
           </View>
         </View>
-        <Pressable style={({ pressed }) => [styles.payBtn, pressed && { opacity: 0.8 }]} onPress={handlePay}>
-          <Text style={styles.payText}>Pay ${membership.planPrice} USD</Text>
+        <Pressable style={({ pressed }) => [styles.payBtn, pressed && !isPaying && { opacity: 0.8 }, isPaying && { opacity: 0.6 }]} disabled={isPaying} onPress={handlePay}>
+          <Text style={styles.payText}>{isPaying ? 'Processing...' : `Pay ${membership.planPrice} USD`}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
