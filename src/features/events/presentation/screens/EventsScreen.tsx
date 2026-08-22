@@ -1,6 +1,9 @@
 import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, typography, radius } from '../../../../shared/theme/tokens';
@@ -8,6 +11,8 @@ import { ScreenHeader } from '../../../../shared/components/ui/ScreenHeader';
 import { Card } from '../../../../shared/components/ui/Card';
 import { Badge } from '../../../../shared/components/ui/Badge';
 import { EmptyState } from '../../../../shared/components/ui/EmptyState';
+import type { AthleteTabParamList } from '../../../../navigation/AthleteTabs';
+import type { RootStackParamList } from '../../../../navigation/Navigation';
 
 type EventItem = {
   id: string;
@@ -18,6 +23,11 @@ type EventItem = {
   location?: string;
   status?: string;
 };
+
+type EventsNav = CompositeNavigationProp<
+  BottomTabNavigationProp<AthleteTabParamList, 'Events'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 type BadgeTone = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
 
@@ -40,6 +50,7 @@ function formatDate(dateStr: string): string {
 }
 
 export function EventsScreen() {
+  const navigation = useNavigation<EventsNav>();
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['athlete-events'],
     queryFn: async () => {
@@ -80,24 +91,34 @@ export function EventsScreen() {
         ) : (
           <View style={styles.list}>
             {events.map((ev) => (
-              <Card key={ev.id} style={styles.card}>
-                <View style={styles.cardAccent} />
-                <View style={styles.cardTopRow}>
-                  <View style={[styles.typeDot, { backgroundColor: colors.primary }]} />
-                  <Text style={styles.typeText} numberOfLines={1}>
-                    {(ev.type ?? 'Evento').toUpperCase()}
+              <Pressable
+                key={ev.id}
+                onPress={() =>
+                  navigation
+                    .getParent<NativeStackNavigationProp<RootStackParamList>>()
+                    ?.navigate('EventDetail', { eventId: ev.id })
+                }
+                style={({ pressed }) => (pressed ? styles.cardPressed : undefined)}
+              >
+                <Card style={styles.card}>
+                  <View style={styles.cardAccent} />
+                  <View style={styles.cardTopRow}>
+                    <View style={[styles.typeDot, { backgroundColor: colors.primary }]} />
+                    <Text style={styles.typeText} numberOfLines={1}>
+                      {(ev.type ?? 'Evento').toUpperCase()}
+                    </Text>
+                    {!!ev.status && <Badge text={ev.status} tone={toneForEventStatus(ev.status)} />}
+                  </View>
+                  <Text style={styles.cardTitle} numberOfLines={2}>
+                    {ev.title}
                   </Text>
-                  {!!ev.status && <Badge text={ev.status} tone={toneForEventStatus(ev.status)} />}
-                </View>
-                <Text style={styles.cardTitle} numberOfLines={2}>
-                  {ev.title}
-                </Text>
-                <Text style={styles.cardMeta} numberOfLines={2}>
-                  {formatDate(ev.date)}
-                  {ev.time ? ` · ${ev.time}` : ''}
-                  {ev.location ? ` · ${ev.location}` : ''}
-                </Text>
-              </Card>
+                  <Text style={styles.cardMeta} numberOfLines={2}>
+                    {formatDate(ev.date)}
+                    {ev.time ? ` · ${ev.time}` : ''}
+                    {ev.location ? ` · ${ev.location}` : ''}
+                  </Text>
+                </Card>
+              </Pressable>
             ))}
           </View>
         )}
@@ -110,6 +131,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.base },
   content: { padding: spacing.lg, paddingBottom: 100 },
   list: { gap: spacing.sm },
+  cardPressed: { opacity: 0.85 },
   card: {
     position: 'relative',
     overflow: 'hidden',

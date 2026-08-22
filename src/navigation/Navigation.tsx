@@ -12,6 +12,7 @@ import { OnboardingScreen, OnboardingData } from '../features/auth/presentation/
 import { MembershipGate } from '../features/membership/presentation/MembershipGate';
 import { MembershipScreen } from '../features/membership/presentation/screens/MembershipScreen';
 import { StoreScreen } from '../features/store/presentation/screens/StoreScreen';
+import { EventDetailScreen } from '../features/events/presentation/screens/EventDetailScreen';
 import { WorkoutDetailScreen } from '../features/training/presentation/screens/WorkoutDetailScreen';
 import { WorkoutExecutionScreen } from '../features/training/presentation/screens/WorkoutExecutionScreen';
 import { AthleteTabs } from './AthleteTabs';
@@ -147,6 +148,7 @@ function RootNavigator() {
           <Stack.Screen name="Splash" component={SplashScreen} />
           <Stack.Screen name="AthleteTabs" component={AthleteTabsWithGate} />
           <Stack.Screen name="Membership" component={MembershipScreen} />
+          <Stack.Screen name="EventDetail" component={EventDetailScreen} />
           <Stack.Screen name="Store" component={StoreScreen} />
           <Stack.Screen name="InviteAccept" component={InviteAcceptScreen} />
           <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
