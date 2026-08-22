@@ -18,6 +18,7 @@ import {
   saveSessionResume,
   type SessionResume,
 } from './executionResume';
+import { syncIfPossible } from '../../../../infrastructure/health';
 
 type ExerciseMode = 'reps' | 'time' | 'cardio';
 
@@ -231,6 +232,9 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
         const prs = await collectPrs();
         await apiClient.post(`/athlete/sessions/${sessionId}/complete`, {});
         setCompletedPrs(prs);
+        // Fire-and-forget: pull the session's real load from the watch into the backend
+        // so the coach sees actual vs prescribed. Never blocks the completion UX.
+        void syncIfPossible().catch(() => undefined);
         return { advance: 'done', resume: null };
       }
 

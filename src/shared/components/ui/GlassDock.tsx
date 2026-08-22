@@ -2,12 +2,13 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { colors, fontFamilies, radius, spacing } from '../../theme/tokens';
-import { BarbellIcon, CalendarIcon, HomeIcon, UserIcon } from '../icons';
+import { BarbellIcon, CalendarIcon, HeartPulseIcon, HomeIcon, UserIcon } from '../icons';
 
 const TAB_META: Record<string, { label: string; Icon: (p: { size: number; color: string }) => React.ReactElement }> = {
   Today: { label: 'Hoy', Icon: HomeIcon },
   Plan: { label: 'Plan', Icon: BarbellIcon },
   Events: { label: 'Eventos', Icon: CalendarIcon },
+  Recovery: { label: 'Recovery', Icon: HeartPulseIcon },
   Profile: { label: 'Perfil', Icon: UserIcon },
 };
 

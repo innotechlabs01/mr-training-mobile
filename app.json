@@ -18,7 +18,19 @@
       ],
       "expo-secure-store",
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      [
+        "react-native-health-connect",
+        {
+          "permissions": [
+            "android.permission.health.READ_HEART_RATE",
+            "android.permission.health.READ_HEART_RATE_VARIABILITY",
+            "android.permission.health.READ_RESTING_HEART_RATE",
+            "android.permission.health.READ_SLEEP",
+            "android.permission.health.READ_STEPS"
+          ]
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": true,
@@ -27,7 +39,15 @@
         "applinks:mobile.innotechlabssas.lat"
       ],
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSHealthShareUsageDescription": "MR Training lee tus datos de salud (HRV, sue\u00f1o, pulso) para medir tu recuperaci\u00f3n y optimizar tu entrenamiento.",
+        "NSHealthUpdateUsageDescription": "MR Training guarda tus entrenamientos en Apple Health.",
+        "UIBackgroundModes": [
+          "processing"
+        ]
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true
       }
     },
     "android": {
@@ -60,6 +80,14 @@
             "pathPrefix": "/invite"
           }
         }
+      ],
+      "permissions": [
+        "android.permission.health.READ_HEART_RATE",
+        "android.permission.health.READ_HEART_RATE_VARIABILITY",
+        "android.permission.health.READ_RESTING_HEART_RATE",
+        "android.permission.health.READ_SLEEP",
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"
       ]
     },
     "web": {

@@ -4,12 +4,14 @@ import { TodayScreen } from '../features/training/presentation/screens/TodayScre
 import { HistoryScreen } from '../features/training/presentation/screens/HistoryScreen';
 import { EventsScreen } from '../features/events/presentation/screens/EventsScreen';
 import { ProfileScreen } from '../features/auth/presentation/screens/ProfileScreen';
+import { RecoveryScreen } from '../features/recovery/presentation/screens/RecoveryScreen';
 import { GlassDock } from '../shared/components/ui/GlassDock';
 
 export type AthleteTabParamList = {
   Today: undefined;
   Plan: undefined;
   Events: undefined;
+  Recovery: undefined;
   Profile: undefined;
 };
 
@@ -24,6 +26,7 @@ export function AthleteTabs() {
       <Tab.Screen name="Today" component={TodayScreen} options={{ tabBarLabel: 'Hoy' }} />
       <Tab.Screen name="Plan" component={HistoryScreen} options={{ tabBarLabel: 'Plan' }} />
       <Tab.Screen name="Events" component={EventsScreen} options={{ tabBarLabel: 'Eventos' }} />
+      <Tab.Screen name="Recovery" component={RecoveryScreen} options={{ tabBarLabel: 'Recovery' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Perfil' }} />
     </Tab.Navigator>
   );
