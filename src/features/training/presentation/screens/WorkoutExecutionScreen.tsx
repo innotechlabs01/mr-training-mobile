@@ -19,6 +19,8 @@ import {
   type SessionResume,
 } from './executionResume';
 
+type ExerciseMode = 'reps' | 'time' | 'cardio';
+
 type Exercise = {
   id: string;
   workoutId: string;
@@ -29,6 +31,11 @@ type Exercise = {
   restSeconds: number | null;
   sortOrder: number;
   notes: string | null;
+  mode?: ExerciseMode;
+  phase?: 'work' | 'warmup';
+  supersetGroup?: string | null;
+  perSide?: boolean;
+  sec?: number | null;
 };
 
 type Workout = {
@@ -43,11 +50,48 @@ type WorkoutDetailData = {
   exercises: Exercise[];
 };
 
+type PrescriptionItem = {
+  exerciseId: string;
+  kind: 'first' | 'up' | 'hold' | 'deload' | 'off';
+  weightKg: number | null;
+  reps: number | null;
+  sec: number | null;
+  sets: number | null;
+  why: [string, ...unknown[]] | null;
+};
+
+type PrescriptionData = {
+  prescriptions: PrescriptionItem[];
+};
+
+type SessionExercise = {
+  exerciseId: string;
+  name: string;
+  pr: { est: number; weightKg: number; reps: number; prevEst: number } | null;
+  est1rm: number | null;
+};
+
+type SessionLiveData = {
+  session: { id: string } | null;
+  exercises: SessionExercise[];
+};
+
 type Advance = 'next-set' | 'next-exercise' | 'done';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'WorkoutExecution'>;
 
-type SetPayload = { weightKg?: number; reps?: number };
+type SetPayload = {
+  weightKg?: number;
+  reps?: number;
+  sec?: number;
+  rir?: number;
+};
+
+function formatWhy(why: PrescriptionItem['why'] | undefined): string | null {
+  if (!why || why.length === 0) return null;
+  const template = String(why[0]);
+  return template.replace(/\{(\d+)\}/g, (_, i) => String(why[Number(i) + 1] ?? ''));
+}
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -67,9 +111,12 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [weightInput, setWeightInput] = useState('');
   const [repsInput, setRepsInput] = useState('');
+  const [secInput, setSecInput] = useState('');
+  const [rirInput, setRirInput] = useState('');
   const [durationSeconds, setDurationSeconds] = useState(0);
   const [finalDuration, setFinalDuration] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [completedPrs, setCompletedPrs] = useState<Array<{ name: string; est: number }>>([]);
   const [resume, setResume] = useState<SessionResume | null>(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -81,8 +128,32 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Next targets derived from the athlete's own history — every number carries its reason.
+  const { data: prescription } = useQuery({
+    queryKey: ['workout-prescription', workoutId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/athlete/workouts/${workoutId}/prescription`);
+      return data as PrescriptionData;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const exercises = data?.exercises ?? [];
   const currentExercise = exercises[currentExerciseIndex] as Exercise | undefined;
+  const prescriptionByExerciseId = new Map(
+    (prescription?.prescriptions ?? []).map((p) => [p.exerciseId, p]),
+  );
+  const currentPrescription = currentExercise
+    ? prescriptionByExerciseId.get(currentExercise.id)
+    : undefined;
+
+  const isTimeMode = currentExercise?.mode === 'time';
+  const isCardioMode = currentExercise?.mode === 'cardio';
+  // Effective target: prescription wins over plan. Explicit zero = bodyweight (no weight
+  // column); null = not specified yet (keep the input so the athlete can still log it).
+  const effectiveTargetKg = currentPrescription?.weightKg ?? currentExercise?.weightKg ?? null;
+  const isBodyweight =
+    !isTimeMode && !isCardioMode && effectiveTargetKg != null && effectiveTargetKg <= 0;
 
   // Elapsed-time counter while mounted.
   useEffect(() => {
@@ -113,9 +184,24 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
   const computedProgress = totalSets > 0 ? (setsSinceStart + currentSetIndex) / totalSets : 0;
 
   const isLastExercise = currentExerciseIndex >= exercises.length - 1;
-  const buttonLabel = isLastExercise && currentSetIndex >= (currentExercise?.sets ?? 0) - 1
-    ? 'Finalizar'
-    : 'Loggear / Siguiente';
+  const isLastSet = currentSetIndex >= (currentExercise?.sets ?? 0) - 1;
+  const buttonLabel = isLastExercise && isLastSet ? 'Finalizar' : 'Loggear / Siguiente';
+
+  /**
+   * Collect PRs detected so far in this session before completing it. The server compares
+   * the logged sets against prior history; after completion the session no longer returns.
+   */
+  const collectPrs = async (): Promise<Array<{ name: string; est: number }>> => {
+    try {
+      const { data } = await apiClient.get(`/athlete/workouts/${workoutId}/session`);
+      const live = data as SessionLiveData;
+      return (live.exercises ?? [])
+        .filter((e) => e.pr)
+        .map((e) => ({ name: e.name, est: e.pr!.est }));
+    } catch {
+      return [];
+    }
+  };
 
   const logSetMutation = useMutation({
     mutationFn: async (payload: SetPayload): Promise<{ advance: Advance; resume: SessionResume | null }> => {
@@ -125,6 +211,8 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
         setIndex: currentSetIndex,
         weightKg: payload.weightKg,
         reps: payload.reps,
+        sec: payload.sec,
+        rir: payload.rir,
       });
 
       if (currentSetIndex < exercise.sets - 1) {
@@ -140,7 +228,9 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
       });
 
       if (isLastExercise) {
+        const prs = await collectPrs();
         await apiClient.post(`/athlete/sessions/${sessionId}/complete`, {});
+        setCompletedPrs(prs);
         return { advance: 'done', resume: null };
       }
 
@@ -168,6 +258,8 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
 
       setWeightInput('');
       setRepsInput('');
+      setSecInput('');
+      setRirInput('');
     },
     onError: (err) => {
       console.error('Failed to log set:', err);
@@ -180,8 +272,13 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
     const payload: SetPayload = {};
     const weight = toNumberOrUndefined(weightInput);
     const reps = toNumberOrUndefined(repsInput);
-    if (weight !== undefined) payload.weightKg = weight;
-    if (reps !== undefined) payload.reps = reps;
+    const sec = toNumberOrUndefined(secInput);
+    const rir = toNumberOrUndefined(rirInput);
+    if (weight !== undefined && !isBodyweight && !isTimeMode) payload.weightKg = weight;
+    if (reps !== undefined && !isTimeMode) payload.reps = reps;
+    if (isTimeMode && sec !== undefined) payload.sec = sec;
+    if (!isTimeMode && sec !== undefined) payload.sec = sec; // allow timed extras on reps rows
+    if (rir !== undefined) payload.rir = rir;
     logSetMutation.mutate(payload);
   };
 
@@ -193,6 +290,17 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
     setResume(null);
     clearSessionResume();
   };
+
+  const whyText = formatWhy(currentPrescription?.why);
+  const targetLabel = isTimeMode
+    ? `${currentPrescription?.sec ?? currentExercise?.sec ?? 0}s por serie`
+    : [
+        `${currentExercise?.sets ?? 0} × ${currentPrescription?.reps ?? currentExercise?.reps}`,
+        isBodyweight ? '' : `@ ${currentPrescription?.weightKg ?? currentExercise?.weightKg ?? 0} kg`,
+        currentExercise?.perSide ? '(por lado)' : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
 
   const title = completed
     ? (data?.workout.contentName ?? 'Workout')
@@ -215,6 +323,16 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
               <Text style={styles.summaryTitle}>{data.workout.contentName}</Text>
               <Text style={styles.summaryTime}>{formatDuration(finalDuration)}</Text>
               <Text style={styles.summaryMeta}>{exercises.length} exercises · {totalSets} sets</Text>
+              {completedPrs.length > 0 ? (
+                <View style={styles.prWrap}>
+                  <Text style={styles.prHeading}>🏆 NUEVOS RÉCORDS</Text>
+                  {completedPrs.map((pr) => (
+                    <Text key={`${pr.name}-${pr.est}`} style={styles.prLine}>
+                      {pr.name} · e1RM {pr.est} kg
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
               <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.summaryButton}>
                 <Text style={styles.summaryButtonLabel}>Done</Text>
               </Pressable>
@@ -234,30 +352,53 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
             <View style={styles.exerciseBlock}>
               <Text style={styles.exerciseName}>{currentExercise.name}</Text>
               <Text style={styles.exerciseDetail}>
-                {currentExercise.sets} × {currentExercise.reps}
-                {currentExercise.weightKg ? ` · ${currentExercise.weightKg} kg` : ''}
+                {targetLabel}
                 {currentExercise.restSeconds ? ` · ${currentExercise.restSeconds}s rest` : ''}
               </Text>
+              {whyText ? <Text style={styles.whyText}>💡 {whyText}</Text> : null}
               <Text style={styles.setProgress}>
                 Serie {currentSetIndex + 1} de {currentExercise.sets}
               </Text>
             </View>
 
             <View style={styles.inputsRow}>
-              <View style={styles.inputCol}>
+              {!isBodyweight && !isTimeMode ? (
+                <View style={styles.inputCol}>
+                  <Input
+                    value={weightInput}
+                    onChangeText={setWeightInput}
+                    placeholder="Peso kg"
+                    keyboardType="numeric"
+                    inputMode="numeric"
+                  />
+                </View>
+              ) : null}
+              {isTimeMode ? (
+                <View style={styles.inputCol}>
+                  <Input
+                    value={secInput}
+                    onChangeText={setSecInput}
+                    placeholder="Segundos"
+                    keyboardType="numeric"
+                    inputMode="numeric"
+                  />
+                </View>
+              ) : (
+                <View style={styles.inputCol}>
+                  <Input
+                    value={repsInput}
+                    onChangeText={setRepsInput}
+                    placeholder={currentExercise.perSide ? 'Reps totales (x lado)' : 'Reps'}
+                    keyboardType="numeric"
+                    inputMode="numeric"
+                  />
+                </View>
+              )}
+              <View style={styles.rirCol}>
                 <Input
-                  value={weightInput}
-                  onChangeText={setWeightInput}
-                  placeholder="Peso kg"
-                  keyboardType="numeric"
-                  inputMode="numeric"
-                />
-              </View>
-              <View style={styles.inputCol}>
-                <Input
-                  value={repsInput}
-                  onChangeText={setRepsInput}
-                  placeholder="Reps"
+                  value={rirInput}
+                  onChangeText={setRirInput}
+                  placeholder="RIR"
                   keyboardType="numeric"
                   inputMode="numeric"
                 />
@@ -292,10 +433,12 @@ const styles = StyleSheet.create({
   exerciseBlock: { gap: spacing.xs },
   exerciseName: { ...typography.display, color: colors.text },
   exerciseDetail: { ...typography.body, color: colors.textSecondary },
+  whyText: { ...typography.caption, color: colors.primary },
   setProgress: { ...typography.caption, color: colors.primary },
 
   inputsRow: { flexDirection: 'row', gap: spacing.md },
   inputCol: { flex: 1 },
+  rirCol: { width: 84 },
 
   summaryWrap: { flex: 1, justifyContent: 'center' },
   summaryCard: { alignItems: 'center', gap: spacing.sm, padding: spacing.xl },
@@ -303,6 +446,9 @@ const styles = StyleSheet.create({
   summaryTitle: { ...typography.title, color: colors.text, textAlign: 'center' },
   summaryTime: { ...typography.display, color: colors.text },
   summaryMeta: { ...typography.caption, color: colors.textSecondary },
+  prWrap: { alignItems: 'center', gap: spacing.xs },
+  prHeading: { ...typography.label, color: colors.primary, marginTop: spacing.sm },
+  prLine: { ...typography.caption, color: colors.text },
   summaryButton: {
     marginTop: spacing.md,
     backgroundColor: colors.primary,

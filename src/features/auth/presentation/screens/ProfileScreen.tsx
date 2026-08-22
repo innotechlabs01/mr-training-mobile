@@ -23,7 +23,7 @@ import { colors, spacing, typography, radius } from '../../../../shared/theme/to
 import { Card } from '../../../../shared/components/ui/Card';
 import { Input } from '../../../../shared/components/ui/Input';
 import { PrimaryButton } from '../../../../shared/components/ui/PrimaryButton';
-import { MembershipIcon, StoreIcon } from '../../../../shared/components/icons';
+import { MembershipIcon, StoreIcon, BarbellIcon } from '../../../../shared/components/icons';
 
 type AthleteProfile = {
   id: string;
@@ -77,6 +77,7 @@ export function ProfileScreen() {
 
   const openMembership = () => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Membership');
   const openStore = () => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Store');
+  const openImport = () => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('ImportHistory');
 
   const initials =
     user?.firstName && user?.lastName
@@ -291,6 +292,16 @@ export function ProfileScreen() {
               <Text style={styles.entrySub}>Browse coach-curated gear</Text>
             </View>
             <Pressable accessibilityRole="button" accessibilityLabel="Open store" onPress={openStore} style={styles.entryCta}>
+              <Text style={styles.entryCtaText}>Open</Text>
+            </Pressable>
+          </Card>
+          <Card style={styles.entryCard}>
+            <BarbellIcon size={24} color={colors.primary} />
+            <View style={styles.entryText}>
+              <Text style={styles.entryTitle}>Importar historial</Text>
+              <Text style={styles.entrySub}>Traé tus entrenamientos de Strong, Hevy o FitNotes</Text>
+            </View>
+            <Pressable accessibilityRole="button" accessibilityLabel="Open history import" onPress={openImport} style={styles.entryCta}>
               <Text style={styles.entryCtaText}>Open</Text>
             </Pressable>
           </Card>
