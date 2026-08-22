@@ -11,7 +11,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { AthleteTabParamList } from '../../../../navigation/AthleteTabs';
+import type { RootStackParamList } from '../../../../navigation/Navigation';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../../infrastructure/api/client';
@@ -60,14 +64,19 @@ const MODALITY_OPTIONS: Array<{ key: Modality; label: string; icon: string }> = 
   { key: 'presencial', label: 'Presencial', icon: '🏢' },
 ];
 
+type ProfileNav = CompositeNavigationProp<
+  BottomTabNavigationProp<AthleteTabParamList, 'Profile'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
+
 export function ProfileScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<ProfileNav>();
   const { signOut } = useAuth();
   const { user } = useUser();
   const queryClient = useQueryClient();
 
-  const openMembership = () => navigation.getParent()?.navigate('Membership');
-  const openStore = () => navigation.getParent()?.navigate('Store');
+  const openMembership = () => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Membership');
+  const openStore = () => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Store');
 
   const initials =
     user?.firstName && user?.lastName
