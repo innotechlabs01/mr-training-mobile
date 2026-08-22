@@ -8,6 +8,12 @@ import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 import { colors, spacing, typography, radius } from '../../../../shared/theme/tokens';
 import { apiClient } from '../../../../infrastructure/api/client';
+import {
+  clearPendingOnboarding,
+  getPendingOnboarding,
+  savePendingOnboarding,
+  type OnboardingPayload,
+} from './onboardingPending';
 
 type AuthNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Auth'>;
 type AuthRouteProp = RouteProp<RootStackParamList, 'Auth'>;
@@ -24,6 +30,34 @@ export function SignInScreen() {
   const [coachCode, setCoachCode] = useState(route.params?.code ?? '');
   const [mode, setMode] = useState<'signin' | 'signup'>(route.params?.mode ?? 'signin');
   const [loading, setLoading] = useState(false);
+
+  const postOnboard = async (onboarding: OnboardingPayload | null | undefined) => {
+    try {
+      await apiClient.post('/athlete/onboard', {
+        sports: onboarding?.sports ?? [],
+        modality: onboarding?.modality ?? '',
+        experienceLevel: onboarding?.experienceLevel ?? '',
+        goal: onboarding?.goal ?? '',
+        sessionsPerWeek: onboarding?.sessionsPerWeek ?? 0,
+        sessionDuration: onboarding?.sessionDuration ?? 0,
+        equipment: onboarding?.equipment ?? '',
+        athleteRoutineAccepted: onboarding?.athleteRoutineAccepted ?? true,
+      });
+    } catch (err) {
+      console.error('[Auth] onboard failed:', err);
+    }
+  };
+
+  // Flush any onboarding buffer left behind by an email-verification sign-up that
+  // later completed (e.g. user verified and now signs in). Best-effort; clears only
+  // after a successful POST.
+  const flushPendingOnboarding = async () => {
+    const pending = await getPendingOnboarding();
+    if (!pending) return;
+    await postOnboard(pending);
+    await clearPendingOnboarding();
+  };
+
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -61,6 +95,8 @@ export function SignInScreen() {
         });
         if (result.status === 'complete') {
           await setActive({ session: result.createdSessionId });
+          // Flush any onboarding buffer left by a verification sign-up that has since completed.
+          await flushPendingOnboarding();
           // Coach code association via direct API - primary path for sign-in (user already exists, webhook user.created won't fire)
           // Server updates Clerk public_metadata atomically, webhook user.updated is fallback
           try {
@@ -91,20 +127,7 @@ export function SignInScreen() {
           await setActiveSignUp({ session: result.createdSessionId });
           // Onboard athlete: create profile + 7-day trial — after setActive so isSignedIn flips
           const onboarding = route.params?.onboardingData;
-          try {
-            await apiClient.post('/athlete/onboard', {
-              sports: onboarding?.sports ?? [],
-              modality: onboarding?.modality ?? '',
-              experienceLevel: onboarding?.experienceLevel ?? '',
-              goal: onboarding?.goal ?? '',
-              sessionsPerWeek: onboarding?.sessionsPerWeek ?? 0,
-              sessionDuration: onboarding?.sessionDuration ?? 0,
-              equipment: onboarding?.equipment ?? '',
-              athleteRoutineAccepted: onboarding?.athleteRoutineAccepted ?? true,
-            });
-          } catch (err) {
-            console.error('[Auth] onboard failed on sign-up:', err);
-          }
+          await postOnboard(onboarding);
           try {
             // Direct DB association as backup — webhook user.created with unsafeMetadata is primary
             await apiClient.post('/athlete/accept-invite', { code: normalizedCode });
@@ -112,6 +135,12 @@ export function SignInScreen() {
             console.error('[Auth] accept-invite failed on sign-up:', err);
           }
         } else {
+          // Email verification pending: keep the onboarding payload so it is not
+          // lost when the user verifies and later signs in (see flushPendingOnboarding).
+          const onboarding = route.params?.onboardingData;
+          if (onboarding) {
+            savePendingOnboarding(onboarding);
+          }
           Alert.alert('Check your email', 'We sent you a verification link');
         }
       } catch (err: unknown) {
