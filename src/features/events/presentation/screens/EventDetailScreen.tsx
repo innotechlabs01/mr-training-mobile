@@ -124,7 +124,9 @@ function buildAnswers(
     const val = answers[field.id];
     if (Array.isArray(val)) {
       if (val.length === 0) continue;
-      out.push({ fieldId: field.id, value: val.join(', ') });
+      // Use a non-colliding delimiter for multi-select values so an option
+      // containing a comma (e.g. "Ironman, Beginner") round-trips intact.
+      out.push({ fieldId: field.id, value: val.join('\u0001') });
     } else if (typeof val === 'string' && val.trim() !== '') {
       out.push({ fieldId: field.id, value: val });
     }
@@ -175,7 +177,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
       const resp = (data.responses ?? []).find((r) => r.fieldId === field.id);
       if (!resp) continue;
       initial[field.id] = isMultiKind(field.kind)
-        ? resp.value.split(',').map((s) => s.trim()).filter(Boolean)
+        ? resp.value.split('\u0001').map((s) => s.trim()).filter(Boolean)
         : resp.value;
     }
     setAnswers(initial);
