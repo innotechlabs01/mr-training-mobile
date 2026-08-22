@@ -1,6 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useUser } from '@clerk/clerk-expo';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../../infrastructure/api/client';
@@ -9,6 +12,8 @@ import { Card } from '../../../../shared/components/ui/Card';
 import { ProgressBar } from '../../../../shared/components/ui/ProgressBar';
 import { Badge } from '../../../../shared/components/ui/Badge';
 import { EmptyState } from '../../../../shared/components/ui/EmptyState';
+import type { AthleteTabParamList } from '../../../../navigation/AthleteTabs';
+import type { RootStackParamList } from '../../../../navigation/Navigation';
 
 type TodayData = {
   athlete: { id: string; name: string; sport: string };
@@ -18,6 +23,11 @@ type TodayData = {
 };
 
 type BadgeTone = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
+
+type TodayNav = CompositeNavigationProp<
+  BottomTabNavigationProp<AthleteTabParamList, 'Today'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -52,6 +62,7 @@ function toneForStatus(status: string): BadgeTone {
 }
 
 export function TodayScreen() {
+  const navigation = useNavigation<TodayNav>();
   const { user } = useUser();
   const firstName = user?.firstName || 'Athlete';
 
@@ -126,18 +137,28 @@ export function TodayScreen() {
                   <Badge text={String(data.activeWorkouts.length)} tone="neutral" />
                 </View>
                 {data.activeWorkouts.map((w) => (
-                  <Card key={w.id} style={styles.sessionCard}>
-                    <View style={styles.cardAccent} />
-                    <View style={styles.sessionTop}>
-                      <Text style={styles.sessionTitle} numberOfLines={1}>
-                        {w.contentName}
-                      </Text>
-                      <Badge text={w.status} tone={toneForStatus(w.status)} />
-                    </View>
-                    <Text style={styles.sessionMeta}>{w.modality}</Text>
-                    <ProgressBar progress={w.progress / 100} />
-                    <Text style={styles.progressCaption}>{w.progress}% complete</Text>
-                  </Card>
+                  <Pressable
+                    key={w.id}
+                    onPress={() =>
+                      navigation
+                        .getParent<NativeStackNavigationProp<RootStackParamList>>()
+                        ?.navigate('WorkoutDetail', { workoutId: w.id })
+                    }
+                    style={({ pressed }) => (pressed ? styles.pressed : undefined)}
+                  >
+                    <Card style={styles.sessionCard}>
+                      <View style={styles.cardAccent} />
+                      <View style={styles.sessionTop}>
+                        <Text style={styles.sessionTitle} numberOfLines={1}>
+                          {w.contentName}
+                        </Text>
+                        <Badge text={w.status} tone={toneForStatus(w.status)} />
+                      </View>
+                      <Text style={styles.sessionMeta}>{w.modality}</Text>
+                      <ProgressBar progress={w.progress / 100} />
+                      <Text style={styles.progressCaption}>{w.progress}% complete</Text>
+                    </Card>
+                  </Pressable>
                 ))}
               </View>
             )}
@@ -214,6 +235,7 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.lg,
     marginBottom: spacing.sm,
   },
+  pressed: { opacity: 0.8 },
   cardAccent: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: colors.primary },
   sessionTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm },
   sessionTitle: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text, lineHeight: 20 },
