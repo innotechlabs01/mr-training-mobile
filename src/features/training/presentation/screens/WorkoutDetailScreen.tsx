@@ -55,7 +55,7 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
       return data.session as { id: string };
     },
     onSuccess: (session) => {
-      navigation.navigate('WorkoutExecution', { sessionId: session.id });
+      navigation.navigate('WorkoutExecution', { sessionId: session.id, workoutId });
     },
     onError: (err) => {
       console.error('Failed to start session:', err);

@@ -78,7 +78,7 @@ export type RootStackParamList = {
   Membership: undefined;
   Store: undefined;
   WorkoutDetail: { workoutId: string };
-  WorkoutExecution: { sessionId: string };
+  WorkoutExecution: { sessionId: string; workoutId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
