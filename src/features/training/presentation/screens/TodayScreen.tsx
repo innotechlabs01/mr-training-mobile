@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
@@ -13,6 +13,7 @@ import { ProgressBar } from '../../../../shared/components/ui/ProgressBar';
 import { Badge } from '../../../../shared/components/ui/Badge';
 import { EmptyState } from '../../../../shared/components/ui/EmptyState';
 import { AthleteTodaySummary } from './AthleteTodaySummary';
+import { fetchAlerts, type Alert } from '../../../../infrastructure/notifications/push';
 import type { AthleteTabParamList } from '../../../../navigation/AthleteTabs';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -82,6 +83,12 @@ export function TodayScreen() {
   const hasData = !!data;
   const hasSessions = hasData && (data.todaySessions.length > 0 || data.activeWorkouts.length > 0);
 
+  // Alerts (fetched once on mount)
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  useEffect(() => {
+    fetchAlerts().then(setAlerts);
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -96,6 +103,26 @@ export function TodayScreen() {
 
         {/* Real-time summary from wearable + training data */}
         <AthleteTodaySummary athleteId={user?.id ?? ''} />
+
+        {/* Alert banners */}
+        {alerts.length > 0 && (
+          <Card style={styles.alertCard}>
+            {alerts.slice(0, 2).map((a, i) => (
+              <View key={`${a.type}-${i}`} style={[styles.alertRow, i > 0 && styles.alertBorder]}>
+                <Text style={[
+                  styles.alertIcon,
+                  a.severity === 'high' ? styles.alertHigh : a.severity === 'medium' ? styles.alertMedium : styles.alertLow,
+                ]}>
+                  {a.severity === 'high' ? '🔴' : a.severity === 'medium' ? '🟡' : '🔵'}
+                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.alertTitle}>{a.title}</Text>
+                  <Text style={styles.alertMessage} numberOfLines={2}>{a.message}</Text>
+                </View>
+              </View>
+            ))}
+          </Card>
+        )}
 
         {isLoading ? (
           <EmptyState variant="loading" />
@@ -246,4 +273,14 @@ const styles = StyleSheet.create({
   sessionMeta: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs },
 
   progressCaption: { fontSize: 11, fontWeight: '400', color: colors.textSecondary, marginTop: spacing.sm },
+
+  alertCard: { gap: 0, padding: 0 },
+  alertRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, padding: spacing.md },
+  alertBorder: { borderTopWidth: 1, borderTopColor: colors.border },
+  alertIcon: { fontSize: 18, marginTop: 2 },
+  alertHigh: {},
+  alertMedium: {},
+  alertLow: {},
+  alertTitle: { ...typography.bodyStrong, color: colors.text, fontSize: 13 },
+  alertMessage: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
 });

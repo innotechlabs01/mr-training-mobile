@@ -11,6 +11,7 @@ import { AppNavigator } from './Navigation';
 import { setClerkInstance } from '../infrastructure/auth/clerk';
 import { useAppFonts } from '../shared/theme/fonts';
 import { registerBackgroundSync } from '../infrastructure/health/background-sync';
+import { registerForPushNotifications } from '../infrastructure/notifications/push';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +63,7 @@ function AppStateRefresh() {
 function BackgroundSyncRegistrar() {
   useEffect(() => {
     registerBackgroundSync();
+    registerForPushNotifications();
   }, []);
   return null;
 }
