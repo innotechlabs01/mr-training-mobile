@@ -12,6 +12,7 @@ import { Card } from '../../../../shared/components/ui/Card';
 import { ProgressBar } from '../../../../shared/components/ui/ProgressBar';
 import { Badge } from '../../../../shared/components/ui/Badge';
 import { EmptyState } from '../../../../shared/components/ui/EmptyState';
+import { AthleteTodaySummary } from './AthleteTodaySummary';
 import type { AthleteTabParamList } from '../../../../navigation/AthleteTabs';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -92,6 +93,9 @@ export function TodayScreen() {
           {getGreeting()}, {firstName}
         </Text>
         <Text style={styles.date}>{getFormattedDate()}</Text>
+
+        {/* Real-time summary from wearable + training data */}
+        <AthleteTodaySummary athleteId={user?.id ?? ''} />
 
         {isLoading ? (
           <EmptyState variant="loading" />
