@@ -1,5 +1,4 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
+import { Linking, Pressable, View, Text, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -9,6 +8,7 @@ import { Card } from '../../../../shared/components/ui/Card';
 import { EmptyState } from '../../../../shared/components/ui/EmptyState';
 import { PrimaryButton } from '../../../../shared/components/ui/PrimaryButton';
 import { ScreenHeader } from '../../../../shared/components/ui/ScreenHeader';
+import { TrackedVideoPlayer } from '../components/TrackedVideoPlayer';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
 type Exercise = {
@@ -21,10 +21,12 @@ type Exercise = {
   restSeconds: number | null;
   sortOrder: number;
   notes: string | null;
+  videoUrl?: string | null;
 };
 
 type Workout = {
   id: string;
+  athleteId: string;
   contentName: string;
   status: string;
   progress: number;
@@ -65,6 +67,7 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
 
   const isLoadingData = isLoading || isRefetching;
   const hasExercises = !!data && data.exercises.length > 0;
+  const athleteId = data?.workout.athleteId ?? '';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -88,6 +91,15 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
                   {ex.weightKg ? <Text style={styles.meta}>{`${ex.weightKg} kg`}</Text> : null}
                   {ex.restSeconds ? <Text style={styles.meta}>{`${ex.restSeconds}s rest`}</Text> : null}
                 </View>
+                {ex.videoUrl ? (
+                  <View style={{ marginTop: spacing.sm }}>
+                    <TrackedVideoPlayer
+                      videoUrl={ex.videoUrl}
+                      exerciseId={ex.id}
+                      athleteId={athleteId}
+                    />
+                  </View>
+                ) : null}
               </Card>
             ))}
           </>
@@ -110,6 +122,8 @@ const styles = StyleSheet.create({
   exerciseSetReps: { ...typography.body, color: colors.textSecondary },
   metaRow: { flexDirection: 'row', gap: spacing.md },
   meta: { ...typography.caption, color: colors.textSecondary },
+  videoLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.xs },
+  videoLinkText: { fontSize: 12, color: colors.primary, fontWeight: '600' },
   cta: {
     position: 'absolute',
     left: spacing.lg,

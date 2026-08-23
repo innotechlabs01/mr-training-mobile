@@ -43,7 +43,8 @@
         "NSHealthShareUsageDescription": "MR Training lee tus datos de salud (HRV, sue\u00f1o, pulso) para medir tu recuperaci\u00f3n y optimizar tu entrenamiento.",
         "NSHealthUpdateUsageDescription": "MR Training guarda tus entrenamientos en Apple Health.",
         "UIBackgroundModes": [
-          "processing"
+          "processing",
+          "fetch"
         ]
       },
       "entitlements": {

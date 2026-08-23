@@ -10,6 +10,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AppNavigator } from './Navigation';
 import { setClerkInstance } from '../infrastructure/auth/clerk';
 import { useAppFonts } from '../shared/theme/fonts';
+import { registerBackgroundSync } from '../infrastructure/health/background-sync';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +59,13 @@ function AppStateRefresh() {
   return null;
 }
 
+function BackgroundSyncRegistrar() {
+  useEffect(() => {
+    registerBackgroundSync();
+  }, []);
+  return null;
+}
+
 const tokenCache = {
   getToken: async (key: string) => SecureStore.getItemAsync(key),
   saveToken: async (key: string, value: string) => SecureStore.setItemAsync(key, value),
@@ -87,6 +95,7 @@ export default function App() {
             <SafeAreaProvider>
               <ClerkInstanceSetter />
               <AppStateRefresh />
+              <BackgroundSyncRegistrar />
               <AppNavigator />
             </SafeAreaProvider>
           </QueryClientProvider>

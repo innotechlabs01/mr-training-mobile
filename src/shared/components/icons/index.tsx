@@ -78,3 +78,11 @@ export function MembershipIcon({ size = S, color = colors.primary }: IconProps) 
     </Svg>
   );
 }
+
+export function PlayIcon({ size = S, color = colors.primary }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M5 3l14 9-14 9V3z" fill={color} />
+    </Svg>
+  );
+}
