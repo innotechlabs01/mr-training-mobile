@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSignIn, useSignUp } from '@clerk/clerk-expo';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
-import { colors, spacing, typography, radius } from '../../../../shared/theme/tokens';
+import { colors, spacing, typography, radius, fontFamilies } from '../../../../shared/theme/tokens';
 import { apiClient } from '../../../../infrastructure/api/client';
 import { showToast } from '../../../../shared/components/ui/Toast';
 import {
@@ -28,6 +37,8 @@ export function SignInScreen() {
   const { signUp, setActive: setActiveSignUp, isLoaded: signUpLoaded } = useSignUp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [coachCode, setCoachCode] = useState(route.params?.code ?? '');
   const [mode, setMode] = useState<'signin' | 'signup'>(route.params?.mode ?? 'signin');
   const [loading, setLoading] = useState(false);
@@ -49,16 +60,12 @@ export function SignInScreen() {
     }
   };
 
-  // Flush any onboarding buffer left behind by an email-verification sign-up that
-  // later completed (e.g. user verified and now signs in). Best-effort; clears only
-  // after a successful POST.
   const flushPendingOnboarding = async () => {
     const pending = await getPendingOnboarding();
     if (!pending) return;
     await postOnboard(pending);
     await clearPendingOnboarding();
   };
-
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -73,6 +80,11 @@ export function SignInScreen() {
 
     if (password.length < 8) {
       showToast('error', 'Error', 'Password must be at least 8 characters');
+      return;
+    }
+
+    if (mode === 'signup' && confirmPassword !== password) {
+      showToast('error', 'Error', 'Passwords do not match');
       return;
     }
 
@@ -96,10 +108,7 @@ export function SignInScreen() {
         });
         if (result.status === 'complete') {
           await setActive({ session: result.createdSessionId });
-          // Flush any onboarding buffer left by a verification sign-up that has since completed.
           await flushPendingOnboarding();
-          // Coach code association via direct API - primary path for sign-in (user already exists, webhook user.created won't fire)
-          // Server updates Clerk public_metadata atomically, webhook user.updated is fallback
           try {
             await apiClient.post('/athlete/accept-invite', { code: normalizedCode });
           } catch (err) {
@@ -126,18 +135,14 @@ export function SignInScreen() {
         });
         if (result.status === 'complete') {
           await setActiveSignUp({ session: result.createdSessionId });
-          // Onboard athlete: create profile + 7-day trial — after setActive so isSignedIn flips
           const onboarding = route.params?.onboardingData;
           await postOnboard(onboarding);
           try {
-            // Direct DB association as backup — webhook user.created with unsafeMetadata is primary
             await apiClient.post('/athlete/accept-invite', { code: normalizedCode });
           } catch (err) {
             console.error('[Auth] accept-invite failed on sign-up:', err);
           }
         } else {
-          // Email verification pending: keep the onboarding payload so it is not
-          // lost when the user verifies and later signs in (see flushPendingOnboarding).
           const onboarding = route.params?.onboardingData;
           if (onboarding) {
             savePendingOnboarding(onboarding);
@@ -154,94 +159,230 @@ export function SignInScreen() {
   };
 
   const isLoaded = mode === 'signin' ? signInLoaded : signUpLoaded;
+  const canGoBack = navigation.canGoBack();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           bounces={false}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <Text style={styles.brand}>MR TRAINING</Text>
-            <Text style={styles.title}>
-              {mode === 'signin' ? 'Welcome back' : 'Create your account'}
-            </Text>
-            <Text style={styles.subtitle}>
-              {mode === 'signin' ? 'Your training journey continues' : 'Start your fitness journey today'}
+          {/* ── Top bar — FitBody lime title → MR primary ── */}
+          <View style={styles.topBar}>
+            {canGoBack ? (
+              <Pressable
+                onPress={() => navigation.goBack()}
+                style={styles.backBtn}
+                hitSlop={12}
+                accessibilityLabel="Go back"
+              >
+                <Text style={styles.backIcon}>‹</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.backBtnPlaceholder} />
+            )}
+            <Text style={styles.topTitle}>{mode === 'signin' ? 'Log In' : 'Create Account'}</Text>
+            <View style={styles.backBtnPlaceholder} />
+          </View>
+
+          {/* ── Hero header — centered Welcome / Let's Start! ── */}
+          <View style={styles.hero}>
+            <Text style={styles.heroTitle}>{mode === 'signin' ? 'Welcome' : "Let's Start!"}</Text>
+            <Text style={styles.heroSubtitle}>
+              {mode === 'signin'
+                ? 'Your training journey continues'
+                : 'Create your fitness journey today'}
             </Text>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="your@email.com"
-              placeholderTextColor={colors.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-              accessibilityLabel="Email address"
-            />
+          {/* ── Form band — FitBody lavanda → MR surface ── */}
+          <View style={styles.formBand}>
+            {mode === 'signin' ? (
+              <>
+                <Text style={styles.fieldLabel}>Username or email</Text>
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputIcon}>✉</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="example@example.com"
+                    placeholderTextColor={colors.textSecondary}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    autoComplete="email"
+                    accessibilityLabel="Email address"
+                  />
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.fieldLabel}>Full name</Text>
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputIcon}>👤</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Your full name"
+                    placeholderTextColor={colors.textSecondary}
+                    value={fullName}
+                    onChangeText={setFullName}
+                    autoCapitalize="words"
+                    autoComplete="name"
+                    accessibilityLabel="Full name"
+                  />
+                </View>
 
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="At least 8 characters"
-              placeholderTextColor={colors.textSecondary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              accessibilityLabel="Password"
-            />
+                <Text style={styles.fieldLabel}>Email or Mobile Number</Text>
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputIcon}>✉</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="example@example.com"
+                    placeholderTextColor={colors.textSecondary}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    autoComplete="email"
+                    accessibilityLabel="Email or mobile number"
+                  />
+                </View>
+              </>
+            )}
 
-            {/* Coach Code — mandatory */}
-            <Text style={styles.label}>Coach Code *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. MR-YH9R"
-              placeholderTextColor={colors.textSecondary}
-              value={coachCode}
-              onChangeText={setCoachCode}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              maxLength={8}
-              accessibilityLabel="Coach invite code"
-            />
-            <Text style={styles.codeHint}>
-              Required — enter your coach&apos;s code to connect with your coach
-            </Text>
+            <Text style={styles.fieldLabel}>Password</Text>
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputIcon}>🔒</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••••••"
+                placeholderTextColor={colors.textSecondary}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                accessibilityLabel="Password"
+              />
+            </View>
+
+            {mode === 'signup' && (
+              <>
+                <Text style={styles.fieldLabel}>Confirm Password</Text>
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputIcon}>🔒</Text>
+                  <TextInput
+                    style={[styles.input, styles.inputDisabled]}
+                    placeholder="••••••••••••"
+                    placeholderTextColor={colors.textSecondary}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry
+                    autoCapitalize="none"
+                    accessibilityLabel="Confirm password"
+                  />
+                </View>
+              </>
+            )}
+
+            {/* Coach Code — mandatory MR field, styled like FitBody inputs */}
+            <Text style={styles.fieldLabel}>Coach Code *</Text>
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputIcon}>🏷</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. MR-YH9R"
+                placeholderTextColor={colors.textSecondary}
+                value={coachCode}
+                onChangeText={setCoachCode}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                maxLength={8}
+                accessibilityLabel="Coach invite code"
+              />
+            </View>
+            <Text style={styles.codeHint}>Required — enter your coach&apos;s code to connect with your coach</Text>
+
+            {/* Forgot Password link — right-aligned, only in sign-in mode (FitBody) */}
+            {mode === 'signin' && (
+              <Pressable
+                onPress={() => showToast('info', 'Coming soon', 'Password reset will be available soon')}
+                style={styles.forgotBtn}
+                hitSlop={8}
+              >
+                <Text style={styles.forgotText}>Forgot Password?</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* ── Actions zone — dark band with primary CTA, social, switch link ── */}
+          <View style={styles.actions}>
+            {/* Terms — only on sign-up, mirrors FitBody purple-band footer */}
+            {mode === 'signup' && (
+              <Text style={styles.termsText}>
+                By continuing, you agree to{'\n'}
+                <Text style={styles.termsAccent}>Terms of Use</Text>
+                <Text style={styles.termsText}> and </Text>
+                <Text style={styles.termsAccent}>Privacy Policy.</Text>
+              </Text>
+            )}
 
             <Pressable
               style={({ pressed }) => [
-                styles.button,
-                pressed && styles.buttonPressed,
-                (loading || !isLoaded) && styles.buttonDisabled,
+                styles.primaryBtn,
+                pressed && styles.primaryBtnPressed,
+                (loading || !isLoaded) && styles.primaryBtnDisabled,
               ]}
               onPress={handleSubmit}
               disabled={loading || !isLoaded}
+              accessibilityLabel={mode === 'signin' ? 'Log In' : 'Sign Up'}
             >
-              <Text style={styles.buttonText}>
-                {loading ? 'Please wait...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
+              <Text style={styles.primaryBtnText}>
+                {loading ? 'Please wait...' : mode === 'signin' ? 'Log In' : 'Sign Up'}
               </Text>
             </Pressable>
 
+            <Text style={styles.orText}>or {mode === 'signin' ? 'sign up' : 'sign in'} with</Text>
+
+            {/* Social row — FitBody G / f / fingerprint → MR surfaceRaised cards */}
+            <View style={styles.socialRow}>
+              <Pressable
+                style={({ pressed }) => [styles.socialBtn, pressed && styles.socialBtnPressed]}
+                onPress={() => showToast('info', 'Coming soon', 'Google sign-in coming soon')}
+                accessibilityLabel="Continue with Google"
+              >
+                <Text style={styles.socialIcon}>G</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.socialBtn, pressed && styles.socialBtnPressed]}
+                onPress={() => showToast('info', 'Coming soon', 'Facebook sign-in coming soon')}
+                accessibilityLabel="Continue with Facebook"
+              >
+                <Text style={[styles.socialIcon, styles.socialIconFacebook]}>f</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.socialBtn, pressed && styles.socialBtnPressed]}
+                onPress={() => showToast('info', 'Coming soon', 'Fingerprint sign-in coming soon')}
+                accessibilityLabel="Continue with fingerprint"
+              >
+                <Text style={styles.socialIcon}>◉</Text>
+              </Pressable>
+            </View>
+
             <Pressable
-              style={styles.switchButton}
+              style={styles.switchBtn}
               onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
+              hitSlop={8}
             >
               <Text style={styles.switchText}>
-                {mode === 'signin'
-                  ? "Don't have an account? Sign Up"
-                  : 'Already have an account? Sign In'}
+                {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+                <Text style={styles.switchAccent}>{mode === 'signin' ? 'Sign Up' : 'Log in'}</Text>
               </Text>
             </Pressable>
           </View>
@@ -254,31 +395,223 @@ export function SignInScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.base },
   flex: { flex: 1 },
-  content: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
-  header: { alignItems: 'center', marginBottom: spacing.xl },
-  brand: { ...typography.label, fontSize: 12, color: colors.primary, marginBottom: spacing.md },
-  title: { ...typography.title, fontSize: 28, lineHeight: 34, color: colors.text, textAlign: 'center' },
-  subtitle: { ...typography.body, fontSize: 17, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm },
-  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
-  label: { ...typography.caption, fontWeight: '600', color: colors.textSecondary, marginBottom: spacing.xs },
-  input: {
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.md,
-    height: 48,
+  scrollContent: { flexGrow: 1, backgroundColor: colors.base },
+
+  // Top bar — FitBody yellow title on dark → MR primary on base
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    fontSize: 16,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.base,
+  },
+  backBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backBtnPlaceholder: { width: 32, height: 32 },
+  backIcon: {
+    fontSize: 28,
+    lineHeight: 28,
+    color: colors.primary,
+    fontWeight: '700',
+    marginTop: -2,
+  },
+  topTitle: {
+    fontFamily: fontFamilies.display,
+    fontSize: 18,
+    lineHeight: 24,
+    color: colors.primary,
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
+
+  // Hero header
+  hero: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+    backgroundColor: colors.base,
+    gap: spacing.sm,
+  },
+  heroTitle: {
+    fontFamily: fontFamilies.display,
+    fontSize: 28,
+    lineHeight: 34,
     color: colors.text,
-    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  heroSubtitle: {
+    fontFamily: fontFamilies.body,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: spacing.md,
+  },
+
+  // Form band — FitBody lavanda full-bleed → MR surface
+  formBand: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.border,
+    gap: 0,
+  },
+  fieldLabel: {
+    fontFamily: fontFamilies.bodySemiBold,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.text,
+    marginBottom: 6,
+    marginTop: spacing.sm,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
+    height: 48,
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
   },
-  button: { backgroundColor: colors.primary, height: 52, borderRadius: radius.md, justifyContent: 'center', alignItems: 'center', marginTop: spacing.sm },
-  buttonPressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { ...typography.bodyStrong, color: colors.base },
-  switchButton: { marginTop: spacing.md, alignItems: 'center' },
-  switchText: { ...typography.bodyStrong, fontSize: 14, color: colors.primary },
-  codeHint: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm, marginTop: -spacing.xs },
-  row: { flexDirection: 'row', gap: spacing.sm },
-  half: { flex: 1 },
+  inputIcon: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    width: 18,
+    textAlign: 'center',
+  },
+  input: {
+    flex: 1,
+    fontFamily: fontFamilies.body,
+    fontSize: 15,
+    lineHeight: 20,
+    color: colors.text,
+    paddingVertical: 0,
+    height: '100%',
+  },
+  inputDisabled: {
+    opacity: 1,
+  },
+  codeHint: {
+    fontFamily: fontFamilies.body,
+    fontSize: 12,
+    lineHeight: 16,
+    color: colors.textSecondary,
+    marginTop: 6,
+  },
+  forgotBtn: {
+    alignSelf: 'flex-end',
+    marginTop: spacing.sm,
+    paddingVertical: 4,
+  },
+  forgotText: {
+    fontFamily: fontFamilies.bodyMedium,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+
+  // Actions zone — dark with MR primary CTA
+  actions: {
+    backgroundColor: colors.base,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  termsText: {
+    fontFamily: fontFamilies.body,
+    fontSize: 12,
+    lineHeight: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  termsAccent: {
+    color: colors.primary,
+    fontFamily: fontFamilies.bodySemiBold,
+  },
+  primaryBtn: {
+    width: '100%',
+    height: 48,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.primary,
+    marginTop: spacing.xs,
+  },
+  primaryBtnPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+  primaryBtnDisabled: { opacity: 0.5 },
+  primaryBtnText: {
+    fontFamily: fontFamilies.bodyBold,
+    fontSize: 16,
+    lineHeight: 20,
+    color: colors.base,
+    fontWeight: '700',
+  },
+  orText: {
+    fontFamily: fontFamilies.body,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  socialRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  socialBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceRaised,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  socialBtnPressed: { opacity: 0.7, transform: [{ scale: 0.97 }] },
+  socialIcon: {
+    fontFamily: fontFamilies.bodyBold,
+    fontSize: 18,
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  socialIconFacebook: {
+    fontFamily: fontFamilies.displayBold,
+    fontSize: 20,
+    color: colors.primary,
+  },
+  switchBtn: {
+    marginTop: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  switchText: {
+    fontFamily: fontFamilies.body,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  switchAccent: {
+    fontFamily: fontFamilies.bodyBold,
+    color: colors.primary,
+    fontWeight: '700',
+  },
 });
