@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSignIn, useSignUp } from '@clerk/clerk-expo';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -8,6 +8,7 @@ import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 import { colors, spacing, typography, radius } from '../../../../shared/theme/tokens';
 import { apiClient } from '../../../../infrastructure/api/client';
+import { showToast } from '../../../../shared/components/ui/Toast';
 import {
   clearPendingOnboarding,
   getPendingOnboarding,
@@ -61,22 +62,22 @@ export function SignInScreen() {
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      showToast('error', 'Error', 'Please fill in all fields');
       return;
     }
 
     if (!EMAIL_REGEX.test(email.trim())) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      showToast('error', 'Error', 'Please enter a valid email address');
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters');
+      showToast('error', 'Error', 'Password must be at least 8 characters');
       return;
     }
 
     if (!coachCode.trim()) {
-      Alert.alert('Error', 'El código de coach es obligatorio');
+      showToast('error', 'Error', 'El código de coach es obligatorio');
       return;
     }
 
@@ -84,7 +85,7 @@ export function SignInScreen() {
 
     if (mode === 'signin') {
       if (!signInLoaded) {
-        Alert.alert('Please wait', 'Authentication is loading...');
+        showToast('info', 'Please wait', 'Authentication is loading...');
         return;
       }
       setLoading(true);
@@ -107,13 +108,13 @@ export function SignInScreen() {
         }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Sign in failed';
-        Alert.alert('Sign in failed', message);
+        showToast('error', 'Sign in failed', message);
       } finally {
         setLoading(false);
       }
     } else {
       if (!signUpLoaded) {
-        Alert.alert('Please wait', 'Authentication is loading...');
+        showToast('info', 'Please wait', 'Authentication is loading...');
         return;
       }
       setLoading(true);
@@ -141,11 +142,11 @@ export function SignInScreen() {
           if (onboarding) {
             savePendingOnboarding(onboarding);
           }
-          Alert.alert('Check your email', 'We sent you a verification link');
+          showToast('success', 'Check your email', 'We sent you a verification link');
         }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Sign up failed';
-        Alert.alert('Sign up failed', message);
+        showToast('error', 'Sign up failed', message);
       } finally {
         setLoading(false);
       }

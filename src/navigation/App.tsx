@@ -12,6 +12,7 @@ import { setClerkInstance } from '../infrastructure/auth/clerk';
 import { useAppFonts } from '../shared/theme/fonts';
 import { registerBackgroundSync } from '../infrastructure/health/background-sync';
 import { registerForPushNotifications } from '../infrastructure/notifications/push';
+import Toast, { toastConfig } from '../shared/components/ui/Toast';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -99,6 +100,7 @@ export default function App() {
               <AppStateRefresh />
               <BackgroundSyncRegistrar />
               <AppNavigator />
+              <Toast config={toastConfig} position="top" visibilityTime={3000} topOffset={56} />
             </SafeAreaProvider>
           </QueryClientProvider>
         </ClerkProvider>
