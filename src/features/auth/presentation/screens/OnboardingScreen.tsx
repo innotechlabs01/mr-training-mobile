@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '@clerk/clerk-expo';
-import { colors, typography, radius } from '../../../../shared/theme/tokens';
+import { colors, radius, spacing, fontFamilies } from '../../../../shared/theme/tokens';
 import { CoachScheduleModal } from './CoachScheduleModal';
 
 type Props = {
@@ -65,12 +65,22 @@ const EQUIPMENT_OPTIONS = [
 
 const STEP_TITLES = ['Your Sport', 'How & Level', 'Your Goal', 'Schedule', 'Equipment', 'Your Plan', 'Your Choice'];
 const STEP_COUNT = 7;
-const HERO_ART: Record<number, string> = {
-  0: 'sport-selection', 1: 'modality-level', 2: 'goal', 3: 'schedule', 4: 'equipment', 5: 'summary', 6: 'choice',
-};
+
+// FitBody-inspired hero headings — lime in Figma → orange (MR primary) in MR
+const HERO_HEADINGS = [
+  'CONSISTENCY IS THE KEY',
+  'BUILD YOUR PATH',
+  'CHASE YOUR GOAL',
+  'STAY CONSISTENT',
+  'TRAIN ANYWHERE',
+  'YOUR PLAN AWAITS',
+  'START YOUR JOURNEY',
+];
+
+const HERO_EMOJIS = ['🏋️', '🧭', '🎯', '📅', '🏠', '✨', '🚀'];
 
 export function OnboardingScreen({ onComplete }: Props) {
-  const { width: screenW } = useWindowDimensions();
+  const { height: screenH } = useWindowDimensions();
   const { user } = useUser();
   const [step, setStep] = useState(0);
   const [sports, setSports] = useState<string[]>([]);
@@ -118,230 +128,300 @@ export function OnboardingScreen({ onComplete }: Props) {
 
   const goBack = () => { if (step > 0) setStep((s) => s - 1); };
 
-  const progressWidth = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, screenW - 48],
-  });
-
-  const cardWidth = (screenW - 68) / 2;
+  const heroHeight = Math.round(screenH * 0.45);
+  const isLastStep = step === STEP_COUNT - 1;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
-        <View style={styles.progressTrack}>
-          <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Hero area — top 45% */}
+      <View style={[styles.heroArea, { height: heroHeight }]}>
+        <View style={styles.heroPlaceholder}>
+          <Text style={styles.heroEmoji}>{HERO_EMOJIS[step] ?? '🏋️'}</Text>
         </View>
-        <Text style={styles.stepLabel}>{step + 1} of {STEP_COUNT}</Text>
+        <View style={styles.heroOverlay} />
+        <View style={styles.heroContent}>
+          <Text style={styles.heroHeading}>{HERO_HEADINGS[step]}</Text>
+          <Text style={styles.heroSubtitle}>{STEP_TITLES[step]}</Text>
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
-          <View style={styles.heroImagePlaceholder}>
-            <Text style={styles.heroImageText}>{HERO_ART[step] ?? 'step'}</Text>
-          </View>
-          <Text style={styles.title}>{STEP_TITLES[step]}</Text>
-        </View>
+      {/* Progress dots */}
+      <View style={styles.dotsRow}>
+        {Array.from({ length: STEP_COUNT }).map((_, idx) => (
+          <View
+            key={idx}
+            style={[
+              styles.dot,
+              idx === step ? styles.dotActive : styles.dotInactive,
+            ]}
+          />
+        ))}
+      </View>
 
-        {/* STEP 0: Sports */}
-        {step === 0 && (
-          <View style={styles.grid2}>
-            {SPORTS.map((s) => {
-              const active = sports.includes(s.id);
-              return (
-                <Pressable key={s.id} onPress={() => toggle(sports, s.id, setSports)}
-                  style={[styles.sportCard, { width: cardWidth }, active && styles.sportCardActive]}>
-                  <Text style={styles.sportEmoji}>{s.emoji}</Text>
-                  <Text style={[styles.sportLabel, active && styles.sportLabelActive]}>{s.label}</Text>
-                  <Text style={styles.sportDesc}>{s.desc}</Text>
-                  {active && <View style={styles.activeDot}><Text style={styles.activeDotText}>✓</Text></View>}
-                </Pressable>
-              );
-            })}
-          </View>
-        )}
+      {/* Choices area — scrollable, rounded top, MR palette */}
+      <View style={styles.choicesWrapper}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {/* STEP 0: Sports */}
+          {step === 0 && (
+            <View style={styles.choicesInner}>
+              {SPORTS.map((s) => {
+                const active = sports.includes(s.id);
+                return (
+                  <Pressable
+                    key={s.id}
+                    onPress={() => toggle(sports, s.id, setSports)}
+                    style={[styles.choiceCard, active && styles.choiceCardActive]}
+                  >
+                    <Text style={styles.choiceEmoji}>{s.emoji}</Text>
+                    <View style={styles.choiceContent}>
+                      <Text style={[styles.choiceLabel, active && styles.choiceLabelActive]}>{s.label}</Text>
+                      <Text style={styles.choiceDesc}>{s.desc}</Text>
+                    </View>
+                    {active ? (
+                      <View style={styles.checkCircle}><Text style={styles.checkText}>✓</Text></View>
+                    ) : (
+                      <View style={styles.checkCircleInactive} />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
 
-        {/* STEP 1: Modality + Level */}
-        {step === 1 && (
-          <View>
-            <Text style={styles.subtitle}>How do you train?</Text>
-            {MODALITIES.map((m) => (
-              <Pressable key={m.id} onPress={() => setModality(m.id)}
-                style={[styles.optionRow, modality === m.id && styles.optionRowActive]}>
-                <Text style={styles.optionEmoji}>{m.emoji}</Text>
-                <View style={styles.optionContent}>
-                  <Text style={[styles.optionLabel, modality === m.id && styles.optionLabelActive]}>{m.label}</Text>
-                  <Text style={styles.optionDesc}>{m.desc}</Text>
+          {/* STEP 1: Modality + Level */}
+          {step === 1 && (
+            <View style={styles.choicesInner}>
+              <Text style={styles.sectionTitle}>How do you train?</Text>
+              {MODALITIES.map((m) => {
+                const active = modality === m.id;
+                return (
+                  <Pressable
+                    key={m.id}
+                    onPress={() => setModality(m.id)}
+                    style={[styles.choiceCard, active && styles.choiceCardActive]}
+                  >
+                    <Text style={styles.choiceEmoji}>{m.emoji}</Text>
+                    <View style={styles.choiceContent}>
+                      <Text style={[styles.choiceLabel, active && styles.choiceLabelActive]}>{m.label}</Text>
+                      <Text style={styles.choiceDesc}>{m.desc}</Text>
+                    </View>
+                    {active ? <View style={styles.checkCircle}><Text style={styles.checkText}>✓</Text></View> : <View style={styles.checkCircleInactive} />}
+                  </Pressable>
+                );
+              })}
+              <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Your experience level</Text>
+              {LEVELS.map((l) => {
+                const active = level === l.id;
+                return (
+                  <Pressable
+                    key={l.id}
+                    onPress={() => setLevel(l.id)}
+                    style={[styles.choiceCard, active && styles.choiceCardActive]}
+                  >
+                    <Text style={styles.choiceEmoji}>{l.emoji}</Text>
+                    <View style={styles.choiceContent}>
+                      <Text style={[styles.choiceLabel, active && styles.choiceLabelActive]}>{l.label}</Text>
+                      <Text style={styles.choiceDesc}>{l.desc}</Text>
+                    </View>
+                    {active ? <View style={styles.checkCircle}><Text style={styles.checkText}>✓</Text></View> : <View style={styles.checkCircleInactive} />}
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
+          {/* STEP 2: Goal */}
+          {step === 2 && (
+            <View style={styles.choicesInner}>
+              {GOALS.map((g) => {
+                const active = goal === g.id;
+                return (
+                  <Pressable
+                    key={g.id}
+                    onPress={() => setGoal(g.id)}
+                    style={[styles.choiceCard, active && styles.choiceCardActive]}
+                  >
+                    <Text style={styles.choiceEmoji}>{g.emoji}</Text>
+                    <View style={styles.choiceContent}>
+                      <Text style={[styles.choiceLabel, active && styles.choiceLabelActive]}>{g.label}</Text>
+                      <Text style={styles.choiceDesc}>{g.desc}</Text>
+                    </View>
+                    {active ? <View style={styles.checkCircle}><Text style={styles.checkText}>✓</Text></View> : <View style={styles.checkCircleInactive} />}
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
+          {/* STEP 3: Frequency + Duration */}
+          {step === 3 && (
+            <View style={styles.choicesInner}>
+              <Text style={styles.sectionTitle}>How many days per week?</Text>
+              <View style={styles.chipRow}>
+                {FREQUENCIES.map((f) => {
+                  const active = frequency === f;
+                  return (
+                    <Pressable
+                      key={f}
+                      onPress={() => setFrequency(f)}
+                      style={[styles.freqChip, active && styles.freqChipActive]}
+                    >
+                      <Text style={[styles.freqText, active && styles.freqTextActive]}>{f}</Text>
+                      <Text style={[styles.freqSub, active && styles.freqSubActive]}>days</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <View style={styles.freqBar}>
+                {FREQUENCIES.map((f) => (
+                  <View key={f} style={[styles.freqBarDot, frequency >= f && styles.freqBarDotActive]} />
+                ))}
+              </View>
+
+              <Text style={[styles.sectionTitle, { marginTop: 32 }]}>Session duration</Text>
+              <View style={styles.chipRow}>
+                {DURATIONS.map((d) => {
+                  const active = duration === d;
+                  return (
+                    <Pressable
+                      key={d}
+                      onPress={() => setDuration(d)}
+                      style={[styles.durChip, active && styles.durChipActive]}
+                    >
+                      <Text style={[styles.durText, active && styles.durTextActive]}>{d}</Text>
+                      <Text style={[styles.durSub, active && styles.durSubActive]}>min</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* STEP 4: Equipment */}
+          {step === 4 && (
+            <View style={styles.choicesInner}>
+              <Text style={styles.sectionTitle}>What equipment do you have?</Text>
+              {EQUIPMENT_OPTIONS.map((e) => {
+                const active = equipment === e.id;
+                return (
+                  <Pressable
+                    key={e.id}
+                    onPress={() => setEquipment(e.id)}
+                    style={[styles.choiceCard, active && styles.choiceCardActive]}
+                  >
+                    <Text style={styles.choiceEmoji}>{e.emoji}</Text>
+                    <View style={styles.choiceContent}>
+                      <Text style={[styles.choiceLabel, active && styles.choiceLabelActive]}>{e.label}</Text>
+                      <Text style={styles.choiceDesc}>{e.desc}</Text>
+                    </View>
+                    {active ? <View style={styles.checkCircle}><Text style={styles.checkText}>✓</Text></View> : <View style={styles.checkCircleInactive} />}
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
+          {/* STEP 5: Summary */}
+          {step === 5 && (
+            <View style={styles.choicesInner}>
+              <View style={styles.summaryHero}>
+                <Text style={styles.summaryEmoji}>🎯</Text>
+                <Text style={styles.summaryTitle}>Your Personalized Plan</Text>
+              </View>
+
+              <View style={styles.summaryCard}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryKey}>Sports</Text>
+                  <View style={styles.summaryChips}>
+                    {sports.map((s) => {
+                      const sport = SPORTS.find((x) => x.id === s);
+                      return <View key={s} style={styles.miniChip}><Text style={styles.miniChipText}>{sport?.emoji} {sport?.label}</Text></View>;
+                    })}
+                  </View>
                 </View>
-                {modality === m.id && <Text style={styles.check}>✓</Text>}
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryKey}>Modality</Text>
+                  <Text style={styles.summaryVal}>{MODALITIES.find((m) => m.id === modality)?.emoji} {MODALITIES.find((m) => m.id === modality)?.label}</Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryKey}>Level</Text>
+                  <Text style={styles.summaryVal}>{LEVELS.find((l) => l.id === level)?.emoji} {LEVELS.find((l) => l.id === level)?.label}</Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryKey}>Goal</Text>
+                  <Text style={styles.summaryVal}>{GOALS.find((g) => g.id === goal)?.emoji} {GOALS.find((g) => g.id === goal)?.label}</Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryKey}>Schedule</Text>
+                  <Text style={styles.summaryVal}>{frequency}x/week · {duration} min</Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryKey}>Equipment</Text>
+                  <Text style={styles.summaryVal}>{EQUIPMENT_OPTIONS.find((e) => e.id === equipment)?.emoji} {EQUIPMENT_OPTIONS.find((e) => e.id === equipment)?.label}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* STEP 6: Your Choice */}
+          {step === 6 && (
+            <View style={styles.choicesInner}>
+              <Text style={styles.sectionTitle}>We have created a routine based on your profile.</Text>
+              <Text style={styles.desc}>What would you like to do?</Text>
+
+              <Pressable
+                onPress={() => setShowScheduleModal(true)}
+                style={[styles.choiceCard, { borderColor: `${colors.primary}30` }]}
+              >
+                <View style={styles.choiceIconBox}><Text style={styles.choiceEmojiLarge}>📅</Text></View>
+                <View style={styles.choiceContent}>
+                  <Text style={styles.choiceLabel}>Schedule with your Coach</Text>
+                  <Text style={styles.choiceDesc}>Book a call to review and personalize your routine together</Text>
+                </View>
+                <Text style={styles.choiceArrow}>→</Text>
               </Pressable>
-            ))}
-            <Text style={[styles.subtitle, { marginTop: 32 }]}>Your experience level</Text>
-            {LEVELS.map((l) => (
-              <Pressable key={l.id} onPress={() => setLevel(l.id)}
-                style={[styles.optionRow, level === l.id && styles.optionRowActive]}>
-                <Text style={styles.optionEmoji}>{l.emoji}</Text>
-                <View style={styles.optionContent}>
-                  <Text style={[styles.optionLabel, level === l.id && styles.optionLabelActive]}>{l.label}</Text>
-                  <Text style={styles.optionDesc}>{l.desc}</Text>
+
+              <Pressable
+                onPress={() => onComplete({ sports, modality, experienceLevel: level, goal, sessionsPerWeek: frequency, sessionDuration: duration, equipment, athleteRoutineAccepted: true })}
+                style={styles.choiceCard}
+              >
+                <View style={styles.choiceIconBox}><Text style={styles.choiceEmojiLarge}>✅</Text></View>
+                <View style={styles.choiceContent}>
+                  <Text style={styles.choiceLabel}>Accept System Routine</Text>
+                  <Text style={styles.choiceDesc}>Start training immediately with the AI-generated plan</Text>
                 </View>
-                {level === l.id && <Text style={styles.check}>✓</Text>}
+                <Text style={styles.choiceArrow}>→</Text>
               </Pressable>
-            ))}
-          </View>
-        )}
-
-        {/* STEP 2: Goal */}
-        {step === 2 && (
-          <View>
-            {GOALS.map((g) => (
-              <Pressable key={g.id} onPress={() => setGoal(g.id)}
-                style={[styles.goalCard, goal === g.id && styles.goalCardActive]}>
-                <View style={[styles.goalIcon, goal === g.id && styles.goalIconActive]}>
-                  <Text style={styles.goalEmoji}>{g.emoji}</Text>
-                </View>
-                <View style={styles.goalContent}>
-                  <Text style={[styles.goalLabel, goal === g.id && styles.goalLabelActive]}>{g.label}</Text>
-                  <Text style={styles.goalDesc}>{g.desc}</Text>
-                </View>
-                {goal === g.id && <View style={styles.goalCheck}><Text style={styles.checkText}>✓</Text></View>}
-              </Pressable>
-            ))}
-          </View>
-        )}
-
-        {/* STEP 3: Frequency + Duration */}
-        {step === 3 && (
-          <View>
-            <Text style={styles.subtitle}>How many days per week?</Text>
-            <View style={styles.chipRow}>
-              {FREQUENCIES.map((f) => (
-                <Pressable key={f} onPress={() => setFrequency(f)}
-                  style={[styles.freqChip, frequency === f && styles.freqChipActive]}>
-                  <Text style={[styles.freqText, frequency === f && styles.freqTextActive]}>{f}</Text>
-                  <Text style={[styles.freqSub, frequency === f && styles.freqSubActive]}>days</Text>
-                </Pressable>
-              ))}
             </View>
-            <View style={styles.freqBar}>
-              {FREQUENCIES.map((f) => (
-                <View key={f} style={[styles.freqBarDot, frequency >= f && styles.freqBarDotActive]} />
-              ))}
-            </View>
+          )}
 
-            <Text style={[styles.subtitle, { marginTop: 36 }]}>Session duration</Text>
-            <View style={styles.chipRow}>
-              {DURATIONS.map((d) => (
-                <Pressable key={d} onPress={() => setDuration(d)}
-                  style={[styles.durChip, duration === d && styles.durChipActive]}>
-                  <Text style={[styles.durText, duration === d && styles.durTextActive]}>{d}</Text>
-                  <Text style={[styles.durSub, duration === d && styles.durSubActive]}>min</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        )}
+          <View style={{ height: 20 }} />
+        </ScrollView>
+      </View>
 
-        {/* STEP 4: Equipment */}
-        {step === 4 && (
-          <View>
-            <Text style={styles.subtitle}>What equipment do you have?</Text>
-            {EQUIPMENT_OPTIONS.map((e) => (
-              <Pressable key={e.id} onPress={() => setEquipment(e.id)}
-                style={[styles.optionRow, equipment === e.id && styles.optionRowActive]}>
-                <Text style={styles.optionEmoji}>{e.emoji}</Text>
-                <View style={styles.optionContent}>
-                  <Text style={[styles.optionLabel, equipment === e.id && styles.optionLabelActive]}>{e.label}</Text>
-                  <Text style={styles.optionDesc}>{e.desc}</Text>
-                </View>
-                {equipment === e.id && <Text style={styles.check}>✓</Text>}
-              </Pressable>
-            ))}
-          </View>
-        )}
-
-        {/* STEP 5: Summary */}
-        {step === 5 && (
-          <View>
-            <View style={styles.summaryHero}>
-              <Text style={styles.summaryEmoji}>🎯</Text>
-              <Text style={styles.summaryTitle}>Your Personalized Plan</Text>
-            </View>
-
-            <View style={styles.summaryCard}>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryKey}>Sports</Text>
-                <View style={styles.summaryChips}>
-                  {sports.map((s) => {
-                    const sport = SPORTS.find((x) => x.id === s);
-                    return <View key={s} style={styles.miniChip}><Text style={styles.miniChipText}>{sport?.emoji} {sport?.label}</Text></View>;
-                  })}
-                </View>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryKey}>Modality</Text>
-                <Text style={styles.summaryVal}>{MODALITIES.find((m) => m.id === modality)?.emoji} {MODALITIES.find((m) => m.id === modality)?.label}</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryKey}>Level</Text>
-                <Text style={styles.summaryVal}>{LEVELS.find((l) => l.id === level)?.emoji} {LEVELS.find((l) => l.id === level)?.label}</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryKey}>Goal</Text>
-                <Text style={styles.summaryVal}>{GOALS.find((g) => g.id === goal)?.emoji} {GOALS.find((g) => g.id === goal)?.label}</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryKey}>Schedule</Text>
-                <Text style={styles.summaryVal}>{frequency}x/week · {duration} min</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryKey}>Equipment</Text>
-                <Text style={styles.summaryVal}>{EQUIPMENT_OPTIONS.find((e) => e.id === equipment)?.emoji} {EQUIPMENT_OPTIONS.find((e) => e.id === equipment)?.label}</Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* STEP 6: Your Choice */}
-        {step === 6 && (
-          <View>
-            <Text style={styles.subtitle}>We have created a routine based on your profile.</Text>
-            <Text style={styles.desc}>What would you like to do?</Text>
-
-            <Pressable
-              onPress={() => setShowScheduleModal(true)}
-              style={[styles.choiceCard, { borderColor: `${colors.primary}30` }]}>
-              <View style={styles.choiceIcon}><Text style={styles.choiceEmoji}>📅</Text></View>
-              <View style={styles.choiceContent}>
-                <Text style={styles.choiceTitle}>Schedule with your Coach</Text>
-                <Text style={styles.choiceDesc}>Book a call to review and personalize your routine together</Text>
-              </View>
-              <Text style={styles.choiceArrow}>→</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => onComplete({ sports, modality, experienceLevel: level, goal, sessionsPerWeek: frequency, sessionDuration: duration, equipment, athleteRoutineAccepted: true })}
-              style={styles.choiceCard}>
-              <View style={styles.choiceIcon}><Text style={styles.choiceEmoji}>✅</Text></View>
-              <View style={styles.choiceContent}>
-                <Text style={styles.choiceTitle}>Accept System Routine</Text>
-                <Text style={styles.choiceDesc}>Start training immediately with the AI-generated plan</Text>
-              </View>
-              <Text style={styles.choiceArrow}>→</Text>
-            </Pressable>
-          </View>
-        )}
-
-        <View style={{ height: 120 }} />
-      </ScrollView>
-
+      {/* Bottom pill button */}
       <View style={styles.bottom}>
-        <Pressable onPress={goNext} style={[styles.nextBtn, !canNext() && styles.nextDisabled]} disabled={!canNext()}>
-          <Text style={styles.nextText}>{step === STEP_COUNT - 1 ? 'Create My Plan' : 'Continue'}</Text>
+        <Pressable
+          onPress={goNext}
+          disabled={!canNext()}
+          style={[
+            styles.nextBtn,
+            isLastStep ? styles.nextBtnPrimary : styles.nextBtnOutline,
+            !canNext() && styles.nextDisabled,
+          ]}
+        >
+          <Text style={[styles.nextText, isLastStep ? styles.nextTextPrimary : styles.nextTextOutline]}>
+            {isLastStep ? 'Complete' : 'Next'}
+          </Text>
         </Pressable>
         {0 < step && step < STEP_COUNT - 1 && (
           <Pressable onPress={() => setStep(STEP_COUNT - 1)} style={styles.skipBtn}>
@@ -371,104 +451,158 @@ export function OnboardingScreen({ onComplete }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.base },
-  topBar: { paddingHorizontal: 24, paddingTop: 8 },
-  progressTrack: { height: 4, borderRadius: 2, backgroundColor: colors.surface, overflow: 'hidden', marginBottom: 8 },
-  progressFill: { height: 4, borderRadius: 2, backgroundColor: colors.primary },
-  stepLabel: { fontSize: 12, color: colors.textSecondary, fontWeight: '600', textAlign: 'right' },
-  scroll: { padding: 24, flexGrow: 1 },
-  hero: { alignItems: 'center', marginBottom: 20 },
-  heroImagePlaceholder: { width: '100%', height: 140, borderRadius: radius.lg, backgroundColor: `${colors.primary}10`, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  heroImageText: { ...typography.label, color: colors.textSecondary },
-  title: { fontSize: 30, fontWeight: '800', color: colors.text, marginBottom: 24 },
-  subtitle: { fontSize: 17, fontWeight: '700', color: colors.text, marginBottom: 16 },
-  grid2: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  sportCard: {
-    padding: 18, borderRadius: 18,
-    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.surface,
-    alignItems: 'center', position: 'relative',
+  container: { flex: 1, backgroundColor: '#0e0e0e' },
+  // Hero — top 45%
+  heroArea: {
+    width: '100%',
+    backgroundColor: '#1a1a1a',
+    overflow: 'hidden',
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  sportCardActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}10` },
-  sportEmoji: { fontSize: 32, marginBottom: 8 },
-  sportLabel: { fontSize: 15, fontWeight: '700', color: colors.textSecondary },
-  sportLabelActive: { color: colors.primary },
-  sportDesc: { fontSize: 11, color: colors.textSecondary, marginTop: 2, textAlign: 'center' },
-  activeDot: { position: 'absolute', top: 10, right: 10, width: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
-  activeDotText: { color: colors.base, fontSize: 12, fontWeight: '700' },
-  optionRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 16, padding: 18,
-    borderRadius: 16, borderWidth: 1.5, borderColor: colors.surface,
-    backgroundColor: colors.surface, marginBottom: 10,
+  heroPlaceholder: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  optionRowActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}08` },
-  optionEmoji: { fontSize: 28 },
-  optionContent: { flex: 1 },
-  optionLabel: { fontSize: 16, fontWeight: '700', color: colors.text },
-  optionLabelActive: { color: colors.primary },
-  optionDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-  check: { fontSize: 20, color: colors.primary, fontWeight: '700' },
-  goalCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20,
-    borderRadius: 18, borderWidth: 1.5, borderColor: colors.surface,
-    backgroundColor: colors.surface, marginBottom: 12,
+  heroEmoji: { fontSize: 72, opacity: 0.9 },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(14,14,14,0.45)',
   },
-  goalCardActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}08` },
-  goalIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: `${colors.primary}10`, justifyContent: 'center', alignItems: 'center' },
-  goalIconActive: { backgroundColor: `${colors.primary}20` },
-  goalEmoji: { fontSize: 26 },
-  goalContent: { flex: 1 },
-  goalLabel: { fontSize: 17, fontWeight: '700', color: colors.text },
-  goalLabelActive: { color: colors.primary },
-  goalDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-  goalCheck: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
-  checkText: { color: colors.base, fontSize: 14, fontWeight: '700' },
-  chipRow: { flexDirection: 'row', gap: 10 },
+  heroContent: {
+    zIndex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  heroHeading: {
+    fontFamily: fontFamilies.displayBlack,
+    fontSize: 24,
+    lineHeight: 28.8,
+    color: colors.primary,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  heroSubtitle: {
+    marginTop: 8,
+    fontFamily: fontFamilies.heading,
+    fontSize: 14,
+    color: colors.text,
+    textAlign: 'center',
+    opacity: 0.85,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  // Progress dots
+  dotsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 14,
+    backgroundColor: '#0e0e0e',
+  },
+  dot: { height: 8, borderRadius: 4 },
+  dotActive: { width: 24, backgroundColor: colors.primary },
+  dotInactive: { width: 8, backgroundColor: colors.border },
+  // Choices wrapper — rounded top, MR palette
+  choicesWrapper: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    overflow: 'hidden',
+    borderTopWidth: 1,
+    borderColor: colors.border,
+  },
+  scrollContent: { padding: spacing.lg, paddingTop: spacing.lg, flexGrow: 1 },
+  choicesInner: { gap: 0 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 },
+  // Choice cards — FitBody structure, MR palette
+  choiceCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    marginBottom: 10,
+  },
+  choiceCardActive: {
+    borderColor: colors.primary,
+    backgroundColor: `${colors.primary}14`,
+  },
+  choiceEmoji: { fontSize: 32, width: 40, textAlign: 'center' },
+  choiceContent: { flex: 1 },
+  choiceLabel: { fontSize: 16, fontWeight: '700', color: colors.text },
+  choiceLabelActive: { color: colors.primary },
+  choiceDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 2, lineHeight: 18 },
+  checkCircle: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  checkCircleInactive: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: colors.border, backgroundColor: 'transparent' },
+  checkText: { color: colors.base, fontSize: 12, fontWeight: '700' },
+  // Chips — frequency / duration
+  chipRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   freqChip: {
     width: 52, height: 72, borderRadius: 14, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.surface,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
   },
-  freqChipActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}10` },
+  freqChipActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}14` },
   freqText: { fontSize: 20, fontWeight: '800', color: colors.textSecondary },
   freqTextActive: { color: colors.primary },
   freqSub: { fontSize: 10, color: colors.textSecondary, marginTop: 2 },
   freqSubActive: { color: colors.primary },
   freqBar: { flexDirection: 'row', gap: 7, marginTop: 16, paddingHorizontal: 2 },
-  freqBarDot: { flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.surface },
+  freqBarDot: { flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.border },
   freqBarDotActive: { backgroundColor: colors.primary },
   durChip: {
     flex: 1, height: 72, borderRadius: 14, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.surface,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
   },
-  durChipActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}10` },
+  durChipActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}14` },
   durText: { fontSize: 20, fontWeight: '800', color: colors.textSecondary },
   durTextActive: { color: colors.primary },
   durSub: { fontSize: 10, color: colors.textSecondary, marginTop: 2 },
   durSubActive: { color: colors.primary },
-  summaryHero: { alignItems: 'center', marginBottom: 28 },
+  // Summary
+  summaryHero: { alignItems: 'center', marginBottom: 20 },
   summaryEmoji: { fontSize: 48, marginBottom: 12 },
-  summaryTitle: { fontSize: 24, fontWeight: '800', color: colors.text },
-  summaryCard: { backgroundColor: colors.surface, borderRadius: 20, padding: 24, borderWidth: 1, borderColor: colors.border },
+  summaryTitle: { fontSize: 22, fontWeight: '800', color: colors.text },
+  summaryCard: { backgroundColor: colors.surfaceRaised, borderRadius: radius.xl, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 12 },
   summaryDivider: { height: 1, backgroundColor: colors.border },
-  summaryKey: { fontSize: 15, color: colors.textSecondary, fontWeight: '600', width: 90 },
-  summaryVal: { fontSize: 15, color: colors.text, fontWeight: '600', flex: 1, textAlign: 'right' },
+  summaryKey: { fontSize: 14, color: colors.textSecondary, fontWeight: '600', width: 90 },
+  summaryVal: { fontSize: 14, color: colors.text, fontWeight: '600', flex: 1, textAlign: 'right' },
   summaryChips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6 },
-  miniChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: `${colors.primary}10` },
+  miniChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: `${colors.primary}14` },
   miniChipText: { fontSize: 12, color: colors.primary, fontWeight: '600' },
-  bottom: { padding: 24, paddingBottom: 40, alignItems: 'center', backgroundColor: colors.base },
-  nextBtn: { width: '100%', height: 56, borderRadius: 18, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  // Bottom pill button
+  bottom: { padding: spacing.lg, paddingBottom: 32, alignItems: 'center', backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border },
+  nextBtn: {
+    width: 200,
+    height: 48,
+    borderRadius: radius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    borderWidth: 1,
+  },
+  nextBtnOutline: { backgroundColor: 'transparent', borderColor: colors.border },
+  nextBtnPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },
+  nextText: { fontSize: 16, fontWeight: '700' },
+  nextTextOutline: { color: colors.text },
+  nextTextPrimary: { color: colors.base },
   nextDisabled: { opacity: 0.35 },
-  nextText: { fontSize: 17, fontWeight: '700', color: colors.base },
-  skipBtn: { paddingVertical: 10, paddingHorizontal: 16, marginTop: 2 },
-  skipText: { fontSize: 15, color: colors.textSecondary, fontWeight: '600' },
-  backLink: { paddingVertical: 8, marginTop: 4 },
-  backText: { fontSize: 15, color: colors.textSecondary, fontWeight: '600' },
-  desc: { fontSize: 15, color: colors.textSecondary, marginBottom: 24, lineHeight: 22 },
-  choiceCard: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20, borderRadius: 18, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface, marginBottom: 12 },
-  choiceIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: `${colors.primary}10`, justifyContent: 'center', alignItems: 'center' },
-  choiceEmoji: { fontSize: 24 },
-  choiceContent: { flex: 1 },
-  choiceTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 2 },
-  choiceDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
-  choiceArrow: { fontSize: 20, color: colors.primary, fontWeight: '600' },
+  skipBtn: { paddingVertical: 10, paddingHorizontal: 16, marginTop: 4 },
+  skipText: { fontSize: 14, color: colors.textSecondary, fontWeight: '600' },
+  backLink: { paddingVertical: 8, marginTop: 2 },
+  backText: { fontSize: 14, color: colors.textSecondary, fontWeight: '600' },
+  desc: { fontSize: 14, color: colors.textSecondary, marginBottom: 16, lineHeight: 20 },
+  choiceIconBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: `${colors.primary}14`, justifyContent: 'center', alignItems: 'center' },
+  choiceEmojiLarge: { fontSize: 22 },
+  choiceArrow: { fontSize: 18, color: colors.primary, fontWeight: '600', marginLeft: 4 },
 });
