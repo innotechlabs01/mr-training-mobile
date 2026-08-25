@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useUser } from '@clerk/clerk-expo';
@@ -62,8 +62,17 @@ export function TodayScreen() {
       const { data } = await apiClient.get('/athlete/today');
       return data as TodayData;
     },
-    staleTime: 2 * 60 * 1000,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
+
+  // Battery-friendly: refetch only when the tab regains focus (no background polling)
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch]),
+  );
 
   const hasData = !!data;
   const hasSessions = hasData && (data.todaySessions.length > 0 || data.activeWorkouts.length > 0);
