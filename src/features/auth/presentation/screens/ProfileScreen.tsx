@@ -83,6 +83,9 @@ export function ProfileScreen() {
   const openMembership = () => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Membership');
   const openStore = () => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Store');
   const openImport = () => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('ImportHistory');
+  const openFavorites = () => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Favorites');
+  const openSettings = () => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Settings');
+  const openHelp = () => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Help');
 
   const initials =
     user?.firstName && user?.lastName
@@ -344,7 +347,7 @@ export function ProfileScreen() {
             <View style={styles.menuSeparator} />
             <Pressable
               style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
-              onPress={openStore}
+              onPress={openFavorites}
               accessibilityRole="button"
               accessibilityLabel="Favorite"
             >
@@ -370,7 +373,7 @@ export function ProfileScreen() {
             <View style={styles.menuSeparator} />
             <Pressable
               style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
-              onPress={() => Alert.alert('Settings', 'Coming soon')}
+              onPress={openSettings}
               accessibilityRole="button"
               accessibilityLabel="Settings"
             >
@@ -383,7 +386,7 @@ export function ProfileScreen() {
             <View style={styles.menuSeparator} />
             <Pressable
               style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
-              onPress={() => Alert.alert('Help', 'Coming soon')}
+              onPress={openHelp}
               accessibilityRole="button"
               accessibilityLabel="Help"
             >
