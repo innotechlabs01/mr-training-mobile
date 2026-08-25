@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
@@ -39,6 +40,10 @@ type AthleteProfile = {
   service_type?: string;
   serviceType?: string;
   emergency_contact?: string;
+  weight?: number | string;
+  age?: number | string;
+  height?: number | string;
+  birthday?: string;
 };
 
 type Modality = 'virtual' | 'hibrido' | 'presencial';
@@ -92,11 +97,31 @@ export function ProfileScreen() {
     queryKey: ['athlete-profile'],
     queryFn: async () => {
       const { data } = await apiClient.get('/athlete/profile');
-      // API returns { profile, coaches } — profile may be null
       return (data.profile ?? data ?? null) as AthleteProfile | null;
     },
     staleTime: 10 * 60 * 1000,
   });
+
+  // Derived header data — keep MR colors, FitBody layout
+  const displayName =
+    (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : null) ??
+    (profile?.name || '') ??
+    'Madison Smith';
+  const displayEmail = email || profile?.email || 'madisons@example.com';
+  const birthdayRaw = (profile as AthleteProfile | null)?.birthday ?? null;
+  // Only show birthday if available; no fake data
+  const birthdayText = birthdayRaw ? `Birthday: ${birthdayRaw}` : null;
+
+  // Stats — pull from profile if available, else mock per spec
+  const weightRaw = (profile as unknown as Record<string, unknown>)?.weight as number | string | undefined;
+  const ageRaw = (profile as unknown as Record<string, unknown>)?.age as number | string | undefined;
+  const heightRaw = (profile as unknown as Record<string, unknown>)?.height as number | string | undefined;
+  const statsWeight = weightRaw != null && weightRaw !== '' ? `${weightRaw}${typeof weightRaw === 'number' || String(weightRaw).match(/^\d/) ? ' Kg' : ''}`.replace(' Kg Kg', ' Kg') : '75 Kg';
+  // Ensure weight has Kg suffix once
+  const statsWeightLabel = statsWeight.includes('Kg') ? statsWeight : `${statsWeight} Kg`;
+  const statsAge = ageRaw != null && ageRaw !== '' ? String(ageRaw) : '28';
+  const statsAgeSub = 'Years Old';
+  const statsHeight = heightRaw != null && heightRaw !== '' ? `${heightRaw}${String(heightRaw).includes('CM') || String(heightRaw).includes('cm') ? '' : ' CM'}` : '1.65 CM';
 
   // Personal info local state
   const [firstName, setFirstName] = useState(user?.firstName ?? '');
@@ -128,12 +153,10 @@ export function ProfileScreen() {
       const raw = profile.modality ?? profile.service_type ?? profile.serviceType;
       setModality(normalizeModality(raw));
       setEmergencyContact(profile.emergency_contact ?? '');
-      // Parse schedule days from "mon,tue,wed" or "Lunes,Martes" format
       const rawDays = profile.schedule_days ?? profile.schedule?.days ?? '';
       const daySet = new Set<string>();
       if (rawDays) {
         rawDays.split(',').map((d: string) => d.trim().toLowerCase()).forEach((d: string) => {
-          // Match by short key or by full Spanish name
           const match = DAY_KEYS.find(k => k === d || DAY_FULL[k]?.toLowerCase() === d);
           if (match) daySet.add(match);
         });
@@ -161,11 +184,9 @@ export function ProfileScreen() {
     }
     setSaving(true);
     try {
-      // Update Clerk
       if (user) {
         await user.update({ firstName: fn, lastName: ln });
       }
-      // Update backend
       await apiClient.put('/athlete/profile', { firstName: fn, lastName: ln });
       await queryClient.invalidateQueries({ queryKey: ['athlete-profile'] });
       Alert.alert('Success', 'Your profile has been updated');
@@ -239,6 +260,17 @@ export function ProfileScreen() {
     ]);
   };
 
+  const handlePrivacyPolicy = async () => {
+    const url = 'https://mr-training.com/privacy';
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) await Linking.openURL(url);
+      else Alert.alert('Privacy Policy', 'Coming soon');
+    } catch {
+      Alert.alert('Privacy Policy', 'Coming soon');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView
@@ -252,261 +284,365 @@ export function ProfileScreen() {
           bounces={false}
           showsVerticalScrollIndicator={false}
         >
-          {/* Hero */}
-          <View style={styles.hero}>
+          {/* Header: solid primary background — FitBody layout, MR palette */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>My Profile</Text>
             <View style={styles.avatarLarge}>
               <Text style={styles.avatarLargeText}>{initials}</Text>
             </View>
-            <View style={styles.heroText}>
-              <View style={styles.heroNameRow}>
-                <Text style={styles.heroName} numberOfLines={1}>
-                  {user?.firstName} {user?.lastName}
-                </Text>
-                <Text style={styles.heroEditIcon} accessibilityLabel="Edit profile">
-                  ✎
-                </Text>
-              </View>
-              {email ? (
-                <Text style={styles.heroEmail} numberOfLines={1}>
-                  {email}
-                </Text>
-              ) : null}
+            <Text style={styles.headerName} numberOfLines={1}>
+              {displayName}
+            </Text>
+            <Text style={styles.headerEmail} numberOfLines={1}>
+              {displayEmail}
+            </Text>
+            {birthdayText ? (
+              <Text style={styles.headerBirthday} numberOfLines={1}>
+                {birthdayText}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Stats card: floating overlap */}
+          <View style={styles.statsCard}>
+            <View style={styles.statsCol}>
+              <Text style={styles.statsValue} numberOfLines={1}>
+                {statsWeightLabel}
+              </Text>
+              <Text style={styles.statsLabel}>Weight</Text>
+            </View>
+            <View style={styles.statsDivider} />
+            <View style={styles.statsCol}>
+              <Text style={styles.statsValue} numberOfLines={1}>
+                {statsAge}
+              </Text>
+              <Text style={styles.statsLabel}>{statsAgeSub}</Text>
+            </View>
+            <View style={styles.statsDivider} />
+            <View style={styles.statsCol}>
+              <Text style={styles.statsValue} numberOfLines={1}>
+                {statsHeight}
+              </Text>
+              <Text style={styles.statsLabel}>Height</Text>
             </View>
           </View>
 
-          {/* Entry cards: Membership / Store */}
-          <Card style={styles.entryCard}>
-            <MembershipIcon size={24} color={colors.primary} />
-            <View style={styles.entryText}>
-              <Text style={styles.entryTitle}>Membership</Text>
-              <Text style={styles.entrySub}>Manage your plan, payments and status</Text>
-            </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Open membership" onPress={openMembership} style={styles.entryCta}>
-              <Text style={styles.entryCtaText}>Open</Text>
-            </Pressable>
-          </Card>
-          <Card style={styles.entryCard}>
-            <StoreIcon size={24} color={colors.primary} />
-            <View style={styles.entryText}>
-              <Text style={styles.entryTitle}>Store</Text>
-              <Text style={styles.entrySub}>Browse coach-curated gear</Text>
-            </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Open store" onPress={openStore} style={styles.entryCta}>
-              <Text style={styles.entryCtaText}>Open</Text>
-            </Pressable>
-          </Card>
-          <Card style={styles.entryCard}>
-            <BarbellIcon size={24} color={colors.primary} />
-            <View style={styles.entryText}>
-              <Text style={styles.entryTitle}>Importar historial</Text>
-              <Text style={styles.entrySub}>Traé tus entrenamientos de Strong, Hevy o FitNotes</Text>
-            </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Open history import" onPress={openImport} style={styles.entryCta}>
-              <Text style={styles.entryCtaText}>Open</Text>
-            </Pressable>
-          </Card>
-
-          {/* Card 1: Personal Info */}
-          <Card style={styles.card}>
-            <Text style={styles.cardTitle}>Personal Info</Text>
-            <Text style={styles.cardSubtitle}>Update your personal details</Text>
-
-            <Text style={styles.label}>First Name</Text>
-            <Input
-              placeholder="John"
-              value={firstName}
-              onChangeText={setFirstName}
-              autoCapitalize="words"
-              autoCorrect={false}
-              accessibilityLabel="First name"
-              returnKeyType="next"
-            />
-
-            <Text style={styles.label}>Last Name</Text>
-            <Input
-              placeholder="Doe"
-              value={lastName}
-              onChangeText={setLastName}
-              autoCapitalize="words"
-              autoCorrect={false}
-              accessibilityLabel="Last name"
-              returnKeyType="next"
-            />
-
-            <Text style={styles.label}>Email</Text>
-            <View style={styles.readOnlyWrap}>
-              <Text style={styles.readOnlyText} numberOfLines={1}>
-                {email || '—'}
-              </Text>
-              <Text style={styles.readOnlyHint}>Read-only</Text>
-            </View>
-
-            <PrimaryButton label="Save" onPress={handleSavePersonalInfo} disabled={saving} />
-          </Card>
-
-          {/* Card 2: Training Mode */}
-          <Card style={styles.card}>
-            <Text style={styles.cardTitle}>Training Mode</Text>
-            <Text style={styles.cardSubtitle}>Choose how you train with your coach</Text>
-
-            <View style={styles.segmentedRow}>
-              {MODALITY_OPTIONS.map((opt) => {
-                const selected = modality === opt.key;
-                const isSaving = modalitySaving === opt.key;
-                return (
-                  <Pressable
-                    key={opt.key}
-                    style={({ pressed }) => [
-                      styles.pill,
-                      selected ? styles.pillSelected : styles.pillUnselected,
-                      pressed && styles.pressed,
-                    ]}
-                    onPress={() => handleModalitySelect(opt.key)}
-                    disabled={!!modalitySaving}
-                    accessibilityLabel={`Training mode ${opt.label}`}
-                    accessibilityState={{ selected }}
-                  >
-                    <Text style={styles.pillIcon}>{opt.icon}</Text>
-                    <Text style={[styles.pillText, selected ? styles.pillTextSelected : styles.pillTextUnselected]}>
-                      {opt.label}
-                    </Text>
-                    {isSaving ? (
-                      <ActivityIndicator size="small" color={selected ? colors.base : colors.primary} style={styles.pillLoader} />
-                    ) : selected ? (
-                      <Text style={styles.pillCheck}>✓</Text>
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Text style={styles.modalityHint}>
-              Current: <Text style={styles.modalityHintStrong}>{MODALITY_OPTIONS.find((o) => o.key === modality)?.label ?? 'Virtual'}</Text>
-            </Text>
-          </Card>
-
-          {/* Card: Training Schedule */}
-          <Card style={styles.card}>
-            <Text style={styles.cardTitle}>Horario de Entrenamiento</Text>
-            <Text style={styles.cardSubtitle}>Seleccioná los días y horario</Text>
-
-            <View style={styles.dayRow}>
-              {DAY_KEYS.map((day) => {
-                const selected = scheduleDays.has(day);
-                return (
-                  <Pressable
-                    key={day}
-                    style={({ pressed }) => [
-                      styles.dayChip,
-                      selected ? styles.dayChipSelected : styles.dayChipUnselected,
-                      pressed && styles.pressed,
-                    ]}
-                    onPress={() => toggleDay(day)}
-                    accessibilityLabel={DAY_FULL[day]}
-                    accessibilityState={{ selected }}
-                  >
-                    <Text style={[styles.dayChipText, selected && styles.dayChipTextSelected]}>
-                      {DAY_LABELS[day]}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Text style={styles.label}>Horario</Text>
-            <Input
-              placeholder="08:00"
-              value={scheduleTime}
-              onChangeText={setScheduleTime}
-              keyboardType="numbers-and-punctuation"
-              maxLength={5}
-              accessibilityLabel="Training time"
-            />
-
-            <PrimaryButton label="Guardar Horario" onPress={handleSaveSchedule} disabled={scheduleSaving} />
-          </Card>
-
-          {/* Card: Emergency Contact */}
-          <Card style={styles.card}>
-            <Text style={styles.cardTitle}>Contacto de Emergencia</Text>
-            <Text style={styles.cardSubtitle}>Nombre y teléfono de tu contacto</Text>
-
-            <Input
-              placeholder="Nombre — Teléfono"
-              value={emergencyContact}
-              onChangeText={setEmergencyContact}
-              autoCapitalize="words"
-              autoCorrect={false}
-              accessibilityLabel="Emergency contact"
-            />
-
-            <PrimaryButton label="Guardar Contacto" onPress={handleSaveEmergency} disabled={emergencySaving} />
-          </Card>
-
-          {/* Card 3: Membership / Plan */}
-          <Card style={styles.card}>
-            <Text style={styles.cardTitle}>Membership</Text>
-            <Text style={styles.cardSubtitle}>Your current plan</Text>
-            {profileLoading ? (
-              <ActivityIndicator color={colors.primary} style={styles.membershipLoader} />
-            ) : profile ? (
-              <View style={styles.membershipContent}>
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Plan</Text>
-                  <Text style={styles.infoValue}>{profile.plan?.name || 'No plan'}</Text>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Sport</Text>
-                  <Text style={styles.infoValue}>{profile.sport || '—'}</Text>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Schedule</Text>
-                  <Text style={styles.infoValue}>
-                    {(() => {
-                      const days = profile.schedule_days ?? profile.schedule?.days ?? '';
-                      const time = profile.schedule_time ?? profile.schedule?.time ?? '';
-                      if (!days && !time) return '—';
-                      // Expand day keys to full names
-                      const expanded = days.split(',').map((d: string) => {
-                        const key = d.trim().toLowerCase();
-                        return DAY_FULL[key] ?? d.trim();
-                      }).filter(Boolean).join(', ');
-                      return `${expanded}${time ? ' · ' + time : ''}`;
-                    })()}
-                  </Text>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Emergency</Text>
-                  <Text style={styles.infoValue}>{profile.emergency_contact || '—'}</Text>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Readiness</Text>
-                  <Text style={[styles.infoValue, { color: colors.primary }]}>
-                    {profile.readiness?.score ?? '—'}
-                  </Text>
-                </View>
-              </View>
-            ) : (
-              <Text style={styles.emptyText}>No membership information available</Text>
-            )}
-          </Card>
-
-          {/* Card 4: Actions */}
-          <Card style={styles.card}>
-            <Text style={styles.cardTitle}>Actions</Text>
+          {/* Menu list: single Card with list items */}
+          <Card style={styles.menuCard}>
             <Pressable
-              style={({ pressed }) => [styles.signOutButton, pressed && styles.pressed]}
-              onPress={handleSignOut}
-              accessibilityLabel="Sign out of your account"
+              style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+              onPress={() => Alert.alert('Profile', 'Personal Info section below')}
               accessibilityRole="button"
+              accessibilityLabel="Profile"
             >
-              <Text style={styles.signOutText}>Sign Out</Text>
+              <View style={styles.menuIconCircle}>
+                <Text style={styles.menuIconText}>👤</Text>
+              </View>
+              <Text style={styles.menuLabel}>Profile</Text>
+              <Text style={styles.menuChevron}>›</Text>
+            </Pressable>
+            <View style={styles.menuSeparator} />
+            <Pressable
+              style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+              onPress={openStore}
+              accessibilityRole="button"
+              accessibilityLabel="Favorite"
+            >
+              <View style={styles.menuIconCircle}>
+                <Text style={styles.menuIconText}>⭐</Text>
+              </View>
+              <Text style={styles.menuLabel}>Favorite</Text>
+              <Text style={styles.menuChevron}>›</Text>
+            </Pressable>
+            <View style={styles.menuSeparator} />
+            <Pressable
+              style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+              onPress={handlePrivacyPolicy}
+              accessibilityRole="button"
+              accessibilityLabel="Privacy Policy"
+            >
+              <View style={styles.menuIconCircle}>
+                <Text style={styles.menuIconText}>🔒</Text>
+              </View>
+              <Text style={styles.menuLabel}>Privacy Policy</Text>
+              <Text style={styles.menuChevron}>›</Text>
+            </Pressable>
+            <View style={styles.menuSeparator} />
+            <Pressable
+              style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+              onPress={() => Alert.alert('Settings', 'Coming soon')}
+              accessibilityRole="button"
+              accessibilityLabel="Settings"
+            >
+              <View style={styles.menuIconCircle}>
+                <Text style={styles.menuIconText}>⚙️</Text>
+              </View>
+              <Text style={styles.menuLabel}>Settings</Text>
+              <Text style={styles.menuChevron}>›</Text>
+            </Pressable>
+            <View style={styles.menuSeparator} />
+            <Pressable
+              style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+              onPress={() => Alert.alert('Help', 'Coming soon')}
+              accessibilityRole="button"
+              accessibilityLabel="Help"
+            >
+              <View style={styles.menuIconCircle}>
+                <Text style={styles.menuIconText}>💬</Text>
+              </View>
+              <Text style={styles.menuLabel}>Help</Text>
+              <Text style={styles.menuChevron}>›</Text>
+            </Pressable>
+            <View style={styles.menuSeparator} />
+            <Pressable
+              style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
+              onPress={handleSignOut}
+              accessibilityRole="button"
+              accessibilityLabel="Logout"
+            >
+              <View style={styles.menuIconCircle}>
+                <Text style={styles.menuIconText}>🚪</Text>
+              </View>
+              <Text style={styles.menuLabel}>Logout</Text>
+              <Text style={styles.menuChevron}>›</Text>
             </Pressable>
           </Card>
+
+          {/* Existing functional cards — preserved below menu list */}
+          <View style={styles.existingCardsWrap}>
+            {/* Entry cards: Membership / Store / Import */}
+            <Card style={styles.entryCard}>
+              <MembershipIcon size={24} color={colors.primary} />
+              <View style={styles.entryText}>
+                <Text style={styles.entryTitle}>Membership</Text>
+                <Text style={styles.entrySub}>Manage your plan, payments and status</Text>
+              </View>
+              <Pressable accessibilityRole="button" accessibilityLabel="Open membership" onPress={openMembership} style={styles.entryCta}>
+                <Text style={styles.entryCtaText}>Open</Text>
+              </Pressable>
+            </Card>
+            <Card style={styles.entryCard}>
+              <StoreIcon size={24} color={colors.primary} />
+              <View style={styles.entryText}>
+                <Text style={styles.entryTitle}>Store</Text>
+                <Text style={styles.entrySub}>Browse coach-curated gear</Text>
+              </View>
+              <Pressable accessibilityRole="button" accessibilityLabel="Open store" onPress={openStore} style={styles.entryCta}>
+                <Text style={styles.entryCtaText}>Open</Text>
+              </Pressable>
+            </Card>
+            <Card style={styles.entryCard}>
+              <BarbellIcon size={24} color={colors.primary} />
+              <View style={styles.entryText}>
+                <Text style={styles.entryTitle}>Importar historial</Text>
+                <Text style={styles.entrySub}>Traé tus entrenamientos de Strong, Hevy o FitNotes</Text>
+              </View>
+              <Pressable accessibilityRole="button" accessibilityLabel="Open history import" onPress={openImport} style={styles.entryCta}>
+                <Text style={styles.entryCtaText}>Open</Text>
+              </Pressable>
+            </Card>
+
+            {/* Card 1: Personal Info */}
+            <Card style={styles.card}>
+              <Text style={styles.cardTitle}>Personal Info</Text>
+              <Text style={styles.cardSubtitle}>Update your personal details</Text>
+
+              <Text style={styles.label}>First Name</Text>
+              <Input
+                placeholder="John"
+                value={firstName}
+                onChangeText={setFirstName}
+                autoCapitalize="words"
+                autoCorrect={false}
+                accessibilityLabel="First name"
+                returnKeyType="next"
+              />
+
+              <Text style={styles.label}>Last Name</Text>
+              <Input
+                placeholder="Doe"
+                value={lastName}
+                onChangeText={setLastName}
+                autoCapitalize="words"
+                autoCorrect={false}
+                accessibilityLabel="Last name"
+                returnKeyType="next"
+              />
+
+              <Text style={styles.label}>Email</Text>
+              <View style={styles.readOnlyWrap}>
+                <Text style={styles.readOnlyText} numberOfLines={1}>
+                  {email || '—'}
+                </Text>
+                <Text style={styles.readOnlyHint}>Read-only</Text>
+              </View>
+
+              <PrimaryButton label="Save" onPress={handleSavePersonalInfo} disabled={saving} />
+            </Card>
+
+            {/* Card 2: Training Mode */}
+            <Card style={styles.card}>
+              <Text style={styles.cardTitle}>Training Mode</Text>
+              <Text style={styles.cardSubtitle}>Choose how you train with your coach</Text>
+
+              <View style={styles.segmentedRow}>
+                {MODALITY_OPTIONS.map((opt) => {
+                  const selected = modality === opt.key;
+                  const isSaving = modalitySaving === opt.key;
+                  return (
+                    <Pressable
+                      key={opt.key}
+                      style={({ pressed }) => [
+                        styles.pill,
+                        selected ? styles.pillSelected : styles.pillUnselected,
+                        pressed && styles.pressed,
+                      ]}
+                      onPress={() => handleModalitySelect(opt.key)}
+                      disabled={!!modalitySaving}
+                      accessibilityLabel={`Training mode ${opt.label}`}
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={styles.pillIcon}>{opt.icon}</Text>
+                      <Text style={[styles.pillText, selected ? styles.pillTextSelected : styles.pillTextUnselected]}>
+                        {opt.label}
+                      </Text>
+                      {isSaving ? (
+                        <ActivityIndicator size="small" color={selected ? colors.base : colors.primary} style={styles.pillLoader} />
+                      ) : selected ? (
+                        <Text style={styles.pillCheck}>✓</Text>
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Text style={styles.modalityHint}>
+                Current: <Text style={styles.modalityHintStrong}>{MODALITY_OPTIONS.find((o) => o.key === modality)?.label ?? 'Virtual'}</Text>
+              </Text>
+            </Card>
+
+            {/* Card: Training Schedule */}
+            <Card style={styles.card}>
+              <Text style={styles.cardTitle}>Horario de Entrenamiento</Text>
+              <Text style={styles.cardSubtitle}>Seleccioná los días y horario</Text>
+
+              <View style={styles.dayRow}>
+                {DAY_KEYS.map((day) => {
+                  const selected = scheduleDays.has(day);
+                  return (
+                    <Pressable
+                      key={day}
+                      style={({ pressed }) => [
+                        styles.dayChip,
+                        selected ? styles.dayChipSelected : styles.dayChipUnselected,
+                        pressed && styles.pressed,
+                      ]}
+                      onPress={() => toggleDay(day)}
+                      accessibilityLabel={DAY_FULL[day]}
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.dayChipText, selected && styles.dayChipTextSelected]}>
+                        {DAY_LABELS[day]}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Text style={styles.label}>Horario</Text>
+              <Input
+                placeholder="08:00"
+                value={scheduleTime}
+                onChangeText={setScheduleTime}
+                keyboardType="numbers-and-punctuation"
+                maxLength={5}
+                accessibilityLabel="Training time"
+              />
+
+              <PrimaryButton label="Guardar Horario" onPress={handleSaveSchedule} disabled={scheduleSaving} />
+            </Card>
+
+            {/* Card: Emergency Contact */}
+            <Card style={styles.card}>
+              <Text style={styles.cardTitle}>Contacto de Emergencia</Text>
+              <Text style={styles.cardSubtitle}>Nombre y teléfono de tu contacto</Text>
+
+              <Input
+                placeholder="Nombre — Teléfono"
+                value={emergencyContact}
+                onChangeText={setEmergencyContact}
+                autoCapitalize="words"
+                autoCorrect={false}
+                accessibilityLabel="Emergency contact"
+              />
+
+              <PrimaryButton label="Guardar Contacto" onPress={handleSaveEmergency} disabled={emergencySaving} />
+            </Card>
+
+            {/* Card 3: Membership / Plan */}
+            <Card style={styles.card}>
+              <Text style={styles.cardTitle}>Membership</Text>
+              <Text style={styles.cardSubtitle}>Your current plan</Text>
+              {profileLoading ? (
+                <ActivityIndicator color={colors.primary} style={styles.membershipLoader} />
+              ) : profile ? (
+                <View style={styles.membershipContent}>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Plan</Text>
+                    <Text style={styles.infoValue}>{profile.plan?.name || 'No plan'}</Text>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Sport</Text>
+                    <Text style={styles.infoValue}>{profile.sport || '—'}</Text>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Schedule</Text>
+                    <Text style={styles.infoValue}>
+                      {(() => {
+                        const days = profile.schedule_days ?? profile.schedule?.days ?? '';
+                        const time = profile.schedule_time ?? profile.schedule?.time ?? '';
+                        if (!days && !time) return '—';
+                        const expanded = days.split(',').map((d: string) => {
+                          const key = d.trim().toLowerCase();
+                          return DAY_FULL[key] ?? d.trim();
+                        }).filter(Boolean).join(', ');
+                        return `${expanded}${time ? ' · ' + time : ''}`;
+                      })()}
+                    </Text>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Emergency</Text>
+                    <Text style={styles.infoValue}>{profile.emergency_contact || '—'}</Text>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Readiness</Text>
+                    <Text style={[styles.infoValue, { color: colors.primary }]}>
+                      {profile.readiness?.score ?? '—'}
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <Text style={styles.emptyText}>No membership information available</Text>
+              )}
+            </Card>
+
+            {/* Card 4: Actions */}
+            <Card style={styles.card}>
+              <Text style={styles.cardTitle}>Actions</Text>
+              <Pressable
+                style={({ pressed }) => [styles.signOutButton, pressed && styles.pressed]}
+                onPress={handleSignOut}
+                accessibilityLabel="Sign out of your account"
+                accessibilityRole="button"
+              >
+                <Text style={styles.signOutText}>Sign Out</Text>
+              </Pressable>
+            </Card>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -516,31 +652,70 @@ export function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.base },
   flex: { flex: 1 },
-  scrollContent: { padding: spacing.md, paddingTop: spacing.lg, gap: spacing.md, paddingBottom: 100 },
-  hero: {
+  scrollContent: { paddingBottom: 100 },
+  // New FitBody header — MR palette
+  header: {
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl + spacing.md,
+    paddingHorizontal: spacing.lg,
+    minHeight: 220,
+  },
+  headerTitle: { ...typography.title, color: '#FFFFFF', textAlign: 'center', marginBottom: spacing.md },
+  avatarLarge: {
+    width: 80,
+    height: 80,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  avatarLargeText: { ...typography.title, color: colors.text, fontSize: 28 },
+  headerName: { ...typography.title, color: '#FFFFFF', marginTop: spacing.md, textAlign: 'center' },
+  headerEmail: { ...typography.caption, color: 'rgba(255,255,255,0.8)', marginTop: 2, textAlign: 'center' },
+  headerBirthday: { ...typography.caption, color: 'rgba(255,255,255,0.8)', marginTop: 2, textAlign: 'center' },
+  // Stats floating overlap
+  statsCard: {
+    flexDirection: 'row',
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    marginHorizontal: spacing.md,
+    marginTop: -28,
+    overflow: 'hidden',
+    alignItems: 'stretch',
+  },
+  statsCol: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.md, gap: 2 },
+  statsValue: { ...typography.bodyStrong, color: '#FFFFFF', textAlign: 'center', fontSize: 14 },
+  statsLabel: { ...typography.caption, color: 'rgba(255,255,255,0.85)', textAlign: 'center', fontSize: 11 },
+  statsDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: spacing.sm },
+  // Menu list card
+  menuCard: { padding: 0, marginHorizontal: spacing.md, marginTop: spacing.md, overflow: 'hidden' },
+  menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    height: 56,
   },
-  avatarLarge: {
-    width: 72,
-    height: 72,
+  menuIconCircle: {
+    width: 32,
+    height: 32,
     borderRadius: radius.full,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarLargeText: { ...typography.title, color: colors.base },
-  heroText: { flex: 1, gap: 2 },
-  heroNameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  heroName: { ...typography.title, color: colors.text, flexShrink: 1 },
-  heroEditIcon: { fontSize: 16, color: colors.textSecondary },
-  heroEmail: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  menuIconText: { fontSize: 14, color: '#FFFFFF', textAlign: 'center' },
+  menuLabel: { flex: 1, ...typography.bodyStrong, color: colors.text },
+  menuChevron: { fontSize: 20, color: colors.primary, fontWeight: '600' },
+  menuSeparator: { height: 1, backgroundColor: colors.border, marginLeft: 56 + spacing.md },
+  // Existing functional cards wrap
+  existingCardsWrap: { padding: spacing.md, gap: spacing.md, marginTop: spacing.md },
   card: { padding: spacing.lg },
   entryCard: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   entryText: { flex: 1, gap: 2 },
