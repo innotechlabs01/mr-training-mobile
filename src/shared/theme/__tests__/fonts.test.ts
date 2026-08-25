@@ -8,12 +8,12 @@ import { fontFamilies } from '../tokens';
 jest.mock('expo-font', () => ({
   useFonts: jest.fn(() => [true]),
 }));
-jest.mock('@expo-google-fonts/archivo', () => ({
+jest.mock('@expo-google-fonts/montserrat', () => ({
   useFonts: jest.fn(() => [true]),
-  Archivo_600SemiBold: 'Archivo_600SemiBold',
-  Archivo_700Bold: 'Archivo_700Bold',
-  Archivo_800ExtraBold: 'Archivo_800ExtraBold',
-  Archivo_900Black: 'Archivo_900Black',
+  Montserrat_600SemiBold: 'Montserrat_600SemiBold',
+  Montserrat_700Bold: 'Montserrat_700Bold',
+  Montserrat_800ExtraBold: 'Montserrat_800ExtraBold',
+  Montserrat_900Black: 'Montserrat_900Black',
 }));
 jest.mock('@expo-google-fonts/inter', () => ({
   useFonts: jest.fn(() => [true]),
@@ -24,7 +24,7 @@ jest.mock('@expo-google-fonts/inter', () => ({
   Inter_800ExtraBold: 'Inter_800ExtraBold',
 }));
 
-const archivoMock = jest.requireMock('@expo-google-fonts/archivo') as {
+const montserratMock = jest.requireMock('@expo-google-fonts/montserrat') as {
   useFonts: jest.Mock;
 };
 const interMock = jest.requireMock('@expo-google-fonts/inter') as {
@@ -33,7 +33,7 @@ const interMock = jest.requireMock('@expo-google-fonts/inter') as {
 
 describe('fonts', () => {
   beforeEach(() => {
-    archivoMock.useFonts.mockReturnValue([true]);
+    montserratMock.useFonts.mockReturnValue([true]);
     interMock.useFonts.mockReturnValue([true]);
   });
 
@@ -41,9 +41,9 @@ describe('fonts', () => {
     // Real package exports are numeric asset ids, not strings — bind each
     // family name to the exact resource exported under that name instead of
     // comparing against the name itself.
-    const archivo = jest.requireMock('@expo-google-fonts/archivo') as Record<string, unknown>;
+    const montserrat = jest.requireMock('@expo-google-fonts/montserrat') as Record<string, unknown>;
     const inter = jest.requireMock('@expo-google-fonts/inter') as Record<string, unknown>;
-    const resources = { ...archivo, ...inter };
+    const resources = { ...montserrat, ...inter };
 
     for (const family of Object.values(fontFamilies)) {
       expect(FONT_FAMILIES_TO_LOAD).toHaveProperty(family);
@@ -52,7 +52,7 @@ describe('fonts', () => {
   });
 
   it('returns false while fonts load', () => {
-    archivoMock.useFonts.mockReturnValue([false]);
+    montserratMock.useFonts.mockReturnValue([false]);
 
     expect(useAppFonts()).toBe(false);
 
@@ -64,8 +64,8 @@ describe('fonts', () => {
   it('returns true once every font resolves', () => {
     expect(useAppFonts()).toBe(true);
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(archivoMock.useFonts).toHaveBeenCalledWith(
-      expect.objectContaining({ Archivo_900Black: 'Archivo_900Black' }),
+    expect(montserratMock.useFonts).toHaveBeenCalledWith(
+      expect.objectContaining({ Montserrat_900Black: 'Montserrat_900Black' }),
     );
   });
 });

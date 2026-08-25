@@ -44,18 +44,6 @@ function getFormattedDate(): string {
   return now.toLocaleDateString('en-US', options);
 }
 
-function getScoreColor(score: number): string {
-  if (score >= 80) return colors.success;
-  if (score >= 60) return colors.warning;
-  return colors.error;
-}
-
-function getScoreStatus(score: number): string {
-  if (score >= 80) return 'Ready to Train';
-  if (score >= 60) return 'Moderate';
-  return 'Recovery Needed';
-}
-
 function toneForStatus(status: string): BadgeTone {
   const s = status.toLowerCase();
   if (s === 'completed' || s === 'confirmed' || s === 'active') return 'success';
@@ -77,9 +65,6 @@ export function TodayScreen() {
     staleTime: 2 * 60 * 1000,
   });
 
-  const readiness = data?.readiness;
-  const score = readiness?.score ?? 0;
-  const scoreColor = getScoreColor(score);
   const hasData = !!data;
   const hasSessions = hasData && (data.todaySessions.length > 0 || data.activeWorkouts.length > 0);
 
@@ -101,7 +86,7 @@ export function TodayScreen() {
         </Text>
         <Text style={styles.date}>{getFormattedDate()}</Text>
 
-        {/* Real-time summary from wearable + training data */}
+        {/* Single readiness source — AthleteTodaySummary already computes from health/metrics */}
         <AthleteTodaySummary athleteId={user?.id ?? ''} />
 
         {/* Alert banners */}
@@ -130,36 +115,6 @@ export function TodayScreen() {
           <EmptyState variant="empty" message="No data yet" />
         ) : (
           <>
-            {/* Hero readiness card */}
-            <Card style={styles.heroCard}>
-              <View style={[styles.scoreCircle, { borderColor: scoreColor }]}>
-                <Text style={[styles.scoreValue, { color: scoreColor }]}>{readiness?.score ?? '—'}</Text>
-              </View>
-              <View style={styles.heroMeta}>
-                <Text style={styles.readinessLabel}>READINESS</Text>
-                <Text style={[styles.readinessStatus, { color: scoreColor }]}>{getScoreStatus(score)}</Text>
-                <Text style={styles.heroSubtext}>Based on sleep, HRV and recovery</Text>
-              </View>
-            </Card>
-
-            {/* Metrics strip */}
-            <Card style={styles.metricsStrip}>
-              <View style={styles.metricCol}>
-                <Text style={styles.metricValue}>{readiness?.sleep != null ? `${readiness.sleep}h` : '—'}</Text>
-                <Text style={styles.metricLabel}>Sleep</Text>
-              </View>
-              <View style={styles.verticalDivider} />
-              <View style={styles.metricCol}>
-                <Text style={styles.metricValue}>{readiness?.hrv != null ? `${readiness.hrv}` : '—'}</Text>
-                <Text style={styles.metricLabel}>HRV</Text>
-              </View>
-              <View style={styles.verticalDivider} />
-              <View style={styles.metricCol}>
-                <Text style={styles.metricValue}>{readiness?.recovery != null ? `${readiness.recovery}%` : '—'}</Text>
-                <Text style={styles.metricLabel}>Recovery</Text>
-              </View>
-            </Card>
-
             {/* Active workouts */}
             {data.activeWorkouts.length > 0 && (
               <View style={styles.section}>
@@ -229,34 +184,12 @@ export function TodayScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.base },
-  content: { padding: spacing.lg, paddingBottom: 100 },
+  content: { padding: spacing.lg, paddingBottom: 120, gap: spacing.lg },
   eyebrow: { ...typography.label, color: colors.primary, marginBottom: spacing.sm },
   greeting: { ...typography.display, color: colors.text },
-  date: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.lg },
+  date: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
 
-  heroCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
-  scoreCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.full,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-  scoreValue: { fontSize: 32, fontWeight: '800', lineHeight: 32 },
-  heroMeta: { flex: 1, gap: spacing.xs },
-  readinessLabel: { ...typography.label, color: colors.textSecondary },
-  readinessStatus: { fontSize: 15, fontWeight: '700', lineHeight: 20 },
-  heroSubtext: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
-
-  metricsStrip: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg },
-  metricCol: { flex: 1, alignItems: 'center', gap: spacing.xs },
-  metricValue: { fontSize: 17, fontWeight: '700', color: colors.primary },
-  metricLabel: { fontSize: 11, fontWeight: '400', color: colors.textSecondary },
-  verticalDivider: { width: 1, height: 28, backgroundColor: colors.border },
-
-  section: { marginBottom: spacing.lg },
+  section: { marginBottom: spacing.xl },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   sectionEyebrow: { ...typography.label, color: colors.textSecondary },
 
@@ -264,7 +197,8 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     paddingLeft: spacing.lg,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+    borderRadius: radius.lg,
   },
   pressed: { opacity: 0.8 },
   cardAccent: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: colors.primary },
@@ -274,7 +208,7 @@ const styles = StyleSheet.create({
 
   progressCaption: { fontSize: 11, fontWeight: '400', color: colors.textSecondary, marginTop: spacing.sm },
 
-  alertCard: { gap: 0, padding: 0 },
+  alertCard: { padding: 0, overflow: 'hidden', borderRadius: radius.lg, marginBottom: spacing.md },
   alertRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, padding: spacing.md },
   alertBorder: { borderTopWidth: 1, borderTopColor: colors.border },
   alertIcon: { fontSize: 18, marginTop: 2 },

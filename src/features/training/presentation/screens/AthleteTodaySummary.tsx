@@ -48,7 +48,7 @@ function latestVsBaseline(rows: HealthMetric[]): { latest: number; deltaPct: num
 
 function DeltaBadge({ delta }: { delta: number | null }) {
   if (delta == null) return null;
-  const color = delta >= 0 ? '#22c55e' : '#ef4444';
+  const color = delta >= 0 ? colors.success : colors.error;
   return (
     <Text style={[styles.delta, { color }]}>
       {delta >= 0 ? '+' : ''}{delta}%
@@ -120,7 +120,7 @@ export function AthleteTodaySummary({ athleteId }: { athleteId: string }) {
       {/* Readiness */}
       {readinessScore != null && (
         <View style={styles.readinessRow}>
-          <View style={[styles.scoreDot, { backgroundColor: readinessScore >= 80 ? '#22c55e' : readinessScore >= 60 ? '#eab308' : '#ef4444' }]} />
+          <View style={[styles.scoreDot, { backgroundColor: readinessScore >= 80 ? colors.success : readinessScore >= 60 ? colors.warning : colors.error }]} />
           <View style={{ flex: 1 }}>
             <Text style={styles.readinessLabel}>Tu readiness hoy</Text>
             <Text style={styles.readinessValue}>{readinessScore}/100</Text>
@@ -171,7 +171,7 @@ export function AthleteTodaySummary({ athleteId }: { athleteId: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.md, gap: spacing.sm },
+  container: { padding: spacing.md, gap: spacing.md, marginBottom: spacing.md },
   readinessRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   scoreDot: { width: 10, height: 10, borderRadius: 5 },
   readinessLabel: { ...typography.caption, color: colors.textSecondary },
@@ -183,10 +183,10 @@ const styles = StyleSheet.create({
   trendValue: { ...typography.bodyStrong, color: colors.text, fontSize: 15 },
   delta: { fontSize: 11, fontWeight: '600' },
   recommendation: {
-    backgroundColor: 'rgba(200,255,0,0.06)',
+    backgroundColor: `${colors.primary}14`,
     borderRadius: 8,
     padding: spacing.sm,
-    marginTop: spacing.xs,
+    marginTop: spacing.md,
   },
   recommendationText: { ...typography.caption, color: colors.primary, lineHeight: 18 },
 });

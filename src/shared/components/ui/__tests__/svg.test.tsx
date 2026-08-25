@@ -6,7 +6,7 @@ describe('react-native-svg', () => {
   it('renders an svg tree without crashing', () => {
     const { UNSAFE_getByType } = render(
       <Svg width={24} height={24} viewBox="0 0 24 24">
-        <Circle cx={12} cy={12} r={10} fill="#C8FF00" />
+        <Circle cx={12} cy={12} r={10} fill="#FF5C00" />
       </Svg>,
     );
     expect(UNSAFE_getByType(Circle)).toBeTruthy();

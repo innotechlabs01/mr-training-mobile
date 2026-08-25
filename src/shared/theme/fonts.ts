@@ -1,10 +1,10 @@
 import {
   useFonts,
-  Archivo_600SemiBold,
-  Archivo_700Bold,
-  Archivo_800ExtraBold,
-  Archivo_900Black,
-} from '@expo-google-fonts/archivo';
+  Montserrat_600SemiBold,
+  Montserrat_700Bold,
+  Montserrat_800ExtraBold,
+  Montserrat_900Black,
+} from '@expo-google-fonts/montserrat';
 import {
   useFonts as useInterFonts,
   Inter_400Regular,
@@ -16,10 +16,10 @@ import {
 
 /** Maps every PostScript family name (as used in tokens.fontFamilies) to its font resource. */
 export const FONT_FAMILIES_TO_LOAD = {
-  Archivo_600SemiBold,
-  Archivo_700Bold,
-  Archivo_800ExtraBold,
-  Archivo_900Black,
+  Montserrat_600SemiBold,
+  Montserrat_700Bold,
+  Montserrat_800ExtraBold,
+  Montserrat_900Black,
   Inter_400Regular,
   Inter_500Medium,
   Inter_600SemiBold,
@@ -32,11 +32,11 @@ export const FONT_FAMILIES_TO_LOAD = {
  * see FontGate in src/navigation/App.tsx.
  */
 export function useAppFonts(): boolean {
-  const [archivoLoaded, archivoError] = useFonts({
-    Archivo_600SemiBold,
-    Archivo_700Bold,
-    Archivo_800ExtraBold,
-    Archivo_900Black,
+  const [montserratLoaded, montserratError] = useFonts({
+    Montserrat_600SemiBold,
+    Montserrat_700Bold,
+    Montserrat_800ExtraBold,
+    Montserrat_900Black,
   });
   const [interLoaded, interError] = useInterFonts({
     Inter_400Regular,
@@ -45,7 +45,7 @@ export function useAppFonts(): boolean {
     Inter_700Bold,
     Inter_800ExtraBold,
   });
-  if (archivoError) console.error('[fonts] Archivo load failed', archivoError);
+  if (montserratError) console.error('[fonts] Montserrat load failed', montserratError);
   if (interError) console.error('[fonts] Inter load failed', interError);
-  return archivoLoaded === true && interLoaded === true;
+  return montserratLoaded === true && interLoaded === true;
 }

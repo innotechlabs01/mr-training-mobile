@@ -1,27 +1,28 @@
 import { colors, typography, spacing, radius, shadows, fontFamilies } from '../tokens';
 
 describe('tokens', () => {
-  it('exposes the Volt color system', () => {
-    expect(colors.base).toBe('#111214');
-    expect(colors.surface).toBe('#191B1E');
-    expect(colors.surfaceRaised).toBe('#202329');
-    expect(colors.border).toBe('#26292E');
-    expect(colors.primary).toBe('#C8FF00');
-    expect(colors.primaryPressed).toBe('#A8D900');
-    expect(colors.text).toBe('#F5F5F7');
-    expect(colors.textSecondary).toBe('#9CA3AF');
+  it('exposes the Apex Performance color system', () => {
+    expect(colors.base).toBe('#0A0A0B');
+    expect(colors.surface).toBe('#131315');
+    expect(colors.surfaceRaised).toBe('#1E1E20');
+    expect(colors.border).toBe('#2C2C2E');
+    expect(colors.primary).toBe('#FF5C00');
+    expect(colors.primaryPressed).toBe('#CC4A00');
+    expect(colors.secondary).toBe('#007AFF');
+    expect(colors.text).toBe('#FFFFFF');
+    expect(colors.textSecondary).toBe('#8E8E93');
     expect(colors.success).toBe('#34D399');
     expect(colors.warning).toBe('#FBBF24');
-    expect(colors.error).toBe('#FF5A5F');
+    expect(colors.error).toBe('#FFB4AB');
   });
 
   it('exposes the typography scale', () => {
     expect(typography.display.fontSize).toBeGreaterThanOrEqual(40);
     expect(typography.display.fontSize).toBeLessThanOrEqual(48);
     expect(typography.title.fontSize).toBe(20);
-    expect(typography.body.fontSize).toBe(15);
-    expect(typography.label.fontSize).toBe(11);
-    expect(typography.label.letterSpacing).toBe(2);
+    expect(typography.body.fontSize).toBe(16);
+    expect(typography.label.fontSize).toBe(14);
+    expect(typography.label.letterSpacing).toBe(0.05);
   });
 
   it('references only fonts loaded by fonts.ts', () => {
@@ -39,6 +40,6 @@ describe('tokens', () => {
 
   it('exposes spacing and radius scales', () => {
     expect(spacing).toMatchObject({ xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48, xxxl: 64 });
-    expect(radius).toMatchObject({ sm: 8, md: 12, lg: 16, xl: 24, full: 9999 });
+    expect(radius).toMatchObject({ sm: 2, md: 4, lg: 8, xl: 12, full: 9999 });
   });
 });

@@ -1,27 +1,32 @@
 /**
- * Single source of truth for the MR Training redesign (spec 2026-08-21 §3).
- * Dark-first. One accent: Volt. Surfaces layer by tonal difference, not borders.
+ * Apex Performance Design System — mobile tokens.
+ * Dark-first. Electric Orange primary, Velocity Blue secondary.
+ * Montserrat for headlines, Inter for body.
  */
 
 export const colors = {
-  base: '#111214', // app background, deepest layer
-  surface: '#191B1E', // cards, main surfaces
-  surfaceRaised: '#202329', // elevated elements, inputs, chips
-  border: '#26292E', // hairlines, separators
-  primary: '#C8FF00', // Volt — single accent, one primary CTA per screen
-  primaryPressed: '#A8D900', // Volt pressed state
-  text: '#F5F5F7', // primary text (WCAG AA on base/surface/surfaceRaised)
-  textSecondary: '#9CA3AF', // secondary text, captions
+  base: '#0A0A0B', // app background, deepest layer (midnight)
+  surface: '#131315', // cards, main surfaces
+  surfaceRaised: '#1E1E20', // elevated elements, inputs, chips
+  border: '#2C2C2E', // hairlines, separators
+  primary: '#FF5C00', // Electric Orange — high-priority CTA, progress, active states
+  primaryPressed: '#CC4A00', // Orange pressed state
+  primaryContainer: '#FF5C00', // filled containers
+  secondary: '#007AFF', // Velocity Blue — data viz, secondary interactive, community
+  secondaryPressed: '#0062CC', // Blue pressed state
+  text: '#FFFFFF', // primary text (pure white, WCAG AA on dark)
+  textSecondary: '#8E8E93', // muted gray — captions, secondary text
   success: '#34D399',
   warning: '#FBBF24',
-  error: '#FF5A5F',
+  error: '#FFB4AB',
+  errorContainer: '#93000A',
 } as const;
 
 export const fontFamilies = {
-  displayBlack: 'Archivo_900Black',
-  display: 'Archivo_800ExtraBold',
-  displayBold: 'Archivo_700Bold',
-  heading: 'Archivo_600SemiBold',
+  displayBlack: 'Montserrat_900Black',
+  display: 'Montserrat_800ExtraBold',
+  displayBold: 'Montserrat_700Bold',
+  heading: 'Montserrat_600SemiBold',
   body: 'Inter_400Regular',
   bodyMedium: 'Inter_500Medium',
   bodySemiBold: 'Inter_600SemiBold',
@@ -30,19 +35,23 @@ export const fontFamilies = {
 } as const;
 
 export const typography = {
-  displayXL: { fontFamily: fontFamilies.display, fontSize: 48, lineHeight: 52 }, // hero numerals
+  displayXL: { fontFamily: fontFamilies.display, fontSize: 48, lineHeight: 52, letterSpacing: -0.02 },
   display: { fontFamily: fontFamilies.displayBold, fontSize: 40, lineHeight: 44 },
+  headlineLG: { fontFamily: fontFamilies.displayBold, fontSize: 32, lineHeight: 38 },
+  headlineMD: { fontFamily: fontFamilies.displayBold, fontSize: 24, lineHeight: 32 },
   title: { fontFamily: fontFamilies.heading, fontSize: 20, lineHeight: 26 },
-  body: { fontFamily: fontFamilies.body, fontSize: 15, lineHeight: 20 },
-  bodyStrong: { fontFamily: fontFamilies.bodySemiBold, fontSize: 15, lineHeight: 20 },
+  bodyLG: { fontFamily: fontFamilies.body, fontSize: 18, lineHeight: 28 },
+  body: { fontFamily: fontFamilies.body, fontSize: 16, lineHeight: 24 },
+  bodyStrong: { fontFamily: fontFamilies.bodySemiBold, fontSize: 16, lineHeight: 24 },
   caption: { fontFamily: fontFamilies.bodyMedium, fontSize: 13, lineHeight: 17 },
   label: {
     fontFamily: fontFamilies.bodySemiBold,
-    fontSize: 11,
-    lineHeight: 14,
-    letterSpacing: 2,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.05,
     textTransform: 'uppercase' as const,
   },
+  statsNumber: { fontFamily: fontFamilies.displayBlack, fontSize: 48, lineHeight: 48 },
 } as const;
 
 export const spacing = {
@@ -56,10 +65,10 @@ export const spacing = {
 } as const;
 
 export const radius = {
-  sm: 8, // intentional redesign value; supersedes legacy 6
-  md: 12,
-  lg: 16,
-  xl: 24,
+  sm: 2, // 0.125rem — sharp, technical
+  md: 4, // 0.25rem — buttons, inputs
+  lg: 8, // 0.5rem — cards, containers
+  xl: 12, // 0.75rem — large cards
   full: 9999,
 } as const;
 
@@ -69,7 +78,7 @@ export const shadows = {
 } as const;
 
 export const layout = {
-  pagePadding: spacing.lg,
+  pagePadding: spacing.md,
   cardPadding: spacing.md,
   touchTarget: 48,
   headerHeight: 56,
