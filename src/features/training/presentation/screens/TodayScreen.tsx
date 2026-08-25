@@ -138,7 +138,7 @@ export function TodayScreen() {
           <View style={styles.headerRight}>
             <Pressable
               accessibilityLabel="Search"
-              onPress={() => console.log('Search pressed')}
+              onPress={() => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Search')}
               style={styles.iconButton}
             >
               <Text style={styles.iconButtonText}>🔍</Text>

@@ -16,6 +16,7 @@ import { EventDetailScreen } from '../features/events/presentation/screens/Event
 import { WorkoutDetailScreen } from '../features/training/presentation/screens/WorkoutDetailScreen';
 import { WorkoutExecutionScreen } from '../features/training/presentation/screens/WorkoutExecutionScreen';
 import { ImportHistoryScreen } from '../features/training/presentation/screens/ImportHistoryScreen';
+import { SearchScreen } from '../features/search/presentation/screens/SearchScreen';
 import { AthleteTabs } from './AthleteTabs';
 import { darkTheme } from '../shared/theme';
 
@@ -85,6 +86,7 @@ export type RootStackParamList = {
   WorkoutExecution: { sessionId: string; workoutId: string };
   EventDetail: { eventId: string };
   ImportHistory: undefined;
+  Search: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -156,6 +158,7 @@ function RootNavigator() {
           <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
           <Stack.Screen name="WorkoutExecution" component={WorkoutExecutionScreen} options={{ presentation: 'modal' }} />
           <Stack.Screen name="ImportHistory" component={ImportHistoryScreen} options={{ presentation: 'modal' }} />
+          <Stack.Screen name="Search" component={SearchScreen} />
         </>
       )}
     </Stack.Navigator>
