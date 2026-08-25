@@ -44,7 +44,7 @@ export function SplashScreen({ navigation }: Props) {
 
     const timer = setTimeout(() => {
       navigation.replace(isSignedIn ? 'AthleteTabs' : 'Welcome');
-    }, 1200);
+    }, 10000);
     return () => { clearTimeout(timer); pulse.stop(); };
   }, [fadeAnim, pulseAnim, taglineOpacity, navigation, isSignedIn]);
 
