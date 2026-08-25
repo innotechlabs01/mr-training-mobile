@@ -1,76 +1,187 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 import { useAuth } from '@clerk/clerk-expo';
 import { colors } from '../../../../shared/theme/tokens';
 
-/**
- * SplashScreen — "Elite Training Lab — Kinetic Energy"
- * Dark lab canvas, dual radial primary glows, geometric MR monogram
- * with kinetic pulse, editorial type and a short brand moment that
- * gates the session into AthleteTabs (signed-in) or Welcome.
- */
-
 type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 
 export function SplashScreen({ navigation }: Props) {
   const { isSignedIn } = useAuth();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const taglineOpacity = useRef(new Animated.Value(0)).current;
+  const { width, height } = useWindowDimensions();
+
+  const scannerAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 700,
-      useNativeDriver: true,
-    }).start();
+    const scannerLoop = Animated.loop(
+      Animated.timing(scannerAnim, {
+        toValue: 1,
+        duration: 3000,
+        useNativeDriver: false,
+      }),
+    );
+    scannerLoop.start();
 
-    Animated.timing(taglineOpacity, {
-      toValue: 1,
-      duration: 500,
-      delay: 500,
-      useNativeDriver: true,
-    }).start();
-
-    const pulse = Animated.loop(
+    const pulseLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.06, duration: 900, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
       ]),
     );
-    pulse.start();
+    pulseLoop.start();
+
+    // Staggered bounce: -0.3s / -0.15s / 0 approximated via initial delays
+    const b1 = Animated.loop(
+      Animated.sequence([
+        Animated.timing(dot1, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.timing(dot1, { toValue: 0, duration: 300, useNativeDriver: true }),
+        Animated.delay(200),
+      ]),
+    );
+    const b2 = Animated.loop(
+      Animated.sequence([
+        Animated.delay(150),
+        Animated.timing(dot2, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.timing(dot2, { toValue: 0, duration: 300, useNativeDriver: true }),
+        Animated.delay(50),
+      ]),
+    );
+    const b3 = Animated.loop(
+      Animated.sequence([
+        Animated.delay(300),
+        Animated.timing(dot3, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.timing(dot3, { toValue: 0, duration: 300, useNativeDriver: true }),
+      ]),
+    );
+    b1.start();
+    b2.start();
+    b3.start();
 
     const timer = setTimeout(() => {
       navigation.replace(isSignedIn ? 'AthleteTabs' : 'Welcome');
     }, 10000);
-    return () => { clearTimeout(timer); pulse.stop(); };
-  }, [fadeAnim, pulseAnim, taglineOpacity, navigation, isSignedIn]);
+
+    return () => {
+      clearTimeout(timer);
+      scannerLoop.stop();
+      pulseLoop.stop();
+      b1.stop();
+      b2.stop();
+      b3.stop();
+    };
+  }, [scannerAnim, pulseAnim, dot1, dot2, dot3, navigation, isSignedIn]);
+
+  const scannerTop = scannerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, height],
+  });
+
+  const pulseOpacity = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.6],
+  });
+
+  const pulseScale = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.05],
+  });
+
+  const dotTranslate = (anim: Animated.Value) =>
+    anim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, -6],
+    });
+
+  // Grid lines every 40px
+  const verticalLines = Math.ceil(width / 40);
+  const horizontalLines = Math.ceil(height / 40);
 
   return (
     <View style={styles.container}>
-      <View style={styles.glowTop} />
-      <View style={styles.glowBottom} />
+      {/* Grid texture */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        {Array.from({ length: verticalLines }).map((_, i) => (
+          <View
+            key={`v-${i}`}
+            style={[styles.gridV, { left: i * 40 }]}
+          />
+        ))}
+        {Array.from({ length: horizontalLines }).map((_, i) => (
+          <View
+            key={`h-${i}`}
+            style={[styles.gridH, { top: i * 40 }]}
+          />
+        ))}
+      </View>
 
-      <Animated.View style={[styles.centerBlock, { opacity: fadeAnim }]}>
-        <Text style={styles.eyebrow}>ELITE PERFORMANCE</Text>
+      {/* Radial gradient — primary-container/10 */}
+      <View style={styles.radialGradient} pointerEvents="none" />
 
-        <Animated.View style={[styles.logoOuter, { transform: [{ scale: pulseAnim }] }]}>
-          <View style={styles.logoInner}>
-            <Text style={styles.logoText}>MR</Text>
-          </View>
-        </Animated.View>
+      {/* Scanner line */}
+      <Animated.View
+        style={[
+          styles.scannerLine,
+          {
+            top: scannerTop,
+          },
+        ]}
+        pointerEvents="none"
+      />
 
-        <Text style={styles.brandText}>MR TRAINING</Text>
-        <View style={styles.divider} />
-        <Animated.Text style={[styles.tagline, { opacity: taglineOpacity }]}>
-          DISCIPLINA. FUERZA. LEGADO.
-        </Animated.Text>
-      </Animated.View>
+      {/* Corner accents */}
+      <View style={styles.cornerTopLeft} />
+      <View style={styles.cornerTopRight} />
+      <View style={styles.cornerBottomLeft} />
+      <View style={styles.cornerBottomRight} />
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>© 2025 MAO Coaching</Text>
+      {/* Center content */}
+      <View style={styles.centerContent}>
+        {/* Bolt icon with glow */}
+        <View style={styles.boltWrapper}>
+          <Animated.View
+            style={[
+              styles.pulseGlow,
+              {
+                opacity: pulseOpacity,
+                transform: [{ scale: pulseScale }],
+              },
+            ]}
+          />
+          <Text style={styles.boltIcon}>⚡</Text>
+        </View>
+
+        {/* Title */}
+        <Text style={styles.title}>MR TRAINING</Text>
+
+        {/* Subtitle with flanking lines */}
+        <View style={styles.subtitleRow}>
+          <View style={styles.subtitleLine} />
+          <Text style={styles.subtitle}>Elite Performance</Text>
+          <View style={styles.subtitleLine} />
+        </View>
+      </View>
+
+      {/* Loading indicator bottom-16 */}
+      <View style={styles.loadingContainer}>
+        <View style={styles.dotsRow}>
+          <Animated.View style={[styles.dot, { transform: [{ translateY: dotTranslate(dot1) }] }]} />
+          <Animated.View style={[styles.dot, { transform: [{ translateY: dotTranslate(dot2) }] }]} />
+          <Animated.View style={[styles.dot, { transform: [{ translateY: dotTranslate(dot3) }] }]} />
+        </View>
+        <Text style={styles.loadingText}>Initializing Protocol</Text>
       </View>
     </View>
   );
@@ -78,76 +189,165 @@ export function SplashScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, backgroundColor: colors.base,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  glowTop: {
-    position: 'absolute', top: -80, right: -80,
-    width: 300, height: 300, borderRadius: 150,
-    backgroundColor: `${colors.primary}1F`,
-  },
-  glowBottom: {
-    position: 'absolute', bottom: -80, left: -80,
-    width: 400, height: 400, borderRadius: 200,
-    backgroundColor: `${colors.primary}14`,
-  },
-  centerBlock: {
+    flex: 1,
+    backgroundColor: '#0e0e0e',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
   },
-  eyebrow: {
-    fontSize: 10, fontWeight: '700', color: colors.primary,
-    letterSpacing: 3, marginBottom: 24,
+  gridV: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 1,
+    backgroundColor: 'rgba(255,92,0,0.05)',
   },
-  logoOuter: {
-    width: 96, height: 96, borderRadius: 48, borderWidth: 1.5,
-    borderColor: `${colors.primary}33`, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: `${colors.primary}0D`,
+  gridH: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(255,92,0,0.05)',
   },
-  logoInner: {
-    width: 64, height: 64, borderRadius: 32, backgroundColor: colors.surface,
-    justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.border,
+  radialGradient: {
+    position: 'absolute',
+    width: 800,
+    height: 800,
+    borderRadius: 400,
+    backgroundColor: 'rgba(255,92,0,0.10)',
+    top: '50%',
+    left: '50%',
+    marginLeft: -400,
+    marginTop: -400,
+    opacity: 0.6,
   },
-  logoText: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: colors.text,
-    letterSpacing: 1.5,
-  },
-  brandText: {
-    fontSize: 34,
-    fontWeight: '900',
-    color: colors.text,
-    letterSpacing: 5,
-    marginTop: 20,
-  },
-  divider: {
-    width: 40,
+  scannerLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     height: 2,
-    backgroundColor: colors.primary,
-    marginVertical: 16,
-    opacity: 0.8,
-    borderRadius: 1,
+    backgroundColor: '#ff5c00',
+    opacity: 0.2,
   },
-  tagline: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    letterSpacing: 2.5,
+  cornerTopLeft: {
+    position: 'absolute',
+    top: 24,
+    left: 24,
+    width: 64,
+    height: 64,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: 'rgba(255,92,0,0.2)',
+  },
+  cornerTopRight: {
+    position: 'absolute',
+    top: 24,
+    right: 24,
+    width: 64,
+    height: 64,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderColor: 'rgba(255,92,0,0.2)',
+  },
+  cornerBottomLeft: {
+    position: 'absolute',
+    bottom: 24,
+    left: 24,
+    width: 64,
+    height: 64,
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: 'rgba(255,92,0,0.2)',
+  },
+  cornerBottomRight: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 64,
+    height: 64,
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderColor: 'rgba(255,92,0,0.2)',
+  },
+  centerContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boltWrapper: {
+    width: 160,
+    height: 160,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  pulseGlow: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255,92,0,0.2)',
+  },
+  boltIcon: {
+    fontSize: 120,
+    color: '#ff5c00',
+    textShadowColor: 'rgba(255,92,0,0.4)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 15,
+    includeFontPadding: false,
     textAlign: 'center',
   },
-  footer: {
+  title: {
+    fontFamily: 'Montserrat_900Black',
+    fontStyle: 'italic',
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#ff5c00',
+    letterSpacing: 6,
+    textAlign: 'center',
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 12,
+  },
+  subtitleLine: {
+    width: 32,
+    height: 1,
+    backgroundColor: 'rgba(91,65,55,0.4)',
+  },
+  subtitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#e4beb1',
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+  },
+  loadingContainer: {
     position: 'absolute',
-    bottom: 40,
+    bottom: 64,
     left: 0,
     right: 0,
     alignItems: 'center',
+    gap: 12,
   },
-  footerText: {
-    fontSize: 10,
+  dotsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#ff5c00',
+  },
+  loadingText: {
+    fontSize: 12,
     fontWeight: '400',
-    color: colors.textSecondary,
-    opacity: 0.4,
-    letterSpacing: 0.5,
+    color: '#ab897d',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    opacity: 0.6,
+    marginTop: 8,
   },
 });
