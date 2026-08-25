@@ -145,7 +145,7 @@ export function TodayScreen() {
             </Pressable>
             <Pressable
               accessibilityLabel="Notifications"
-              onPress={() => console.log('Notifications pressed')}
+              onPress={() => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Notifications')}
               style={styles.iconButton}
             >
               <Text style={styles.iconButtonText}>🔔</Text>

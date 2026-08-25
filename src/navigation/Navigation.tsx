@@ -20,6 +20,7 @@ import { SearchScreen } from '../features/search/presentation/screens/SearchScre
 import { SettingsScreen } from '../features/settings/presentation/screens/SettingsScreen';
 import { FavoritesScreen } from '../features/favorites/presentation/screens/FavoritesScreen';
 import { HelpScreen } from '../features/help/presentation/screens/HelpScreen';
+import { NotificationsScreen } from '../features/notifications/presentation/screens/NotificationsScreen';
 import { AthleteTabs } from './AthleteTabs';
 import { darkTheme } from '../shared/theme';
 
@@ -93,6 +94,7 @@ export type RootStackParamList = {
   Settings: undefined;
   Favorites: undefined;
   Help: undefined;
+  Notifications: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -168,6 +170,7 @@ function RootNavigator() {
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="Favorites" component={FavoritesScreen} />
           <Stack.Screen name="Help" component={HelpScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
         </>
       )}
     </Stack.Navigator>
