@@ -134,7 +134,7 @@ export function CommunityScreen() {
               {FORUM_TOPICS.map((topic) => (
                 <Pressable
                   key={topic.id}
-                  onPress={() => console.log('Forum topic pressed', topic.title)}
+                  onPress={() => navigation.navigate('DiscussionForum')}
                   style={({ pressed }) => [styles.topicCard, pressed && { opacity: 0.85 }]}
                 >
                   <View style={styles.topicLeft}>
@@ -169,7 +169,7 @@ export function CommunityScreen() {
                   </View>
                 </View>
                 <Pressable
-                  onPress={() => console.log('Join challenge', challenge.id)}
+                  onPress={() => navigation.navigate('ChallengeDetail')}
                   style={styles.joinButton}
                 >
                   <Text style={styles.joinButtonText}>Join</Text>

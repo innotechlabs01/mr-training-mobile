@@ -90,6 +90,17 @@ export function WorkoutListScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Create Your Own */}
+        <Pressable
+          onPress={() => navigation.navigate('CreateRoutine')}
+          style={({ pressed }) => [styles.createCard, pressed && { opacity: 0.85 }]}
+        >
+          <Text style={styles.createIcon}>{'+'}</Text>
+          <View style={styles.createLeft}>
+            <Text style={styles.createTitle}>Create Your Own</Text>
+            <Text style={styles.createSub}>Build a custom routine from scratch</Text>
+          </View>
+        </Pressable>
         {filtered.length === 0 ? (
           <View style={styles.emptyWrap}>
             <Text style={styles.emptyText}>No workouts found</Text>
@@ -182,6 +193,31 @@ const styles = StyleSheet.create({
   pillTextSelected: { color: colors.base, fontWeight: '700' },
   pillTextUnselected: { color: colors.textSecondary },
   listContent: { padding: spacing.md, paddingBottom: 32, gap: spacing.md },
+  createCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  createIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    textAlign: 'center',
+    lineHeight: 44,
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.base,
+    overflow: 'hidden',
+  },
+  createLeft: { flex: 1, gap: 2 },
+  createTitle: { ...typography.bodyStrong, color: colors.text, fontSize: 14 },
+  createSub: { fontFamily: fontFamilies.body, fontSize: 12, lineHeight: 16, color: colors.textSecondary },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

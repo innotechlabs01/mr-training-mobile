@@ -28,6 +28,9 @@ import { CommunityScreen } from '../features/community/presentation/screens/Comm
 import { ArticlesScreen } from '../features/community/presentation/screens/ArticlesScreen';
 import { WeeklyChallengeScreen } from '../features/community/presentation/screens/WeeklyChallengeScreen';
 import { MealDetailScreen } from '../features/nutrition/presentation/screens/MealDetailScreen';
+import { CreateRoutineScreen } from '../features/training/presentation/screens/CreateRoutineScreen';
+import { DiscussionForumScreen } from '../features/community/presentation/screens/DiscussionForumScreen';
+import { ChallengeDetailScreen } from '../features/community/presentation/screens/ChallengeDetailScreen';
 import { AthleteTabs } from './AthleteTabs';
 import { darkTheme } from '../shared/theme';
 
@@ -109,6 +112,9 @@ export type RootStackParamList = {
   Articles: undefined;
   WeeklyChallenge: undefined;
   MealDetail: { name?: string; calories?: number; time?: string };
+  CreateRoutine: undefined;
+  DiscussionForum: undefined;
+  ChallengeDetail: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -192,6 +198,9 @@ function RootNavigator() {
           <Stack.Screen name="Articles" component={ArticlesScreen} />
           <Stack.Screen name="WeeklyChallenge" component={WeeklyChallengeScreen} />
           <Stack.Screen name="MealDetail" component={MealDetailScreen} />
+          <Stack.Screen name="CreateRoutine" component={CreateRoutineScreen} />
+          <Stack.Screen name="DiscussionForum" component={DiscussionForumScreen} />
+          <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
         </>
       )}
     </Stack.Navigator>
