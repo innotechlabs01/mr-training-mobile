@@ -111,7 +111,10 @@ export function CommunityScreen() {
         {tab === 'forum' ? (
           <>
             {/* Featured Challenge Card */}
-            <View style={styles.featuredCard}>
+            <Pressable
+              onPress={() => navigation.navigate('WeeklyChallenge')}
+              style={({ pressed }) => [styles.featuredCard, pressed && { opacity: 0.85 }]}
+            >
               <View style={styles.featuredImagePlaceholder}>
                 <Text style={styles.featuredImageEmoji}>🚴</Text>
               </View>
@@ -123,7 +126,7 @@ export function CommunityScreen() {
                   <Text style={styles.featuredStar}>★</Text>
                 </View>
               </View>
-            </View>
+            </Pressable>
 
             {/* Forums Section */}
             <View style={styles.section}>

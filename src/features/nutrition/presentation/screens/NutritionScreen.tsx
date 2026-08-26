@@ -96,7 +96,11 @@ export function NutritionScreen() {
           </View>
         ) : (
           filtered.map((item) => (
-            <View key={item.id} style={styles.card}>
+            <Pressable
+              key={item.id}
+              onPress={() => navigation.navigate('MealDetail', { name: item.title, calories: parseInt(item.calories, 10), time: item.time })}
+              style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+            >
               <View style={styles.cardLeft}>
                 <Text style={styles.cardTitle} numberOfLines={1}>
                   {item.title}
@@ -113,7 +117,7 @@ export function NutritionScreen() {
                   <Text style={styles.star}>{'\u2605'}</Text>
                 </View>
               </View>
-            </View>
+            </Pressable>
           ))
         )}
       </ScrollView>
