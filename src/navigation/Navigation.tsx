@@ -21,6 +21,9 @@ import { SettingsScreen } from '../features/settings/presentation/screens/Settin
 import { FavoritesScreen } from '../features/favorites/presentation/screens/FavoritesScreen';
 import { HelpScreen } from '../features/help/presentation/screens/HelpScreen';
 import { NotificationsScreen } from '../features/notifications/presentation/screens/NotificationsScreen';
+import { WorkoutListScreen } from '../features/training/presentation/screens/WorkoutListScreen';
+import { ProgressScreen } from '../features/progress/presentation/screens/ProgressScreen';
+import { NutritionScreen } from '../features/nutrition/presentation/screens/NutritionScreen';
 import { AthleteTabs } from './AthleteTabs';
 import { darkTheme } from '../shared/theme';
 
@@ -95,6 +98,9 @@ export type RootStackParamList = {
   Favorites: undefined;
   Help: undefined;
   Notifications: undefined;
+  Workouts: undefined;
+  Progress: undefined;
+  Nutrition: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -171,6 +177,9 @@ function RootNavigator() {
           <Stack.Screen name="Favorites" component={FavoritesScreen} />
           <Stack.Screen name="Help" component={HelpScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="Workouts" component={WorkoutListScreen} />
+          <Stack.Screen name="Progress" component={ProgressScreen} />
+          <Stack.Screen name="Nutrition" component={NutritionScreen} />
         </>
       )}
     </Stack.Navigator>

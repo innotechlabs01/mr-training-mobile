@@ -6,38 +6,39 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
-type MealFilter = 'All' | 'Breakfast' | 'Lunch' | 'Dinner';
+type Level = 'All' | 'Beginner' | 'Intermediate' | 'Advanced';
 
-type MealItem = {
+type WorkoutItem = {
   id: string;
   title: string;
-  type: Exclude<MealFilter, 'All'>;
+  level: Exclude<Level, 'All'>;
+  duration: string;
   calories: string;
-  time: string;
+  exercises: string;
   emoji: string;
 };
 
-const FILTERS: MealFilter[] = ['All', 'Breakfast', 'Lunch', 'Dinner'];
+const LEVELS: Level[] = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
-const MEALS: MealItem[] = [
-  { id: '1', title: 'Avocado Egg Toast', type: 'Breakfast', calories: '320 Cal', time: '15 min', emoji: '\uD83E\uDD51' },
-  { id: '2', title: 'Greek Yogurt', type: 'Breakfast', calories: '200 Cal', time: '6 min', emoji: '\uD83C\uDF65' },
-  { id: '3', title: 'Grilled Chicken Salad', type: 'Lunch', calories: '450 Cal', time: '20 min', emoji: '\uD83E\uDD57' },
-  { id: '4', title: 'Salmon Bowl', type: 'Lunch', calories: '520 Cal', time: '25 min', emoji: '\uD83D\uDC1F' },
-  { id: '5', title: 'Protein Shake', type: 'Dinner', calories: '280 Cal', time: '5 min', emoji: '\uD83E\uDDC3' },
-  { id: '6', title: 'Turkey Wrap', type: 'Dinner', calories: '380 Cal', time: '10 min', emoji: '\uD83C\uDF2F' },
+const WORKOUTS: WorkoutItem[] = [
+  { id: '1', title: 'Squat Exercise', level: 'Beginner', duration: '12 Minutes', calories: '120 Kcal', exercises: '5 Exercises', emoji: '🏋️' },
+  { id: '2', title: 'Full Body Stretching', level: 'Beginner', duration: '45 Minutes', calories: '1450 Kcal', exercises: '5 Exercises', emoji: '🧘' },
+  { id: '3', title: 'Circuit Training', level: 'Intermediate', duration: '50 Minutes', calories: '800 Kcal', exercises: '8 Exercises', emoji: '💪' },
+  { id: '4', title: 'Upper Body', level: 'Intermediate', duration: '60 Minutes', calories: '1320 Kcal', exercises: '5 Exercises', emoji: '🏋️' },
+  { id: '5', title: 'Lower Body Blast', level: 'Advanced', duration: '45 Minutes', calories: '950 Kcal', exercises: '6 Exercises', emoji: '🦵' },
+  { id: '6', title: 'Split Strength Training', level: 'Advanced', duration: '55 Minutes', calories: '1100 Kcal', exercises: '7 Exercises', emoji: '🔥' },
 ];
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-export function NutritionScreen() {
+export function WorkoutListScreen() {
   const navigation = useNavigation<Nav>();
-  const [filter, setFilter] = useState<MealFilter>('All');
+  const [level, setLevel] = useState<Level>('All');
 
   const filtered = useMemo(() => {
-    if (filter === 'All') return MEALS;
-    return MEALS.filter((m) => m.type === filter);
-  }, [filter]);
+    if (level === 'All') return WORKOUTS;
+    return WORKOUTS.filter((w) => w.level === level);
+  }, [level]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -52,7 +53,7 @@ export function NutritionScreen() {
         >
           <Text style={styles.backChevron}>{'\u2039'}</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>Nutrition</Text>
+        <Text style={styles.headerTitle}>Workout</Text>
         <View style={styles.headerRight}>
           <Pressable accessibilityLabel="Search" onPress={() => undefined} style={styles.iconButton}>
             <Text style={styles.iconButtonText}>{'\uD83D\uDD0D'}</Text>
@@ -68,31 +69,31 @@ export function NutritionScreen() {
 
       {/* Filter pills */}
       <View style={styles.filterRow}>
-        {FILTERS.map((f) => {
-          const selected = filter === f;
+        {LEVELS.map((l) => {
+          const selected = level === l;
           return (
             <Pressable
-              key={f}
-              onPress={() => setFilter(f)}
+              key={l}
+              onPress={() => setLevel(l)}
               style={[styles.pill, selected ? styles.pillSelected : styles.pillUnselected]}
             >
               <Text style={[styles.pillText, selected ? styles.pillTextSelected : styles.pillTextUnselected]}>
-                {f}
+                {l}
               </Text>
             </Pressable>
           );
         })}
       </View>
 
-      {/* Meal list */}
+      {/* Workout list */}
       <ScrollView
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       >
         {filtered.length === 0 ? (
           <View style={styles.emptyWrap}>
-            <Text style={styles.emptyText}>No meals found</Text>
-            <Text style={styles.emptySub}>Try a different filter.</Text>
+            <Text style={styles.emptyText}>No workouts found</Text>
+            <Text style={styles.emptySub}>Try a different level filter.</Text>
           </View>
         ) : (
           filtered.map((item) => (
@@ -102,9 +103,11 @@ export function NutritionScreen() {
                   {item.title}
                 </Text>
                 <View style={styles.metaRow}>
+                  <Text style={styles.metaText}>{'\u25F7'} {item.duration}</Text>
+                  <Text style={styles.metaDot}>{'\u00B7'}</Text>
                   <Text style={styles.metaText}>{'\uD83D\uDD25'} {item.calories}</Text>
                   <Text style={styles.metaDot}>{'\u00B7'}</Text>
-                  <Text style={styles.metaText}>{'\u25F7'} {item.time}</Text>
+                  <Text style={styles.metaText}>{'\u2733'} {item.exercises}</Text>
                 </View>
               </View>
               <View style={styles.imageWrap}>

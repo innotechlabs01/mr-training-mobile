@@ -104,15 +104,16 @@ export function TodayScreen() {
       : MOCK_RECOMMENDATIONS;
 
   const handleQuickAccess = (key: 'workout' | 'progress' | 'nutrition' | 'community') => {
+    const parentNav = navigation.getParent<NativeStackNavigationProp<RootStackParamList>>();
     switch (key) {
       case 'workout':
-        (navigation as unknown as { navigate: (s: string) => void }).navigate('Plan');
+        parentNav?.navigate('Workouts');
         break;
       case 'progress':
-        (navigation as unknown as { navigate: (s: string) => void }).navigate('Recovery');
+        parentNav?.navigate('Progress');
         break;
       case 'nutrition':
-        console.log('Navigate Nutrition: route not implemented');
+        parentNav?.navigate('Nutrition');
         break;
       case 'community':
         (navigation as unknown as { navigate: (s: string) => void }).navigate('Events');
