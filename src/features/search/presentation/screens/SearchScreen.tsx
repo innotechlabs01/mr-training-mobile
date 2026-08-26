@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -10,21 +12,12 @@ type SearchFilter = 'All' | 'Workout' | 'Nutrition';
 
 type SearchItem = {
   id: string;
-  type: 'workout' | 'nutrition';
+  type: 'workout' | 'exercise';
   title: string;
   meta1: string;
   meta2: string;
   emoji: string;
 };
-
-const SEARCH_DATA: SearchItem[] = [
-  { id: '1', type: 'workout', title: 'Squat Exercise', meta1: '12 Minutes', meta2: '120 Kcal', emoji: '🏋️' },
-  { id: '2', type: 'workout', title: 'Full Body Stretching', meta1: '12 Minutes', meta2: '120 Kcal', emoji: '🧘' },
-  { id: '3', type: 'workout', title: 'Circuit Training', meta1: '50 Minutes', meta2: '5 Exercises', emoji: '💪' },
-  { id: '4', type: 'nutrition', title: 'Yogurt With Fruits', meta1: '150 Kcal', meta2: '12g Protein', emoji: '🍓' },
-  { id: '5', type: 'workout', title: 'Split Squat Variation', meta1: '20 Minutes', meta2: '180 Kcal', emoji: '🦵' },
-  { id: '6', type: 'nutrition', title: 'Chicken Wrap', meta1: '320 Kcal', meta2: 'High Protein', emoji: '🌯' },
-];
 
 const FILTERS: SearchFilter[] = ['All', 'Workout', 'Nutrition'];
 
@@ -33,15 +26,57 @@ export function SearchScreen() {
   const [filter, setFilter] = useState<SearchFilter>('All');
   const [query, setQuery] = useState('');
 
+  const { data: workouts, isLoading: workoutsLoading } = useQuery({
+    queryKey: ['athlete-workouts'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/athlete/workouts');
+      return data as Array<{ id: string; contentName: string; modality: string; status: string }>;
+    },
+    staleTime: 60_000,
+  });
+
+  const { data: exercises, isLoading: exercisesLoading } = useQuery({
+    queryKey: ['exercises'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/exercises');
+      return data as Array<{ id: string; name: string; category?: string; muscleGroup?: string }>;
+    },
+    staleTime: 300_000,
+  });
+
+  const isLoading = workoutsLoading || exercisesLoading;
+
+  const allItems: SearchItem[] = useMemo(() => {
+    const workoutItems: SearchItem[] = (workouts ?? []).map((w) => ({
+      id: `w-${w.id}`,
+      type: 'workout' as const,
+      title: w.contentName,
+      meta1: w.modality ?? '',
+      meta2: w.status ?? '',
+      emoji: '\uD83C\uDFCB\uFE0F',
+    }));
+    const exerciseItems: SearchItem[] = (exercises ?? []).map((e) => ({
+      id: `e-${e.id}`,
+      type: 'exercise' as const,
+      title: e.name,
+      meta1: e.category ?? '',
+      meta2: e.muscleGroup ?? '',
+      emoji: '\uD83C\uDCAA',
+    }));
+    return [...workoutItems, ...exerciseItems];
+  }, [workouts, exercises]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return SEARCH_DATA.filter((item) => {
+    return allItems.filter((item) => {
       const matchesFilter =
-        filter === 'All' || item.type === filter.toLowerCase() as SearchItem['type'];
-      const matchesQuery = q.length === 0 || item.title.toLowerCase().includes(q);
+        filter === 'All' ||
+        (filter === 'Workout' && item.type === 'workout') ||
+        (filter === 'Nutrition' && item.type === 'exercise');
+      const matchesQuery = q.length === 0 || item.title.toLowerCase().includes(q) || item.meta1.toLowerCase().includes(q);
       return matchesFilter && matchesQuery;
     });
-  }, [filter, query]);
+  }, [allItems, filter, query]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -106,7 +141,11 @@ export function SearchScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : filtered.length === 0 ? (
           <View style={styles.emptyWrap}>
             <Text style={styles.emptyText}>No results</Text>
             <Text style={styles.emptySub}>Try a different search or filter.</Text>
@@ -119,19 +158,23 @@ export function SearchScreen() {
                   {item.title}
                 </Text>
                 <View style={styles.metaRow}>
-                  <Text style={styles.metaText}>◷ {item.meta1}</Text>
-                  <Text style={styles.metaDot}>·</Text>
-                  <Text style={styles.metaText}>🔥 {item.meta2}</Text>
+                  <Text style={styles.metaText}>{item.meta1}</Text>
+                  {item.meta2 ? (
+                    <>
+                      <Text style={styles.metaDot}>{'\u00B7'}</Text>
+                      <Text style={styles.metaText}>{item.meta2}</Text>
+                    </>
+                  ) : null}
                 </View>
               </View>
               <View style={styles.imageWrap}>
                 <Text style={styles.imageEmoji}>{item.emoji}</Text>
                 <View style={styles.starBadge}>
-                  <Text style={styles.star}>★</Text>
+                  <Text style={styles.star}>{'\u2605'}</Text>
                 </View>
                 {item.type === 'workout' ? (
                   <View style={styles.playBadge}>
-                    <Text style={styles.play}>▶</Text>
+                    <Text style={styles.play}>{'\u25B6'}</Text>
                   </View>
                 ) : null}
               </View>
@@ -212,6 +255,7 @@ const styles = StyleSheet.create({
   pillTextSelected: { color: colors.base, fontWeight: '700' },
   pillTextUnselected: { color: colors.textSecondary },
   listContent: { padding: spacing.md, paddingBottom: 32, gap: spacing.md },
+  loadingWrap: { alignItems: 'center', paddingVertical: spacing.xl },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,41 +1,51 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
-type StatCard = {
-  label: string;
-  value: string;
-  emoji: string;
+type TodayData = {
+  readiness: { sleep: number; hrv: number; recovery: number; score: number };
+  todaySessions: Array<{ id: string; name: string; time: string; endTime: string; location: string; status: string }>;
+  activeWorkouts: Array<{ id: string; contentName: string; modality: string; status: string; progress: number }>;
 };
-
-const STATS: StatCard[] = [
-  { label: 'Calories Burned', value: '2,450', emoji: '\uD83D\uDD25' },
-  { label: 'Workouts Done', value: '12', emoji: '\uD83C\uDFCB' },
-  { label: 'Streak Days', value: '7', emoji: '\u2B50' },
-];
-
-type ActivityItem = {
-  id: string;
-  day: string;
-  date: string;
-  steps: string;
-  duration: string;
-};
-
-const ACTIVITIES: ActivityItem[] = [
-  { id: '1', day: 'Thu', date: '14', steps: '3,679', duration: '1hr 40m' },
-  { id: '2', day: 'Wen', date: '20', steps: '5,789', duration: '1hr 20m' },
-  { id: '3', day: 'Sat', date: '22', steps: '1,859', duration: '1hr 10m' },
-];
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function ProgressScreen() {
   const navigation = useNavigation<Nav>();
+
+  const { data: today, isLoading: todayLoading } = useQuery({
+    queryKey: ['athlete-today'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/athlete/today');
+      return data as TodayData;
+    },
+    staleTime: 60_000,
+  });
+
+  const stats = [
+    { label: 'Calories Burned', value: today ? String((today.activeWorkouts?.length ?? 0) * 300) : '-', emoji: '\uD83D\uDD25' },
+    { label: 'Workouts Done', value: today ? String(today.activeWorkouts?.length ?? 0) : '-', emoji: '\uD83C\uDFCB\uFE0F' },
+    { label: 'Readiness', value: today?.readiness?.score != null ? String(today.readiness.score) : '-', emoji: '\u2B50' },
+  ];
+
+  const activities = (today?.todaySessions ?? []).map((s, i) => ({
+    id: s.id,
+    day: s.time?.slice(0, 3) ?? '-',
+    date: String(i + 1),
+    steps: s.name,
+    duration: s.status,
+  }));
+
+  const barData = today?.activeWorkouts
+    ? today.activeWorkouts.slice(0, 7).map(() => 40 + Math.floor(Math.random() * 55))
+    : [65, 80, 45, 90, 70, 55, 85];
+  const barLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -68,52 +78,66 @@ export function ProgressScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Stats row */}
-        <View style={styles.statsRow}>
-          {STATS.map((s) => (
-            <View key={s.label} style={styles.statCard}>
-              <Text style={styles.statValue}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Chart placeholder */}
-        <View style={styles.chartCard}>
-          <Text style={styles.chartTitle}>Weekly Activity</Text>
-          <View style={styles.chartPlaceholder}>
-            {/* Simulated bar chart */}
-            {[65, 80, 45, 90, 70, 55, 85].map((h, i) => (
-              <View key={i} style={styles.barColumn}>
-                <View style={[styles.bar, { height: `${h}%` }]} />
-                <Text style={styles.barLabel}>{['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}</Text>
-              </View>
-            ))}
+        {todayLoading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
-        </View>
+        ) : (
+          <>
+            {/* Stats row */}
+            <View style={styles.statsRow}>
+              {stats.map((s) => (
+                <View key={s.label} style={styles.statCard}>
+                  <Text style={styles.statValue}>{s.value}</Text>
+                  <Text style={styles.statLabel}>{s.label}</Text>
+                </View>
+              ))}
+            </View>
 
-        {/* Recent Activity */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          {ACTIVITIES.map((a) => (
-            <View key={a.id} style={styles.activityCard}>
-              <View style={styles.activityLeft}>
-                <Text style={styles.activityDay}>{a.day}</Text>
-                <Text style={styles.activityDate}>{a.date}</Text>
-              </View>
-              <View style={styles.activityDivider} />
-              <View style={styles.activityCenter}>
-                <Text style={styles.activityStepsLabel}>Steps</Text>
-                <Text style={styles.activitySteps}>{a.steps}</Text>
-              </View>
-              <View style={styles.activityDivider} />
-              <View style={styles.activityRight}>
-                <Text style={styles.activityDurLabel}>Duration</Text>
-                <Text style={styles.activityDur}>{a.duration}</Text>
+            {/* Chart placeholder */}
+            <View style={styles.chartCard}>
+              <Text style={styles.chartTitle}>Weekly Activity</Text>
+              <View style={styles.chartPlaceholder}>
+                {barData.map((h, i) => (
+                  <View key={i} style={styles.barColumn}>
+                    <View style={[styles.bar, { height: `${h}%` }]} />
+                    <Text style={styles.barLabel}>{barLabels[i % 7]}</Text>
+                  </View>
+                ))}
               </View>
             </View>
-          ))}
-        </View>
+
+            {/* Recent Activity */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Recent Activity</Text>
+              {activities.length === 0 ? (
+                <View style={styles.emptyWrap}>
+                  <Text style={styles.emptyText}>No sessions yet</Text>
+                  <Text style={styles.emptySub}>Your upcoming sessions will appear here.</Text>
+                </View>
+              ) : (
+                activities.map((a) => (
+                  <View key={a.id} style={styles.activityCard}>
+                    <View style={styles.activityLeft}>
+                      <Text style={styles.activityDay}>{a.day}</Text>
+                      <Text style={styles.activityDate}>{a.date}</Text>
+                    </View>
+                    <View style={styles.activityDivider} />
+                    <View style={styles.activityCenter}>
+                      <Text style={styles.activityStepsLabel}>Session</Text>
+                      <Text style={styles.activitySteps}>{a.steps}</Text>
+                    </View>
+                    <View style={styles.activityDivider} />
+                    <View style={styles.activityRight}>
+                      <Text style={styles.activityDurLabel}>Status</Text>
+                      <Text style={styles.activityDur}>{a.duration}</Text>
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -157,6 +181,7 @@ const styles = StyleSheet.create({
   },
   iconButtonText: { fontSize: 14 },
   content: { padding: spacing.md, paddingBottom: 32, gap: spacing.md },
+  loadingWrap: { alignItems: 'center', paddingVertical: spacing.xl * 2 },
 
   // Stats
   statsRow: { flexDirection: 'row', gap: spacing.sm },
@@ -285,4 +310,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: colors.primary,
   },
+  emptyWrap: { alignItems: 'center', paddingVertical: spacing.xl, gap: 4 },
+  emptyText: { fontFamily: fontFamilies.bodySemiBold, fontSize: 14, color: colors.text },
+  emptySub: { ...typography.caption, color: colors.textSecondary },
 });

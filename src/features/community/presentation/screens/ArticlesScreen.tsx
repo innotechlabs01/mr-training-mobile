@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, radius, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -16,53 +18,32 @@ type Article = {
   emoji: string;
 };
 
-const ARTICLES: Article[] = [
-  {
-    id: 'a1',
-    title: 'Supplement Guide for Athletes',
-    description: 'Discover the best supplements to boost your performance and recovery.',
-    date: 'Aug 20, 2026',
-    emoji: '💊',
-  },
-  {
-    id: 'a2',
-    title: '15 Quick & Effective Daily Routines',
-    description: 'Short routines that fit into even the busiest schedules.',
-    date: 'Aug 18, 2026',
-    emoji: '⚡',
-  },
-  {
-    id: 'a3',
-    title: 'Meal Prep on a Budget',
-    description: "Healthy eating doesn't have to break the bank. Learn how to prep meals smartly.",
-    date: 'Aug 15, 2026',
-    emoji: '🥗',
-  },
-  {
-    id: 'a4',
-    title: 'Sleep & Recovery: The Science',
-    description: 'Why sleep is the most underrated performance enhancer.',
-    date: 'Aug 12, 2026',
-    emoji: '😴',
-  },
-  {
-    id: 'a5',
-    title: 'Strength Training Fundamentals',
-    description: 'Master the basics of strength training with proper form and programming.',
-    date: 'Aug 10, 2026',
-    emoji: '🏋️',
-  },
-];
-
 const FILTERS: Filter[] = ['All', 'Workout', 'Nutrition', 'Health'];
 
 export function ArticlesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [filter, setFilter] = useState<Filter>('All');
 
-  const filtered = ARTICLES.filter((a) => {
+  const { data: articles, isLoading } = useQuery({
+    queryKey: ['blog-posts'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/marketing/blog');
+      return data as Array<{ id: string; title: string; content: string; slug: string; createdAt: string }>;
+    },
+    staleTime: 300_000,
+  });
+
+  const mapped: Article[] = (articles ?? []).map((a) => ({
+    id: a.id,
+    title: a.title,
+    description: a.content?.slice(0, 120) ?? '',
+    date: a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
+    emoji: '📄',
+  }));
+
+  const filtered = mapped.filter((a) => {
     if (filter === 'All') return true;
-    return a.emoji === '🏋️' || a.emoji === '⚡'; // workout
+    return true; // No category field from API yet — show all
   });
 
   return (
@@ -112,26 +93,37 @@ export function ArticlesScreen() {
 
       {/* Article cards */}
       <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-        {ARTICLES.map((article) => (
-          <Pressable
-            key={article.id}
-            onPress={() => console.log('Article pressed', article.title)}
-            style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
-          >
-            <View style={styles.cardLeft}>
-              <Text style={styles.cardTitle} numberOfLines={2}>
-                {article.title}
-              </Text>
-              <Text style={styles.cardDescription} numberOfLines={2}>
-                {article.description}
-              </Text>
-              <Text style={styles.cardDate}>{article.date}</Text>
-            </View>
-            <View style={styles.cardImagePlaceholder}>
-              <Text style={styles.cardImageEmoji}>{article.emoji}</Text>
-            </View>
-          </Pressable>
-        ))}
+        {isLoading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : filtered.length === 0 ? (
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyText}>No articles yet</Text>
+            <Text style={styles.emptySub}>Check back later for tips and insights.</Text>
+          </View>
+        ) : (
+          filtered.map((article) => (
+            <Pressable
+              key={article.id}
+              onPress={() => console.log('Article pressed', article.title)}
+              style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+            >
+              <View style={styles.cardLeft}>
+                <Text style={styles.cardTitle} numberOfLines={2}>
+                  {article.title}
+                </Text>
+                <Text style={styles.cardDescription} numberOfLines={2}>
+                  {article.description}
+                </Text>
+                <Text style={styles.cardDate}>{article.date}</Text>
+              </View>
+              <View style={styles.cardImagePlaceholder}>
+                <Text style={styles.cardImageEmoji}>{article.emoji}</Text>
+              </View>
+            </Pressable>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -200,6 +192,10 @@ const styles = StyleSheet.create({
   pillTextUnselected: { color: colors.textSecondary },
 
   listContent: { padding: spacing.md, paddingBottom: 32, gap: spacing.md },
+  loadingWrap: { alignItems: 'center', paddingVertical: spacing.xl },
+  emptyWrap: { alignItems: 'center', paddingVertical: spacing.xl, gap: 4 },
+  emptyText: { fontFamily: fontFamilies.bodySemiBold, fontSize: 14, color: colors.text },
+  emptySub: { fontFamily: fontFamilies.body, fontSize: 12, color: colors.textSecondary },
 
   // Article card — row layout with image right
   card: {

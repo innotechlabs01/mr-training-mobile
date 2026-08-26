@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -19,7 +21,8 @@ type MealItem = {
 
 const FILTERS: MealFilter[] = ['All', 'Breakfast', 'Lunch', 'Dinner'];
 
-const MEALS: MealItem[] = [
+// TODO: replace with real nutrition API when available
+const MOCK_MEALS: MealItem[] = [
   { id: '1', title: 'Avocado Egg Toast', type: 'Breakfast', calories: '320 Cal', time: '15 min', emoji: '\uD83E\uDD51' },
   { id: '2', title: 'Greek Yogurt', type: 'Breakfast', calories: '200 Cal', time: '6 min', emoji: '\uD83C\uDF65' },
   { id: '3', title: 'Grilled Chicken Salad', type: 'Lunch', calories: '450 Cal', time: '20 min', emoji: '\uD83E\uDD57' },
@@ -34,10 +37,31 @@ export function NutritionScreen() {
   const navigation = useNavigation<Nav>();
   const [filter, setFilter] = useState<MealFilter>('All');
 
+  // Graceful API attempt — fallback to mock if endpoint doesn't exist or returns no nutrition data
+  const { data: apiMeals } = useQuery({
+    queryKey: ['athlete-nutrition'],
+    queryFn: async () => {
+      try {
+        const { data: today } = await apiClient.get('/athlete/today');
+        // Extract nutrition data if available from today response
+        if (today?.nutrition?.meals) {
+          return today.nutrition.meals as MealItem[];
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    },
+    staleTime: 60_000,
+    retry: false,
+  });
+
+  const meals = apiMeals ?? MOCK_MEALS;
+
   const filtered = useMemo(() => {
-    if (filter === 'All') return MEALS;
-    return MEALS.filter((m) => m.type === filter);
-  }, [filter]);
+    if (filter === 'All') return meals;
+    return meals.filter((m) => m.type === filter);
+  }, [filter, meals]);
 
   return (
     <SafeAreaView style={styles.container}>

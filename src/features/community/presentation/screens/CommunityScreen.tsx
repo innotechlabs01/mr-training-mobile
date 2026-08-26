@@ -8,6 +8,7 @@ import type { RootStackParamList } from '../../../../navigation/Navigation';
 
 type Tab = 'forum' | 'challenges';
 
+// TODO: replace with real community API when available (no dedicated endpoint yet)
 type ForumTopic = {
   id: string;
   title: string;

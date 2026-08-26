@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -10,24 +12,22 @@ type Level = 'All' | 'Beginner' | 'Intermediate' | 'Advanced';
 
 type WorkoutItem = {
   id: string;
-  title: string;
-  level: Exclude<Level, 'All'>;
-  duration: string;
-  calories: string;
-  exercises: string;
-  emoji: string;
+  contentName: string;
+  modality: string;
+  status: string;
+  progress: number;
+  startDate: string;
 };
 
 const LEVELS: Level[] = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
-const WORKOUTS: WorkoutItem[] = [
-  { id: '1', title: 'Squat Exercise', level: 'Beginner', duration: '12 Minutes', calories: '120 Kcal', exercises: '5 Exercises', emoji: '🏋️' },
-  { id: '2', title: 'Full Body Stretching', level: 'Beginner', duration: '45 Minutes', calories: '1450 Kcal', exercises: '5 Exercises', emoji: '🧘' },
-  { id: '3', title: 'Circuit Training', level: 'Intermediate', duration: '50 Minutes', calories: '800 Kcal', exercises: '8 Exercises', emoji: '💪' },
-  { id: '4', title: 'Upper Body', level: 'Intermediate', duration: '60 Minutes', calories: '1320 Kcal', exercises: '5 Exercises', emoji: '🏋️' },
-  { id: '5', title: 'Lower Body Blast', level: 'Advanced', duration: '45 Minutes', calories: '950 Kcal', exercises: '6 Exercises', emoji: '🦵' },
-  { id: '6', title: 'Split Strength Training', level: 'Advanced', duration: '55 Minutes', calories: '1100 Kcal', exercises: '7 Exercises', emoji: '🔥' },
-];
+const MODALITY_EMOJI: Record<string, string> = {
+  strength: '\uD83C\uDFCB\uFE0F',
+  flexibility: '\uD83E\uDDD8',
+  cardio: '\uD83C\uDFC3',
+  conditioning: '\uD83D\uDCAA',
+  recovery: '\uD83D\uDCA4',
+};
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -35,10 +35,20 @@ export function WorkoutListScreen() {
   const navigation = useNavigation<Nav>();
   const [level, setLevel] = useState<Level>('All');
 
+  const { data: workouts, isLoading } = useQuery({
+    queryKey: ['athlete-workouts'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/athlete/workouts');
+      return data as WorkoutItem[];
+    },
+    staleTime: 60_000,
+  });
+
   const filtered = useMemo(() => {
-    if (level === 'All') return WORKOUTS;
-    return WORKOUTS.filter((w) => w.level === level);
-  }, [level]);
+    if (!workouts) return [];
+    if (level === 'All') return workouts;
+    return workouts.filter((w) => w.modality?.toLowerCase() === level.toLowerCase());
+  }, [workouts, level]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -101,34 +111,47 @@ export function WorkoutListScreen() {
             <Text style={styles.createSub}>Build a custom routine from scratch</Text>
           </View>
         </Pressable>
-        {filtered.length === 0 ? (
+
+        {isLoading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : filtered.length === 0 ? (
           <View style={styles.emptyWrap}>
-            <Text style={styles.emptyText}>No workouts found</Text>
-            <Text style={styles.emptySub}>Try a different level filter.</Text>
+            <Text style={styles.emptyText}>No workouts assigned yet</Text>
+            <Text style={styles.emptySub}>Your coach will assign workouts soon.</Text>
           </View>
         ) : (
-          filtered.map((item) => (
-            <View key={item.id} style={styles.card}>
-              <View style={styles.cardLeft}>
-                <Text style={styles.cardTitle} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <View style={styles.metaRow}>
-                  <Text style={styles.metaText}>{'\u25F7'} {item.duration}</Text>
-                  <Text style={styles.metaDot}>{'\u00B7'}</Text>
-                  <Text style={styles.metaText}>{'\uD83D\uDD25'} {item.calories}</Text>
-                  <Text style={styles.metaDot}>{'\u00B7'}</Text>
-                  <Text style={styles.metaText}>{'\u2733'} {item.exercises}</Text>
+          filtered.map((item) => {
+            const emoji = MODALITY_EMOJI[item.modality?.toLowerCase()] ?? '\uD83C\uDFCB\uFE0F';
+            const progressPct = Math.round((item.progress ?? 0) * 100);
+            return (
+              <View key={item.id} style={styles.card}>
+                <View style={styles.cardLeft}>
+                  <Text style={styles.cardTitle} numberOfLines={1}>
+                    {item.contentName}
+                  </Text>
+                  <View style={styles.metaRow}>
+                    <Text style={styles.metaText}>{item.modality}</Text>
+                    <Text style={styles.metaDot}>{'\u00B7'}</Text>
+                    <Text style={styles.metaText}>{item.status}</Text>
+                    {progressPct > 0 && (
+                      <>
+                        <Text style={styles.metaDot}>{'\u00B7'}</Text>
+                        <Text style={styles.metaText}>{progressPct}%</Text>
+                      </>
+                    )}
+                  </View>
+                </View>
+                <View style={styles.imageWrap}>
+                  <Text style={styles.imageEmoji}>{emoji}</Text>
+                  <View style={styles.starBadge}>
+                    <Text style={styles.star}>{'\u2605'}</Text>
+                  </View>
                 </View>
               </View>
-              <View style={styles.imageWrap}>
-                <Text style={styles.imageEmoji}>{item.emoji}</Text>
-                <View style={styles.starBadge}>
-                  <Text style={styles.star}>{'\u2605'}</Text>
-                </View>
-              </View>
-            </View>
-          ))
+            );
+          })
         )}
       </ScrollView>
     </SafeAreaView>
@@ -256,6 +279,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   star: { color: colors.primary, fontSize: 10, lineHeight: 12 },
+  loadingWrap: { alignItems: 'center', paddingVertical: spacing.xl },
   emptyWrap: { alignItems: 'center', paddingVertical: spacing.xl, gap: 4 },
   emptyText: { fontFamily: fontFamilies.bodySemiBold, fontSize: 14, color: colors.text },
   emptySub: { ...typography.caption, color: colors.textSecondary },
