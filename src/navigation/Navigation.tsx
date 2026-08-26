@@ -18,6 +18,8 @@ import { WorkoutExecutionScreen } from '../features/training/presentation/screen
 import { ImportHistoryScreen } from '../features/training/presentation/screens/ImportHistoryScreen';
 import { SearchScreen } from '../features/search/presentation/screens/SearchScreen';
 import { SettingsScreen } from '../features/settings/presentation/screens/SettingsScreen';
+import { NotificationSettingsScreen } from '../features/settings/presentation/screens/NotificationSettingsScreen';
+import { PasswordSettingsScreen } from '../features/settings/presentation/screens/PasswordSettingsScreen';
 import { FavoritesScreen } from '../features/favorites/presentation/screens/FavoritesScreen';
 import { HelpScreen } from '../features/help/presentation/screens/HelpScreen';
 import { NotificationsScreen } from '../features/notifications/presentation/screens/NotificationsScreen';
@@ -102,6 +104,8 @@ export type RootStackParamList = {
   ImportHistory: undefined;
   Search: undefined;
   Settings: undefined;
+  NotificationSettings: undefined;
+  PasswordSettings: undefined;
   Favorites: undefined;
   Help: undefined;
   Notifications: undefined;
@@ -188,6 +192,8 @@ function RootNavigator() {
           <Stack.Screen name="ImportHistory" component={ImportHistoryScreen} options={{ presentation: 'modal' }} />
           <Stack.Screen name="Search" component={SearchScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
+          <Stack.Screen name="PasswordSettings" component={PasswordSettingsScreen} />
           <Stack.Screen name="Favorites" component={FavoritesScreen} />
           <Stack.Screen name="Help" component={HelpScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />

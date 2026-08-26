@@ -22,12 +22,12 @@ export function SettingsScreen() {
     {
       icon: '\uD83D\uDD14',
       label: 'Notification Setting',
-      onPress: () => Alert.alert('Notifications', 'Coming soon'),
+      onPress: () => navigation.navigate('NotificationSettings'),
     },
     {
       icon: '\uD83D\uDD11',
       label: 'Password Setting',
-      onPress: () => Alert.alert('Password', 'Coming soon'),
+      onPress: () => navigation.navigate('PasswordSettings'),
     },
     {
       icon: '\uD83D\uDC64',
