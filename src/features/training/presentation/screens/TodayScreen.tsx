@@ -116,7 +116,7 @@ export function TodayScreen() {
         parentNav?.navigate('Nutrition');
         break;
       case 'community':
-        (navigation as unknown as { navigate: (s: string) => void }).navigate('Events');
+        navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Community');
         break;
     }
   };
@@ -223,7 +223,7 @@ export function TodayScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Recommendations</Text>
-            <Pressable onPress={() => (navigation as unknown as { navigate: (s: string) => void }).navigate('Plan')}>
+            <Pressable onPress={() => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Articles')}>
               <Text style={styles.seeAll}>See All ›</Text>
             </Pressable>
           </View>

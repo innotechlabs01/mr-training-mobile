@@ -24,6 +24,8 @@ import { NotificationsScreen } from '../features/notifications/presentation/scre
 import { WorkoutListScreen } from '../features/training/presentation/screens/WorkoutListScreen';
 import { ProgressScreen } from '../features/progress/presentation/screens/ProgressScreen';
 import { NutritionScreen } from '../features/nutrition/presentation/screens/NutritionScreen';
+import { CommunityScreen } from '../features/community/presentation/screens/CommunityScreen';
+import { ArticlesScreen } from '../features/community/presentation/screens/ArticlesScreen';
 import { AthleteTabs } from './AthleteTabs';
 import { darkTheme } from '../shared/theme';
 
@@ -101,6 +103,8 @@ export type RootStackParamList = {
   Workouts: undefined;
   Progress: undefined;
   Nutrition: undefined;
+  Community: undefined;
+  Articles: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -180,6 +184,8 @@ function RootNavigator() {
           <Stack.Screen name="Workouts" component={WorkoutListScreen} />
           <Stack.Screen name="Progress" component={ProgressScreen} />
           <Stack.Screen name="Nutrition" component={NutritionScreen} />
+          <Stack.Screen name="Community" component={CommunityScreen} />
+          <Stack.Screen name="Articles" component={ArticlesScreen} />
         </>
       )}
     </Stack.Navigator>
