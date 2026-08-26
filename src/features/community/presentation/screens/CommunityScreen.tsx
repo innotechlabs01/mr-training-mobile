@@ -1,65 +1,46 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
 type Tab = 'forum' | 'challenges';
 
-// TODO: replace with real community API when available (no dedicated endpoint yet)
 type ForumTopic = {
   id: string;
   title: string;
   description: string;
-  timeAgo: string;
+  category: string;
 };
 
 type Challenge = {
   id: string;
   title: string;
-  duration: string;
-  calories: string;
-  emoji: string;
+  description: string;
+  durationMinutes: number;
+  calories: number;
+  participantsCount: number;
 };
-
-const FORUM_TOPICS: ForumTopic[] = [
-  {
-    id: 'f1',
-    title: 'Training Tips for Beginners',
-    description: 'Share your best training tips for those just starting out.',
-    timeAgo: '2h ago',
-  },
-  {
-    id: 'f2',
-    title: 'Nutrition Myths Debunked',
-    description: 'Discuss common nutrition misconceptions and the science.',
-    timeAgo: '5h ago',
-  },
-  {
-    id: 'f3',
-    title: 'Recovery & Rest Days',
-    description: 'How do you approach recovery? Share your strategies.',
-    timeAgo: '1d ago',
-  },
-  {
-    id: 'f4',
-    title: 'Goal Setting & Motivation',
-    description: 'What keeps you going when motivation fades?',
-    timeAgo: '2d ago',
-  },
-];
-
-const CHALLENGES: Challenge[] = [
-  { id: 'c1', title: '30-Day Push-Up Challenge', duration: '30 Days', calories: '500 Kcal', emoji: '💪' },
-  { id: 'c2', title: 'Morning Run Streak', duration: '14 Days', calories: '300 Kcal', emoji: '🏃' },
-  { id: 'c3', title: 'Core Strength Builder', duration: '21 Days', calories: '400 Kcal', emoji: '🔥' },
-];
 
 export function CommunityScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [tab, setTab] = useState<Tab>('forum');
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['community'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/athlete/community');
+      return data as { forums: ForumTopic[]; challenges: Challenge[] };
+    },
+    staleTime: 60_000,
+  });
+
+  const forums = data?.forums ?? [];
+  const challenges = data?.challenges ?? [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -109,74 +90,67 @@ export function CommunityScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-        {tab === 'forum' ? (
+        {isLoading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : tab === 'forum' ? (
           <>
-            {/* Featured Challenge Card */}
-            <Pressable
-              onPress={() => navigation.navigate('WeeklyChallenge')}
-              style={({ pressed }) => [styles.featuredCard, pressed && { opacity: 0.85 }]}
-            >
-              <View style={styles.featuredImagePlaceholder}>
-                <Text style={styles.featuredImageEmoji}>🚴</Text>
-              </View>
-              <View style={styles.featuredContent}>
-                <Text style={styles.featuredTitle}>Cycling Challenge</Text>
-                <View style={styles.featuredMetaRow}>
-                  <Text style={styles.featuredMeta}>◷ 15 Minutes</Text>
-                  <Text style={styles.featuredMeta}>🔥 100 Kcal</Text>
-                  <Text style={styles.featuredStar}>★</Text>
-                </View>
-              </View>
-            </Pressable>
-
             {/* Forums Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Forums</Text>
-              {FORUM_TOPICS.map((topic) => (
-                <Pressable
-                  key={topic.id}
-                  onPress={() => navigation.navigate('DiscussionForum')}
-                  style={({ pressed }) => [styles.topicCard, pressed && { opacity: 0.85 }]}
-                >
-                  <View style={styles.topicLeft}>
-                    <Text style={styles.topicTitle} numberOfLines={1}>
-                      {topic.title}
-                    </Text>
-                    <Text style={styles.topicDescription} numberOfLines={2}>
-                      {topic.description}
-                    </Text>
-                  </View>
-                  <View style={styles.topicRight}>
-                    <Text style={styles.seeAll}>See All ›</Text>
-                    <Text style={styles.topicTime}>{topic.timeAgo}</Text>
-                  </View>
-                </Pressable>
-              ))}
+              {forums.length === 0 ? (
+                <Text style={styles.emptyText}>No forums available yet.</Text>
+              ) : (
+                forums.map((topic) => (
+                  <Pressable
+                    key={topic.id}
+                    onPress={() => navigation.navigate('DiscussionForum')}
+                    style={({ pressed }) => [styles.topicCard, pressed && { opacity: 0.85 }]}
+                  >
+                    <View style={styles.topicLeft}>
+                      <Text style={styles.topicTitle} numberOfLines={1}>
+                        {topic.title}
+                      </Text>
+                      <Text style={styles.topicDescription} numberOfLines={2}>
+                        {topic.description}
+                      </Text>
+                    </View>
+                    <View style={styles.topicRight}>
+                      <Text style={styles.seeAll}>See All ›</Text>
+                    </View>
+                  </Pressable>
+                ))
+              )}
             </View>
           </>
         ) : (
           /* Challenges Tab */
           <View style={styles.challengesSection}>
-            {CHALLENGES.map((challenge) => (
-              <View key={challenge.id} style={styles.challengeCard}>
-                <View style={styles.challengeImagePlaceholder}>
-                  <Text style={styles.challengeImageEmoji}>{challenge.emoji}</Text>
-                </View>
-                <View style={styles.challengeContent}>
-                  <Text style={styles.challengeTitle}>{challenge.title}</Text>
-                  <View style={styles.challengeMetaRow}>
-                    <Text style={styles.challengeMeta}>◷ {challenge.duration}</Text>
-                    <Text style={styles.challengeMeta}>🔥 {challenge.calories}</Text>
+            {challenges.length === 0 ? (
+              <Text style={styles.emptyText}>No active challenges.</Text>
+            ) : (
+              challenges.map((challenge) => (
+                <View key={challenge.id} style={styles.challengeCard}>
+                  <View style={styles.challengeImagePlaceholder}>
+                    <Text style={styles.challengeImageEmoji}>🏆</Text>
                   </View>
+                  <View style={styles.challengeContent}>
+                    <Text style={styles.challengeTitle}>{challenge.title}</Text>
+                    <View style={styles.challengeMetaRow}>
+                      <Text style={styles.challengeMeta}>◷ {challenge.durationMinutes} min</Text>
+                      <Text style={styles.challengeMeta}>🔥 {challenge.calories} Kcal</Text>
+                    </View>
+                  </View>
+                  <Pressable
+                    onPress={() => navigation.navigate('ChallengeDetail')}
+                    style={styles.joinButton}
+                  >
+                    <Text style={styles.joinButtonText}>Join</Text>
+                  </Pressable>
                 </View>
-                <Pressable
-                  onPress={() => navigation.navigate('ChallengeDetail')}
-                  style={styles.joinButton}
-                >
-                  <Text style={styles.joinButtonText}>Join</Text>
-                </Pressable>
-              </View>
-            ))}
+              ))
+            )}
           </View>
         )}
       </ScrollView>
@@ -333,5 +307,13 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.bodySemiBold,
     fontSize: 13,
     color: colors.base,
+  },
+  loadingWrap: { alignItems: 'center', paddingVertical: spacing.xl },
+  emptyText: {
+    fontFamily: fontFamilies.bodyMedium,
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
   },
 });

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -16,19 +18,10 @@ type NotificationItem = {
   group: 'today' | 'yesterday' | 'older';
 };
 
-const MOCK_NOTIFICATIONS: NotificationItem[] = [
-  { id: 'r1', title: 'Time for your workout!', date: 'June 10 - 10:00 AM', emoji: '⭐', group: 'today' },
-  { id: 'r2', title: 'Stay hydrated — drink water', date: 'June 10 - 08:30 AM', emoji: '💧', group: 'today' },
-  { id: 'r3', title: 'Recovery session scheduled', date: 'June 9 - 06:00 PM', emoji: '💡', group: 'yesterday' },
-  { id: 's1', title: 'Weekly progress report ready', date: 'June 10 - 09:00 AM', emoji: '📄', group: 'today' },
-  { id: 's2', title: 'Achievement unlocked: 7-day streak!', date: 'June 9 - 11:00 AM', emoji: '🏆', group: 'yesterday' },
-  { id: 's3', title: 'New article: Nutrition Tips', date: 'May 29 - 03:00 PM', emoji: '📄', group: 'older' },
-];
-
 const GROUP_LABELS: Record<NotificationItem['group'], string> = {
   today: 'Today',
   yesterday: 'Yesterday',
-  older: 'May 29 - 2026',
+  older: 'Older',
 };
 
 const TABS: { key: NotificationTab; label: string }[] = [
@@ -52,15 +45,49 @@ function NotificationCard({ item }: { item: NotificationItem }) {
   );
 }
 
+function getGroup(dateStr: string): NotificationItem['group'] {
+  const now = new Date();
+  const d = new Date(dateStr);
+  const diffMs = now.getTime() - d.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays < 1) return 'today';
+  if (diffDays < 2) return 'yesterday';
+  return 'older';
+}
+
 export function NotificationsScreen() {
   const navigation = useNavigation<Nav>();
   const [tab, setTab] = useState<NotificationTab>('reminders');
 
-  const filtered = MOCK_NOTIFICATIONS.filter((n) =>
-    tab === 'reminders'
-      ? ['r1', 'r2', 'r3'].includes(n.id)
-      : ['s1', 's2', 's3'].includes(n.id),
-  );
+  const { data: notifications, isLoading } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/athlete/notifications');
+      return data as Array<{
+        id: string;
+        type: string;
+        title: string;
+        message: string;
+        icon: string;
+        read: boolean;
+        createdAt: string;
+      }>;
+    },
+    staleTime: 30_000,
+  });
+
+  const allItems: NotificationItem[] = (notifications ?? []).map((n) => ({
+    id: n.id,
+    title: n.title,
+    date: n.createdAt,
+    emoji: n.icon || (n.type === 'reminder' ? '⭐' : '📄'),
+    group: getGroup(n.createdAt),
+  }));
+
+  const filtered = allItems.filter((n) => {
+    if (tab === 'reminders') return !n.id.startsWith('sys-');
+    return true;
+  });
 
   const groups = filtered.reduce<Record<string, NotificationItem[]>>((acc, item) => {
     (acc[item.group] ??= []).push(item);
@@ -119,20 +146,26 @@ export function NotificationsScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       >
-        {groupOrder.map((groupKey) => {
-          const items = groups[groupKey];
-          if (!items || items.length === 0) return null;
-          return (
-            <View key={groupKey} style={styles.groupSection}>
-              <Text style={styles.groupLabel}>{GROUP_LABELS[groupKey]}</Text>
-              <View style={styles.groupCards}>
-                {items.map((item) => (
-                  <NotificationCard key={item.id} item={item} />
-                ))}
+        {isLoading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : (
+          groupOrder.map((groupKey) => {
+            const items = groups[groupKey];
+            if (!items || items.length === 0) return null;
+            return (
+              <View key={groupKey} style={styles.groupSection}>
+                <Text style={styles.groupLabel}>{GROUP_LABELS[groupKey]}</Text>
+                <View style={styles.groupCards}>
+                  {items.map((item) => (
+                    <NotificationCard key={item.id} item={item} />
+                  ))}
+                </View>
               </View>
-            </View>
-          );
-        })}
+            );
+          })
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -239,4 +272,5 @@ const styles = StyleSheet.create({
   cardContent: { flex: 1, gap: 2 },
   cardTitle: { ...typography.bodyStrong, color: colors.text, fontSize: 14, lineHeight: 18 },
   cardDate: { ...typography.caption, color: colors.primary, fontSize: 12 },
+  loadingWrap: { alignItems: 'center', paddingVertical: spacing.xl },
 });

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -13,19 +15,47 @@ type Message = {
   time: string;
 };
 
-const MESSAGES: Message[] = [
-  { id: '1', name: 'Alex M.', message: 'I find that focusing on compound lifts first gives me the best results for strength gains.', time: '2 min ago' },
-  { id: '2', name: 'Jordan K.', message: 'What about progressive overload? I try to add 2.5kg each week on squats.', time: '5 min ago' },
-  { id: '3', name: 'Sam R.', message: 'Don\'t forget recovery! Sleep and nutrition are half the battle.', time: '12 min ago' },
-  { id: '4', name: 'Taylor W.', message: 'I\'ve been using RPE to gauge intensity. Works better than percentages for me.', time: '1 hr ago' },
-  { id: '5', name: 'Casey L.', message: 'Anyone tried the 5/3/1 program? Thinking about switching to it.', time: '3 hr ago' },
-];
-
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function DiscussionForumScreen() {
   const navigation = useNavigation<Nav>();
   const [inputText, setInputText] = useState('');
+  const queryClient = useQueryClient();
+
+  const { data: messages, isLoading } = useQuery({
+    queryKey: ['community-messages'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/athlete/community/messages?forumId=default');
+      return data as Array<{
+        id: string;
+        userId: string;
+        userName: string;
+        message: string;
+        createdAt: string;
+      }>;
+    },
+    staleTime: 10_000,
+  });
+
+  const sendMessage = useMutation({
+    mutationFn: async (text: string) => {
+      await apiClient.post('/athlete/community/messages', {
+        forumId: 'default',
+        message: text,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['community-messages'] });
+      setInputText('');
+    },
+  });
+
+  const messageList: Message[] = (messages ?? []).map((m) => ({
+    id: m.id,
+    name: m.userName,
+    message: m.message,
+    time: formatTimeAgo(m.createdAt),
+  }));
 
   return (
     <SafeAreaView style={styles.container}>
@@ -54,20 +84,28 @@ export function DiscussionForumScreen() {
         contentContainerStyle={styles.messagesContent}
         showsVerticalScrollIndicator={false}
       >
-        {MESSAGES.map((msg) => (
-          <View key={msg.id} style={styles.messageRow}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{msg.name.charAt(0)}</Text>
-            </View>
-            <View style={styles.messageBody}>
-              <View style={styles.messageHeader}>
-                <Text style={styles.messageName}>{msg.name}</Text>
-                <Text style={styles.messageTime}>{msg.time}</Text>
-              </View>
-              <Text style={styles.messageText}>{msg.message}</Text>
-            </View>
+        {isLoading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
-        ))}
+        ) : messageList.length === 0 ? (
+          <Text style={styles.emptyText}>No messages yet. Start the conversation!</Text>
+        ) : (
+          messageList.map((msg) => (
+            <View key={msg.id} style={styles.messageRow}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{msg.name.charAt(0)}</Text>
+              </View>
+              <View style={styles.messageBody}>
+                <View style={styles.messageHeader}>
+                  <Text style={styles.messageName}>{msg.name}</Text>
+                  <Text style={styles.messageTime}>{msg.time}</Text>
+                </View>
+                <Text style={styles.messageText}>{msg.message}</Text>
+              </View>
+            </View>
+          ))
+        )}
       </ScrollView>
 
       {/* Input Bar */}
@@ -81,7 +119,11 @@ export function DiscussionForumScreen() {
         />
         <Pressable
           style={({ pressed }) => [styles.sendButton, pressed && styles.sendButtonPressed]}
-          onPress={() => setInputText('')}
+          onPress={() => {
+            if (inputText.trim()) {
+              sendMessage.mutate(inputText.trim());
+            }
+          }}
         >
           <Text style={styles.sendIcon}>{'\u27A4'}</Text>
         </Pressable>
@@ -204,4 +246,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.base,
   },
+  loadingWrap: { alignItems: 'center', paddingVertical: spacing.xl },
+  emptyText: {
+    fontFamily: fontFamilies.bodyMedium,
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
+  },
 });
+
+function formatTimeAgo(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}

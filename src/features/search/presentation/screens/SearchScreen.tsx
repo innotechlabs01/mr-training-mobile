@@ -44,6 +44,15 @@ export function SearchScreen() {
     staleTime: 300_000,
   });
 
+  const { data: favoritesData } = useQuery({
+    queryKey: ['favorites'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/athlete/favorites');
+      return data as Array<{ id: string; itemType: string; itemId: string; itemTitle: string; itemMeta: string }>;
+    },
+    staleTime: 30_000,
+  });
+
   const isLoading = workoutsLoading || exercisesLoading;
 
   const allItems: SearchItem[] = useMemo(() => {
@@ -63,8 +72,16 @@ export function SearchScreen() {
       meta2: e.muscleGroup ?? '',
       emoji: '\uD83C\uDCAA',
     }));
-    return [...workoutItems, ...exerciseItems];
-  }, [workouts, exercises]);
+    const favoriteItems: SearchItem[] = (favoritesData ?? []).map((f) => ({
+      id: `fav-${f.id}`,
+      type: 'exercise' as const,
+      title: f.itemTitle,
+      meta1: f.itemMeta ?? '',
+      meta2: 'Favorite',
+      emoji: '\u2B50',
+    }));
+    return [...favoriteItems, ...workoutItems, ...exerciseItems];
+  }, [workouts, exercises, favoritesData]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
