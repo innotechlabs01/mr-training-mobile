@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../../../infrastructure/api/client';
+import { listMessages, sendMessage } from '../../communityService';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -24,26 +24,12 @@ export function DiscussionForumScreen() {
 
   const { data: messages, isLoading } = useQuery({
     queryKey: ['community-messages'],
-    queryFn: async () => {
-      const { data } = await apiClient.get('/athlete/community/messages?forumId=default');
-      return data as Array<{
-        id: string;
-        userId: string;
-        userName: string;
-        message: string;
-        createdAt: string;
-      }>;
-    },
+    queryFn: () => listMessages('default'),
     staleTime: 10_000,
   });
 
-  const sendMessage = useMutation({
-    mutationFn: async (text: string) => {
-      await apiClient.post('/athlete/community/messages', {
-        forumId: 'default',
-        message: text,
-      });
-    },
+  const sendMessageMut = useMutation({
+    mutationFn: async (text: string) => sendMessage('default', text),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['community-messages'] });
       setInputText('');
@@ -121,7 +107,7 @@ export function DiscussionForumScreen() {
           style={({ pressed }) => [styles.sendButton, pressed && styles.sendButtonPressed]}
           onPress={() => {
             if (inputText.trim()) {
-              sendMessage.mutate(inputText.trim());
+              sendMessageMut.mutate(inputText.trim());
             }
           }}
         >

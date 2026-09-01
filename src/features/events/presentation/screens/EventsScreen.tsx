@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, type CompositeNavigationProp } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import { ScreenHeader } from '../../../../shared/components/ui/ScreenHeader';
 import { Card } from '../../../../shared/components/ui/Card';
 import { Badge } from '../../../../shared/components/ui/Badge';
 import { EmptyState } from '../../../../shared/components/ui/EmptyState';
+import { DayStrip, type CalendarDay } from '../../../../shared/components/ui/DayStrip';
 import type { AthleteTabParamList } from '../../../../navigation/AthleteTabs';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -31,6 +32,27 @@ type EventsNav = CompositeNavigationProp<
 
 type BadgeTone = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
 
+const INITIAL_DAYS = 30;
+const LOAD_MORE = 15;
+
+function toLocalKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Normalize an API date string to 'YYYY-MM-DD' without timezone drift. */
+function dayKey(dateStr: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr ?? '');
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  try {
+    return toLocalKey(new Date(dateStr));
+  } catch {
+    return '';
+  }
+}
+
 function toneForEventStatus(status: string): BadgeTone {
   const s = status.toLowerCase();
   if (s === 'confirmed' || s === 'active' || s === 'upcoming') return 'success';
@@ -49,13 +71,31 @@ function formatDate(dateStr: string): string {
   }
 }
 
+function formatHeaderDate(key: string): string {
+  try {
+    return new Date(`${key}T12:00:00`).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
+  } catch {
+    return key;
+  }
+}
+
+function compareByTime(a: EventItem, b: EventItem): number {
+  const ta = a.time ?? '';
+  const tb = b.time ?? '';
+  if (ta !== tb) return ta.localeCompare(tb);
+  return a.title.localeCompare(b.title);
+}
+
 export function EventsScreen() {
   const navigation = useNavigation<EventsNav>();
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['athlete-events'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/athlete/events');
-      // API may return { events: [] } or direct array
+      const { data } = await apiClient.get('/athletes/events');
       if (Array.isArray(data)) return data as EventItem[];
       if (Array.isArray(data.events)) return data.events as EventItem[];
       if (Array.isArray(data.data)) return data.data as EventItem[];
@@ -65,11 +105,54 @@ export function EventsScreen() {
   });
 
   const events = data ?? [];
-  const isEmpty = !isLoading && events.length === 0;
+  const todayKey = useMemo(() => toLocalKey(new Date()), []);
+  const [selectedKey, setSelectedKey] = useState(todayKey);
+  const [windowSize, setWindowSize] = useState(INITIAL_DAYS);
+
+  const eventsByDay = useMemo(() => {
+    const map: Record<string, EventItem[]> = {};
+    for (const ev of events) {
+      const key = dayKey(ev.date);
+      if (!key) continue;
+      (map[key] ??= []).push(ev);
+    }
+    return map;
+  }, [events]);
+
+  const days = useMemo(() => {
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    const out: CalendarDay[] = [];
+    for (let i = 0; i < windowSize; i++) {
+      const d = new Date(base);
+      d.setDate(base.getDate() + i);
+      const key = toLocalKey(d);
+      out.push({
+        key,
+        weekday: d.toLocaleDateString('en-US', { weekday: 'short' }),
+        dayNumber: d.getDate(),
+        month: d.toLocaleDateString('en-US', { month: 'short' }),
+        eventCount: eventsByDay[key]?.length ?? 0,
+        isToday: i === 0,
+      });
+    }
+    return out;
+  }, [windowSize, eventsByDay]);
+
+  const selectedEvents = useMemo(
+    () => [...(eventsByDay[selectedKey] ?? [])].sort(compareByTime),
+    [eventsByDay, selectedKey],
+  );
+
+  const extendWindow = useCallback(() => {
+    setWindowSize((s) => s + LOAD_MORE);
+  }, []);
 
   const handleRefresh = useCallback(() => {
     refetch();
   }, [refetch]);
+
+  const showLoading = isLoading && events.length === 0;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -80,17 +163,17 @@ export function EventsScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <ScreenHeader title="Proximos Eventos" />
+        <ScreenHeader title="Eventos" subtitle={formatHeaderDate(selectedKey)} />
 
-        {/* Loading */}
-        {isLoading ? (
+        <DayStrip days={days} selectedKey={selectedKey} onSelect={setSelectedKey} onEndReached={extendWindow} />
+
+        {showLoading ? (
           <EmptyState variant="loading" message="Cargando eventos..." />
-        ) : isEmpty ? (
-          <EmptyState variant="empty" message="No hay eventos" />
+        ) : selectedEvents.length === 0 ? (
+          <EmptyState variant="empty" message="No hay eventos este día" />
         ) : (
           <View style={styles.list}>
-            {events.map((ev) => (
+            {selectedEvents.map((ev) => (
               <Pressable
                 key={ev.id}
                 onPress={() =>
@@ -129,8 +212,8 @@ export function EventsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.base },
-  content: { padding: spacing.lg, paddingBottom: 100 },
-  list: { gap: spacing.sm },
+  content: { paddingBottom: 100 },
+  list: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   cardPressed: { opacity: 0.85 },
   card: {
     position: 'relative',

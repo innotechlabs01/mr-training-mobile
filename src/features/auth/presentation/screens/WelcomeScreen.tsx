@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, spacing, typography, radius } from '../../../../shared/theme/tokens';
+import { colors, spacing, typography, radius, fontFamilies } from '../../../../shared/theme/tokens';
+import { welcomeImage } from '../../../../shared/theme/onboardingImages';
 
 type Props = {
   onNewUser: () => void;
@@ -11,12 +12,17 @@ type Props = {
 export function WelcomeScreen({ onNewUser, onExistingUser }: Props) {
   return (
     <SafeAreaView style={styles.container}>
+      {/* Fitness hero background */}
+      <Image source={{ uri: welcomeImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      {/* Dark overlay for contrast */}
+      <View style={styles.overlay} pointerEvents="none" />
+
       <View style={styles.content}>
         <View style={styles.header}>
           <View style={styles.iconCircle}>
-            <Text style={styles.iconText}>🏋️</Text>
+            <Text style={styles.iconText}>MR</Text>
           </View>
-          <Text style={styles.title}>Welcome to{'\n'}MR Training</Text>
+          <Text style={styles.title}>Go beyond{'\n'}your limits</Text>
           <Text style={styles.subtitle}>
             Your personal coach in your pocket. Train smarter, recover better, reach your goals.
           </Text>
@@ -29,7 +35,7 @@ export function WelcomeScreen({ onNewUser, onExistingUser }: Props) {
             accessibilityLabel="I'm new here — Get a personalized plan"
           >
             <View style={styles.cardIcon}>
-              <Text style={styles.cardEmoji}>🚀</Text>
+              <Text style={styles.cardMonogram}>MR</Text>
             </View>
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>I&apos;m new here</Text>
@@ -44,7 +50,7 @@ export function WelcomeScreen({ onNewUser, onExistingUser }: Props) {
             accessibilityLabel="I already train — Sign in to continue"
           >
             <View style={styles.cardIcon}>
-              <Text style={styles.cardEmoji}>💪</Text>
+              <Text style={styles.cardMonogram}>+</Text>
             </View>
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>I already train</Text>
@@ -67,29 +73,33 @@ export function WelcomeScreen({ onNewUser, onExistingUser }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.base },
+  container: { flex: 1, backgroundColor: '#000' },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(11,15,14,0.55)',
+  },
   content: { flex: 1, justifyContent: 'space-between', padding: spacing.xl },
   header: { alignItems: 'center', marginTop: spacing.xl },
   iconCircle: {
     width: 72, height: 72, borderRadius: radius.full,
-    backgroundColor: `${colors.primary}15`, borderWidth: 2, borderColor: `${colors.primary}30`,
+    backgroundColor: `${colors.primary}15`, borderWidth: 2, borderColor: `${colors.primary}40`,
     justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg,
   },
-  iconText: { fontSize: 32 },
-  title: { ...typography.display, fontSize: 32, lineHeight: 40, color: colors.text, textAlign: 'center', marginBottom: spacing.sm },
+  iconText: { fontFamily: fontFamilies.displayBlack, fontSize: 22, color: colors.primary, letterSpacing: 1 },
+  title: { ...typography.h1, fontSize: 32, lineHeight: 40, color: colors.text, textAlign: 'center', marginBottom: spacing.sm },
   subtitle: { ...typography.body, fontSize: 16, lineHeight: 24, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.md },
   cards: { gap: spacing.sm, marginTop: spacing.lg },
   card: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg,
+    backgroundColor: `${colors.surface}E6`, borderRadius: radius.lg, padding: spacing.lg,
     borderWidth: 1, borderColor: colors.border, gap: spacing.md,
   },
   cardPressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
   cardIcon: {
     width: 48, height: 48, borderRadius: radius.full,
-    backgroundColor: `${colors.primary}15`, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: `${colors.primary}18`, justifyContent: 'center', alignItems: 'center',
   },
-  cardEmoji: { fontSize: 22 },
+  cardMonogram: { fontFamily: fontFamilies.displayBold, fontSize: 16, color: colors.primary },
   cardContent: { flex: 1 },
   cardTitle: { ...typography.title, fontSize: 17, color: colors.text, marginBottom: spacing.xs },
   cardDesc: { ...typography.caption, fontSize: 13, lineHeight: 18, color: colors.textSecondary },

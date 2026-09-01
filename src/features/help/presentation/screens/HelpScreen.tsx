@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  iconText: { fontSize: 14, color: '#FFFFFF', textAlign: 'center' },
+  iconText: { fontSize: 14, color: colors.text, textAlign: 'center' },
   contactLabel: { flex: 1, ...typography.bodyStrong, color: colors.text },
   contactChevron: { fontSize: 20, color: colors.primary, fontWeight: '600' },
   separator: { height: 1, backgroundColor: colors.border, marginLeft: 48 + spacing.md },

@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../../../infrastructure/api/client';
+import { listBlogPosts } from '@features/blog/blogService';
 import { colors, spacing, radius, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -27,8 +27,7 @@ export function ArticlesScreen() {
   const { data: articles, isLoading } = useQuery({
     queryKey: ['blog-posts'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/marketing/blog');
-      return data as Array<{ id: string; title: string; content: string; slug: string; createdAt: string }>;
+      return await listBlogPosts();
     },
     staleTime: 300_000,
   });

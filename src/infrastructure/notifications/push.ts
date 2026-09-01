@@ -2,7 +2,7 @@
  * Push notification registration and alert display for the athlete.
  *
  * - Registers Expo push token on mount
- * - Fetches computed alerts from /api/athlete/alerts
+ * - Fetches computed alerts from /alerts via alertService
  * - Shows in-app alerts as toast banners
  */
 import { useEffect, useState } from 'react';
@@ -10,6 +10,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { apiClient } from '../../infrastructure/api/client';
+import { listAlerts } from '../../features/alerts/alertService';
 
 export interface Alert {
   type: string;
@@ -51,7 +52,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
     const token = tokenData.data;
 
     // Register with backend (fire-and-forget).
-    apiClient.post('/athlete/push-tokens', {
+    apiClient.post('/devices', {
       token,
       platform: Platform.OS,
     }).catch(() => {});
@@ -67,8 +68,14 @@ export async function registerForPushNotifications(): Promise<string | null> {
  */
 export async function fetchAlerts(): Promise<Alert[]> {
   try {
-    const { data } = await apiClient.get('/athlete/alerts');
-    return data?.alerts ?? [];
+    const alerts = await listAlerts();
+    // Map new Alert DTO to legacy shape expected by callers
+    return alerts.map(a => ({
+      type: a.type ?? 'general',
+      severity: (a.severity as 'low' | 'medium' | 'high') ?? 'low',
+      title: a.title,
+      message: a.message,
+    }));
   } catch {
     return [];
   }

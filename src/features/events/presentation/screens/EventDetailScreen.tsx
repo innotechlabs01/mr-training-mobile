@@ -161,7 +161,7 @@ export function EventDetailScreen({ route, navigation }: Props) {
   const { data, isLoading, isError, refetch } = useQuery<EventDetailData>({
     queryKey: ['event-detail', eventId],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/athlete/events/${eventId}`);
+      const { data } = await apiClient.get(`/events/${eventId}`);
       return data as EventDetailData;
     },
     staleTime: 5 * 60 * 1000,

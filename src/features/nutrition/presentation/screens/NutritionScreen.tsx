@@ -42,7 +42,7 @@ export function NutritionScreen() {
     queryKey: ['athlete-nutrition'],
     queryFn: async () => {
       try {
-        const { data: today } = await apiClient.get('/athlete/today');
+        const { data: today } = await apiClient.get('/athletes/today');
         // Extract nutrition data if available from today response
         if (today?.nutrition?.meals) {
           return today.nutrition.meals as MealItem[];

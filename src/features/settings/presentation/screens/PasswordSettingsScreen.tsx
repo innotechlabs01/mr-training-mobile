@@ -14,6 +14,9 @@ export function PasswordSettingsScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleChangePassword = () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -71,10 +74,17 @@ export function PasswordSettingsScreen() {
               placeholderTextColor={colors.textSecondary}
               value={currentPassword}
               onChangeText={setCurrentPassword}
-              secureTextEntry
+              secureTextEntry={!showCurrent}
               autoCapitalize="none"
               autoCorrect={false}
+              onPress={() => setShowCurrent((prev) => !prev)}
             />
+            <Pressable
+              style={{ padding: 4 }}
+              onPress={() => setShowCurrent((prev) => !prev)}
+            >
+              <Text style={{ color: colors.textSecondary }}>{showCurrent ? '\uD83D\uDD25' : '\uD83D\uDD12'}</Text>
+            </Pressable>
           </View>
 
           <View style={styles.inputRow}>
@@ -85,10 +95,17 @@ export function PasswordSettingsScreen() {
               placeholderTextColor={colors.textSecondary}
               value={newPassword}
               onChangeText={setNewPassword}
-              secureTextEntry
+              secureTextEntry={!showNew}
               autoCapitalize="none"
               autoCorrect={false}
+              onPress={() => setShowNew((prev) => !prev)}
             />
+            <Pressable
+              style={{ padding: 4 }}
+              onPress={() => setShowNew((prev) => !prev)}
+            >
+              <Text style={{ color: colors.textSecondary }}>•••</Text>
+            </Pressable>
           </View>
 
           <View style={styles.inputRow}>
@@ -99,10 +116,17 @@ export function PasswordSettingsScreen() {
               placeholderTextColor={colors.textSecondary}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              secureTextEntry
+              secureTextEntry={!showConfirm}
               autoCapitalize="none"
               autoCorrect={false}
+              onPress={() => setShowConfirm((prev) => !prev)}
             />
+            <Pressable
+              style={{ padding: 4 }}
+              onPress={() => setShowConfirm((prev) => !prev)}
+            >
+              <Text style={{ color: colors.text }}>•••</Text>
+            </Pressable>
           </View>
 
           {/* CTA */}
@@ -133,6 +157,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     gap: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   backButton: {
     width: 32,

@@ -11,6 +11,7 @@ type SettingsRow = {
   icon: string;
   label: string;
   onPress: () => void;
+  description?: string;
 };
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -23,11 +24,13 @@ export function SettingsScreen() {
       icon: '\uD83D\uDD14',
       label: 'Notification Setting',
       onPress: () => navigation.navigate('NotificationSettings'),
+      description: 'Manage workout reminders and updates',
     },
     {
       icon: '\uD83D\uDD11',
       label: 'Password Setting',
       onPress: () => navigation.navigate('PasswordSettings'),
+      description: 'Change your password or reset it',
     },
     {
       icon: '\uD83D\uDC64',
@@ -46,42 +49,33 @@ export function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerRow}>
+      <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
           onPress={() => navigation.goBack()}
-          hitSlop={12}
           style={styles.backButton}
         >
           <Text style={styles.backChevron}>{'\u2039'}</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.headerSpacer} />
+        <Text style={styles.title}>Settings</Text>
       </View>
 
-      {/* Rows card */}
-      <View style={styles.bodyWrap}>
-        <Card style={styles.card}>
-          {rows.map((row, i) => (
-            <React.Fragment key={row.label}>
-              <Pressable
-                style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-                onPress={row.onPress}
-                accessibilityRole="button"
-                accessibilityLabel={row.label}
-              >
+      <View style={styles.content}>
+        {rows.map((row) => (
+          <Card style={styles.card} key={row.label}>
+            <Pressable accessibilityRole="button" accessibilityLabel={row.label} onPress={row.onPress}>
+              <View style={styles.row}>
                 <View style={styles.iconCircle}>
                   <Text style={styles.iconText}>{row.icon}</Text>
                 </View>
                 <Text style={styles.rowLabel}>{row.label}</Text>
-                <Text style={styles.chevron}>{'\u25B8'}</Text>
-              </Pressable>
-              {i < rows.length - 1 && <View style={styles.separator} />}
-            </React.Fragment>
-          ))}
-        </Card>
+              </View>
+              {row.description && <Text style={styles.rowDescription}>{row.description}</Text>}
+              <Text style={styles.chevron}>▶</Text>
+            </Pressable>
+          </Card>
+        ))}
       </View>
     </SafeAreaView>
   );
@@ -89,13 +83,13 @@ export function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.base },
-  headerRow: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
+    padding: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   backButton: {
     width: 32,
@@ -104,7 +98,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backChevron: { color: colors.primary, fontSize: 32, lineHeight: 32, fontWeight: '400' },
-  headerTitle: {
+  title: {
     flex: 1,
     textAlign: 'center',
     fontFamily: fontFamilies.displayBold,
@@ -112,15 +106,18 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     color: colors.primary,
   },
-  headerSpacer: { width: 32 },
-  bodyWrap: { padding: spacing.md },
-  card: { padding: 0, overflow: 'hidden' },
+  content: { padding: spacing.md },
+  card: {
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    marginBottom: spacing.sm,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    height: 56,
+    paddingVertical: spacing.xs,
   },
   iconCircle: {
     width: 32,
@@ -130,9 +127,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  iconText: { fontSize: 14, color: '#FFFFFF', textAlign: 'center' },
+  iconText: { fontSize: 14, color: colors.text, textAlign: 'center' },
   rowLabel: { flex: 1, ...typography.bodyStrong, color: colors.text },
+  rowDescription: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginLeft: spacing.sm,
+    marginTop: 2,
+  },
   chevron: { fontSize: 20, color: colors.primary, fontWeight: '600' },
-  separator: { height: 1, backgroundColor: colors.border, marginLeft: 48 + spacing.md },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
 });

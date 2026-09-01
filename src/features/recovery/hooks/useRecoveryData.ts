@@ -93,8 +93,8 @@ export function useRecoveryData(): RecoveryState & {
 
   const loadFromApi = useCallback(async () => {
     const [metricsRes, sleepRes] = await Promise.all([
-      apiClient.get('/athlete/health/metrics?days=8'),
-      apiClient.get('/athlete/health/sleep?days=8'),
+      apiClient.get('/health/metrics?days=8'),
+      apiClient.get('/health/sleep?days=8'),
     ]);
     const metrics: MetricRow[] = metricsRes.data.metrics ?? [];
     const sleeps: Array<SleepLog & { date: string }> = sleepRes.data.sleepLogs ?? [];
@@ -224,14 +224,12 @@ export function useRecoveryData(): RecoveryState & {
   const saveManualReadiness = useCallback(async (score: number): Promise<boolean> => {
     try {
       const clamped = clamp(score, 0, 100);
-      await apiClient.post('/athlete/health/metrics', {
-        metrics: [{
-          metricType: 'manual_readiness',
-          value: clamped,
-          unit: 'score',
-          source: 'manual',
-          recordedAt: new Date().toISOString(),
-        }],
+      await apiClient.post('/health/metrics', {
+        metricType: 'manual_readiness',
+        value: clamped,
+        unit: 'score',
+        source: 'manual',
+        recordedAt: new Date().toISOString(),
       });
       await loadFromApi();
       return true;

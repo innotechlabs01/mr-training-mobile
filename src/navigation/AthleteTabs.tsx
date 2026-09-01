@@ -23,11 +23,11 @@ export function AthleteTabs() {
       tabBar={(props) => <GlassDock {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tab.Screen name="Today" component={TodayScreen} options={{ tabBarLabel: 'Hoy' }} />
+      <Tab.Screen name="Today" component={TodayScreen} options={{ tabBarLabel: 'Today' }} />
       <Tab.Screen name="Plan" component={HistoryScreen} options={{ tabBarLabel: 'Plan' }} />
-      <Tab.Screen name="Events" component={EventsScreen} options={{ tabBarLabel: 'Eventos' }} />
+      <Tab.Screen name="Events" component={EventsScreen} options={{ tabBarLabel: 'Events' }} />
       <Tab.Screen name="Recovery" component={RecoveryScreen} options={{ tabBarLabel: 'Recovery' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Perfil' }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Profile' }} />
     </Tab.Navigator>
   );
 }

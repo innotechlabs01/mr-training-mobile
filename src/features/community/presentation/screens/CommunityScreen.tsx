@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../../../infrastructure/api/client';
+import { getCommunity } from '../../communityService';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -32,10 +32,7 @@ export function CommunityScreen() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['community'],
-    queryFn: async () => {
-      const { data } = await apiClient.get('/athlete/community');
-      return data as { forums: ForumTopic[]; challenges: Challenge[] };
-    },
+    queryFn: getCommunity,
     staleTime: 60_000,
   });
 

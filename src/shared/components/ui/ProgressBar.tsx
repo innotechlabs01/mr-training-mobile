@@ -5,9 +5,11 @@ import { colors, radius } from '../../theme/tokens';
 type Props = {
   /** 0..1 */
   progress: number;
+  /** Optional: show numeric label */
+  showLabel?: boolean;
 };
 
-export function ProgressBar({ progress }: Props) {
+export function ProgressBar({ progress, showLabel = false }: Props) {
   const clamped = Math.min(Math.max(progress, 0), 1);
   return (
     <View
@@ -25,7 +27,7 @@ const styles = StyleSheet.create({
   track: {
     backgroundColor: colors.surfaceRaised,
     borderRadius: radius.full,
-    height: 8,
+    height: 4,
     overflow: 'hidden',
   },
   fill: { backgroundColor: colors.primary, borderRadius: radius.full, height: '100%' },

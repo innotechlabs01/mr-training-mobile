@@ -7,15 +7,28 @@ type Props = {
   subtitle?: string;
   onBack?: () => void;
   action?: React.ReactNode;
+  loading?: boolean;
 };
 
-export function ScreenHeader({ title, subtitle, onBack, action }: Props) {
+export function ScreenHeader({ title, subtitle, onBack, action, loading = false }: Props) {
   return (
     <View style={styles.header}>
       {onBack ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} hitSlop={12}>
-          <Text style={styles.back}>‹</Text>
-        </Pressable>
+        <View style={styles.backContainer}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            onPress={onBack}
+            hitSlop={12}
+            disabled={loading}
+            style={({ pressed }) => [
+              styles.backPressable,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={styles.back}>‹</Text>
+          </Pressable>
+        </View>
       ) : null}
       <View style={styles.titles}>
         <Text style={styles.title}>{title}</Text>
@@ -35,6 +48,9 @@ const styles = StyleSheet.create({
   },
   titles: { flex: 1 },
   back: { color: colors.primary, fontSize: 32, lineHeight: 36 },
-  title: { ...typography.title, color: colors.text },
+  backContainer: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' },
+  backPressable: {},
+  pressed: { opacity: 0.8 },
+  title: { ...typography.h3, color: colors.text },
   subtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
 });

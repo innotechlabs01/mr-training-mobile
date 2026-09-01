@@ -38,8 +38,9 @@ export function WorkoutListScreen() {
   const { data: workouts, isLoading } = useQuery({
     queryKey: ['athlete-workouts'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/athlete/workouts');
-      return data as WorkoutItem[];
+      const { data } = await apiClient.get('/workouts');
+      // Go returns ListResponse {data: [...]} — unwrap
+      return (data?.data ?? data) as WorkoutItem[];
     },
     staleTime: 60_000,
   });

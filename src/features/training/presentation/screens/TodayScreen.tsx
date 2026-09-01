@@ -13,10 +13,11 @@ import { ProgressBar } from '../../../../shared/components/ui/ProgressBar';
 import { Badge } from '../../../../shared/components/ui/Badge';
 import { EmptyState } from '../../../../shared/components/ui/EmptyState';
 import { AthleteTodaySummary } from './AthleteTodaySummary';
-import { fetchAlerts, type Alert } from '../../../../infrastructure/notifications/push';
+import { listAlerts, type Alert } from '../../../../features/alerts/alertService';
+import { listMessages, type CommunityMessage } from '../../../../features/community/communityService';
+import { listBlogPosts, type BlogPost } from '../../../../features/blog/blogService';
 import type { AthleteTabParamList } from '../../../../navigation/AthleteTabs';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
-import { BarbellIcon, HeartPulseIcon } from '../../../../shared/components/icons';
 
 type TodayData = {
   athlete: { id: string; name: string; sport: string };
@@ -39,29 +40,6 @@ function toneForStatus(status: string): BadgeTone {
   return 'neutral';
 }
 
-// Inline small Users icon for Quick Access — group silhouette
-function UsersIcon({ size = 20, color = colors.primary }: { size?: number; color?: string }) {
-  return (
-    <Text style={{ fontSize: size * 0.8, color, textAlign: 'center', lineHeight: size }}>👥</Text>
-  );
-}
-
-function AppleIcon({ size = 20, color = colors.primary }: { size?: number; color?: string }) {
-  return (
-    <Text style={{ fontSize: size * 0.8, color, textAlign: 'center', lineHeight: size }}>🍎</Text>
-  );
-}
-
-const MOCK_RECOMMENDATIONS = [
-  { id: 'mock-1', contentName: 'Squat Exercise', modality: 'Strength', minutes: 12, kcal: 120 },
-  { id: 'mock-2', contentName: 'Full Body Stretching', modality: 'Flexibility', minutes: 12, kcal: 120 },
-];
-
-const MOCK_ARTICLES = [
-  { id: 'art-1', title: 'Supplement Guide...' },
-  { id: 'art-2', title: '15 Quick & Effective Daily Routines...' },
-];
-
 export function TodayScreen() {
   const navigation = useNavigation<TodayNav>();
   const { user } = useUser();
@@ -70,12 +48,27 @@ export function TodayScreen() {
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['athlete-today'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/athlete/today');
+      const { data } = await apiClient.get('/athletes/today');
       return data as TodayData;
     },
     staleTime: 60 * 1000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+  });
+
+  // Most recent community chat message — real data, graceful empty on failure.
+  const { data: chatMessages = [] } = useQuery({
+    queryKey: ['community-messages-preview'],
+    queryFn: () => listMessages().catch((): CommunityMessage[] => []),
+    staleTime: 60 * 1000,
+  });
+
+  // Real blog articles — graceful empty on failure (endpoint returns snake_case created_at;
+  // only title is safe to render, so createdAt is intentionally not shown).
+  const { data: blogPosts = [] } = useQuery({
+    queryKey: ['blog-preview'],
+    queryFn: () => listBlogPosts().catch((): BlogPost[] => []),
+    staleTime: 60 * 1000,
   });
 
   useFocusEffect(
@@ -89,37 +82,17 @@ export function TodayScreen() {
 
   const [alerts, setAlerts] = useState<Alert[]>([]);
   useEffect(() => {
-    fetchAlerts().then(setAlerts);
+    listAlerts().then(setAlerts).catch(() => setAlerts([]));
   }, []);
 
-  const recommendations =
-    data?.activeWorkouts && data.activeWorkouts.length > 0
-      ? data.activeWorkouts.map((w) => ({
-          id: w.id,
-          contentName: w.contentName,
-          modality: w.modality,
-          minutes: 12,
-          kcal: 120,
-        }))
-      : MOCK_RECOMMENDATIONS;
+  const latestChatMessage = chatMessages.length > 0 ? chatMessages[chatMessages.length - 1] : null;
+  const displayedArticles = blogPosts.slice(0, 3);
 
-  const handleQuickAccess = (key: 'workout' | 'progress' | 'nutrition' | 'community') => {
-    const parentNav = navigation.getParent<NativeStackNavigationProp<RootStackParamList>>();
-    switch (key) {
-      case 'workout':
-        parentNav?.navigate('Workouts');
-        break;
-      case 'progress':
-        parentNav?.navigate('Progress');
-        break;
-      case 'nutrition':
-        parentNav?.navigate('Nutrition');
-        break;
-      case 'community':
-        navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Community');
-        break;
-    }
-  };
+  const goDiscussionForum = () =>
+    navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('DiscussionForum');
+
+  const goArticles = () =>
+    navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Articles');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -161,165 +134,17 @@ export function TodayScreen() {
           </View>
         </View>
 
-        {/* Quick Access Row — 4 cols with dividers */}
-        <View style={styles.quickAccessRow}>
-          <Pressable style={styles.quickItem} onPress={() => handleQuickAccess('workout')}>
-            <View style={styles.quickIconCircle}>
-              <BarbellIcon size={20} color={colors.primary} />
-            </View>
-            <Text style={styles.quickLabel}>Workout</Text>
-          </Pressable>
-          <View style={styles.divider} />
-          <Pressable style={styles.quickItem} onPress={() => handleQuickAccess('progress')}>
-            <View style={styles.quickIconCircle}>
-              <HeartPulseIcon size={20} color={colors.primary} />
-            </View>
-            <Text style={styles.quickLabel}>Progress</Text>
-          </Pressable>
-          <View style={styles.divider} />
-          <Pressable style={styles.quickItem} onPress={() => handleQuickAccess('nutrition')}>
-            <View style={styles.quickIconCircle}>
-              <AppleIcon size={18} color={colors.primary} />
-            </View>
-            <Text style={styles.quickLabel}>Nutrition</Text>
-          </Pressable>
-          <View style={styles.divider} />
-          <Pressable style={styles.quickItem} onPress={() => handleQuickAccess('community')}>
-            <View style={styles.quickIconCircle}>
-              <UsersIcon size={18} color={colors.primary} />
-            </View>
-            <Text style={styles.quickLabel}>Community</Text>
-          </Pressable>
-        </View>
-
-        {/* Athlete readiness — kept but after Quick Access, before Recommendations */}
+        {/* Athlete readiness / recovery summary */}
         <AthleteTodaySummary athleteId={user?.id ?? ''} />
 
-        {/* Alert banners */}
-        {alerts.length > 0 && (
-          <Card style={styles.alertCard}>
-            {alerts.slice(0, 2).map((a, i) => (
-              <View key={`${a.type}-${i}`} style={[styles.alertRow, i > 0 && styles.alertBorder]}>
-                <Text
-                  style={[
-                    styles.alertIcon,
-                    a.severity === 'high' ? styles.alertHigh : a.severity === 'medium' ? styles.alertMedium : styles.alertLow,
-                  ]}
-                >
-                  {a.severity === 'high' ? '🔴' : a.severity === 'medium' ? '🟡' : '🔵'}
-                </Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.alertTitle}>{a.title}</Text>
-                  <Text style={styles.alertMessage} numberOfLines={2}>
-                    {a.message}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </Card>
-        )}
-
-        {/* Recommendations Section — horizontal ScrollView */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Recommendations</Text>
-            <Pressable onPress={() => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Articles')}>
-              <Text style={styles.seeAll}>See All ›</Text>
-            </Pressable>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.recoScrollContent}
-          >
-            {recommendations.map((item) => (
-              <Pressable
-                key={item.id}
-                onPress={() => {
-                  if (item.id.startsWith('mock-')) {
-                    console.log('Mock recommendation pressed', item.contentName);
-                    return;
-                  }
-                  navigation
-                    .getParent<NativeStackNavigationProp<RootStackParamList>>()
-                    ?.navigate('WorkoutDetail', { workoutId: item.id });
-                }}
-                style={({ pressed }) => [styles.recoCard, pressed && { opacity: 0.85 }]}
-              >
-                <View style={styles.recoImagePlaceholder}>
-                  <Text style={styles.recoImageText}>🏋️</Text>
-                  {/* favorite star top-right */}
-                  <View style={styles.recoStarBadge}>
-                    <Text style={styles.recoStar}>★</Text>
-                  </View>
-                  {/* play overlay */}
-                  <View style={styles.recoPlayBadge}>
-                    <Text style={styles.recoPlay}>▶</Text>
-                  </View>
-                </View>
-                <View style={styles.recoContent}>
-                  <Text style={styles.recoTitle} numberOfLines={1}>
-                    {item.contentName}
-                  </Text>
-                  <View style={styles.recoMetaRow}>
-                    <Text style={styles.recoMeta}>◷ {item.minutes} Minutes</Text>
-                    <Text style={styles.recoMeta}>🔥 {item.kcal} Kcal</Text>
-                  </View>
-                </View>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Weekly Challenge Card */}
-        <Pressable
-          onPress={() => console.log('Weekly Challenge pressed')}
-          style={({ pressed }) => [styles.weeklyCard, pressed && { opacity: 0.9 }]}
-        >
-          <View style={styles.weeklyLeft}>
-            <Text style={styles.weeklyEyebrow}>Weekly Challenge</Text>
-            <Text style={styles.weeklyTitle}>Plank With Hip Twist</Text>
-          </View>
-          <View style={styles.weeklyImagePlaceholder}>
-            <Text style={styles.weeklyImageEmoji}>🧘</Text>
-          </View>
-        </Pressable>
-
-        {/* Articles & Tips Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Articles & Tips</Text>
-          </View>
-          <View style={styles.articlesGrid}>
-            {MOCK_ARTICLES.map((art) => (
-              <Pressable
-                key={art.id}
-                onPress={() => console.log('Article pressed', art.title)}
-                style={({ pressed }) => [styles.articleCard, pressed && { opacity: 0.9 }]}
-              >
-                <View style={styles.articleImagePlaceholder}>
-                  <Text style={styles.articleImageEmoji}>📰</Text>
-                  <View style={styles.articleStarBadge}>
-                    <Text style={styles.articleStar}>★</Text>
-                  </View>
-                </View>
-                <Text style={styles.articleTitle} numberOfLines={2}>
-                  {art.title}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-
-        {/* Existing loading / empty / sessions — kept below new layout */}
+        {/* Loading / empty / sessions + active workouts */}
         {isLoading ? (
           <EmptyState variant="loading" />
         ) : !hasData ? (
           <EmptyState variant="empty" message="No data yet" />
         ) : (
           <>
-            {/* Active workouts detailed list was replaced by Recommendations horizontal; keep only if needed for progress */}
-            {/* Keep today's sessions if any */}
+            {/* Today's sessions */}
             {data.todaySessions.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
@@ -344,11 +169,11 @@ export function TodayScreen() {
               </View>
             )}
 
-            {/* Progress for active workouts (kept subtle) */}
+            {/* Continue training — active workouts */}
             {data.activeWorkouts.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionEyebrow}>ACTIVE PROGRESS</Text>
+                  <Text style={styles.sectionEyebrow}>CONTINUE TRAINING</Text>
                   <Badge text={String(data.activeWorkouts.length)} tone="neutral" />
                 </View>
                 {data.activeWorkouts.map((w) => (
@@ -367,9 +192,9 @@ export function TodayScreen() {
                         <Text style={styles.sessionTitle} numberOfLines={1}>
                           {w.contentName}
                         </Text>
-                        <Badge text={w.status} tone={toneForStatus(w.status)} />
+                        <Badge text={w.modality} tone="primary" />
                       </View>
-                      <Text style={styles.sessionMeta}>{w.modality}</Text>
+                      <Text style={styles.sessionMeta}>{w.status}</Text>
                       <ProgressBar progress={w.progress / 100} />
                       <Text style={styles.progressCaption}>{w.progress}% complete</Text>
                     </Card>
@@ -380,6 +205,77 @@ export function TodayScreen() {
 
             {!hasSessions && <EmptyState variant="empty" message="No sessions today" />}
           </>
+        )}
+
+        {/* Community Chat — real preview of the community thread */}
+        <Card onPress={goDiscussionForum} style={styles.chatCard}>
+          <View style={styles.chatTopRow}>
+            <View style={styles.chatAccentDot} />
+            <Text style={styles.chatLabel}>Comunidad</Text>
+            <Text style={styles.chatAffordance}>Ver chat</Text>
+          </View>
+          {latestChatMessage ? (
+            <>
+              <Text style={styles.chatSender} numberOfLines={1}>
+                {latestChatMessage.userName}
+              </Text>
+              <Text style={styles.chatMessage} numberOfLines={1}>
+                {latestChatMessage.message}
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.chatEmpty}>No messages yet</Text>
+          )}
+        </Card>
+
+        {/* Articles — real professional info */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Artículos</Text>
+            {displayedArticles.length > 0 && (
+              <Pressable onPress={goArticles}>
+                <Text style={styles.seeAll}>Ver todos ›</Text>
+              </Pressable>
+            )}
+          </View>
+          {displayedArticles.length > 0 ? (
+            <View style={styles.articlesList}>
+              {displayedArticles.map((post) => (
+                <Card key={post.id} onPress={goArticles} style={styles.articleRowCard}>
+                  <View style={styles.cardAccent} />
+                  <Text style={styles.articleRowTitle} numberOfLines={2}>
+                    {post.title}
+                  </Text>
+                </Card>
+              ))}
+            </View>
+          ) : (
+            <EmptyState variant="empty" message="No articles yet" />
+          )}
+        </View>
+
+        {/* Alert banners */}
+        {alerts.length > 0 && (
+          <Card style={styles.alertCard}>
+            {alerts.slice(0, 2).map((a, i) => (
+              <View key={`${a.id ?? a.type}-${i}`} style={[styles.alertRow, i > 0 && styles.alertBorder]}>
+                <Text
+                  style={[
+                    styles.alertIcon,
+                    a.severity === 'high' ? styles.alertHigh : a.severity === 'medium' ? styles.alertMedium : styles.alertLow,
+                  ]}
+                >
+                  {a.severity === 'high' ? '🔴' : a.severity === 'medium' ? '🟡' : '🔵'}
+                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.alertTitle}>{a.title}</Text>
+                  <Text style={styles.alertMessage} numberOfLines={2}>
+                    {a.message}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </Card>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -424,35 +320,6 @@ const styles = StyleSheet.create({
   },
   iconButtonText: { fontSize: 14, color: colors.textSecondary },
 
-  // Quick Access
-  quickAccessRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
-  },
-  quickItem: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: spacing.xs },
-  quickIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.full,
-    backgroundColor: `${colors.primary}1A`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickLabel: {
-    fontFamily: fontFamilies.bodyMedium,
-    fontSize: 10,
-    lineHeight: 12,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  divider: { width: StyleSheet.hairlineWidth, backgroundColor: colors.border, alignSelf: 'stretch', marginVertical: spacing.sm },
-
   // Section header
   section: { gap: spacing.md },
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -468,115 +335,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
 
-  // Recommendations
-  recoScrollContent: { gap: spacing.md, paddingRight: spacing.lg },
-  recoCard: {
-    width: 160,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  recoImagePlaceholder: {
-    height: 80,
-    backgroundColor: colors.surfaceRaised,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  recoImageText: { fontSize: 28 },
-  recoStarBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  recoStar: { color: colors.primary, fontSize: 10, lineHeight: 12 },
-  recoPlayBadge: {
-    position: 'absolute',
-    bottom: -10,
-    right: 8,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  recoPlay: { color: colors.text, fontSize: 10, marginLeft: 1 },
-  recoContent: { padding: spacing.sm, paddingTop: spacing.md, gap: 4 },
-  recoTitle: { fontFamily: fontFamilies.bodySemiBold, fontSize: 13, lineHeight: 16, color: colors.text },
-  recoMetaRow: { flexDirection: 'row', gap: spacing.sm },
-  recoMeta: { fontFamily: fontFamilies.bodyMedium, fontSize: 10, color: colors.textSecondary },
-
-  // Weekly Challenge
-  weeklyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.md,
-  },
-  weeklyLeft: { flex: 1, gap: 4 },
-  weeklyEyebrow: { fontFamily: fontFamilies.displayBold, fontSize: 16, lineHeight: 20, color: colors.primary },
-  weeklyTitle: { fontFamily: fontFamilies.bodyMedium, fontSize: 12, lineHeight: 16, color: colors.textSecondary },
-  weeklyImagePlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceRaised,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  weeklyImageEmoji: { fontSize: 28 },
-
-  // Articles & Tips
-  articlesGrid: { flexDirection: 'row', gap: spacing.md },
-  articleCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  articleImagePlaceholder: {
-    height: 90,
-    backgroundColor: colors.surfaceRaised,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  articleImageEmoji: { fontSize: 28 },
-  articleStarBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  articleStar: { color: colors.warning, fontSize: 10, lineHeight: 12 },
-  articleTitle: {
-    fontFamily: fontFamilies.bodyMedium,
-    fontSize: 12,
-    lineHeight: 16,
-    color: colors.text,
-    padding: spacing.sm,
-  },
-
-  // Legacy sections kept below
+  // Legacy sections (sessions / active workouts)
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   sectionEyebrow: { ...typography.label, color: colors.textSecondary },
 
@@ -594,6 +353,30 @@ const styles = StyleSheet.create({
   sessionMeta: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs },
 
   progressCaption: { fontSize: 11, fontWeight: '400', color: colors.textSecondary, marginTop: spacing.sm },
+
+  // Community chat preview
+  chatCard: { position: 'relative', overflow: 'hidden', paddingLeft: spacing.lg },
+  chatTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  chatAccentDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+  },
+  chatLabel: { ...typography.overline, color: colors.primary, flex: 1 },
+  chatAffordance: { fontFamily: fontFamilies.bodyMedium, fontSize: 12, color: colors.textSecondary },
+  chatSender: { ...typography.bodyStrong, color: colors.text, fontSize: 14, marginTop: spacing.sm },
+  chatMessage: { ...typography.bodySmall, color: colors.textSecondary, marginTop: 2 },
+  chatEmpty: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.sm },
+
+  // Articles list
+  articlesList: { gap: spacing.md },
+  articleRowCard: {
+    position: 'relative',
+    overflow: 'hidden',
+    paddingLeft: spacing.lg,
+  },
+  articleRowTitle: { ...typography.bodyStrong, color: colors.text, fontSize: 14, lineHeight: 20, paddingVertical: spacing.xs },
 
   alertCard: { padding: 0, overflow: 'hidden', borderRadius: radius.lg, marginBottom: spacing.md },
   alertRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, padding: spacing.md },

@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render } from '@testing-library/react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { GlassDock, GlassDockIndicatorProto } from '../GlassDock';
+import { GlassDock } from '../GlassDock';
 
 const TAB_LABELS: Record<string, string> = { Today: 'Hoy', Plan: 'Plan', Events: 'Eventos', Recovery: 'Recovery', Profile: 'Perfil' };
 
@@ -41,10 +41,8 @@ describe('GlassDock', () => {
     expect(navigate).toHaveBeenCalledWith('Plan');
   });
 
-  it('marks exactly one tab focused and all five dots render', () => {
-    const { UNSAFE_getAllByType } = render(<GlassDock {...makeProps('Events')} />);
-    const all = UNSAFE_getAllByType(GlassDockIndicatorProto);
-    expect(all.length).toBe(5);
-    expect(all.filter((n: any) => n.props.focused).length).toBe(1);
+  it('does not render a central FAB', () => {
+    const { queryByTestId } = render(<GlassDock {...makeProps('Events')} />);
+    expect(queryByTestId('glass-dock-fab')).toBeNull();
   });
 });

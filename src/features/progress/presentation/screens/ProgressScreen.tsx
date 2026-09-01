@@ -22,7 +22,7 @@ export function ProgressScreen() {
   const { data: today, isLoading: todayLoading } = useQuery({
     queryKey: ['athlete-today'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/athlete/today');
+      const { data } = await apiClient.get('/athletes/today');
       return data as TodayData;
     },
     staleTime: 60_000,

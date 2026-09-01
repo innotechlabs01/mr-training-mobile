@@ -67,9 +67,9 @@ export function AthleteTodaySummary({ athleteId }: { athleteId: string }) {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      apiClient.get('/athlete/health/metrics?days=8').then(r => r.data).catch(() => null),
-      apiClient.get('/athlete/health/sleep?days=8').then(r => r.data).catch(() => null),
-      apiClient.get('/athlete/today').then(r => r.data).catch(() => null),
+      apiClient.get('/health/metrics?days=8').then(r => r.data).catch(() => null),
+      apiClient.get('/health/sleep?days=8').then(r => r.data).catch(() => null),
+      apiClient.get('/athletes/today').then(r => r.data).catch(() => null),
     ]).then(([metricsRes, sleepRes, todayRes]) => {
       if (cancelled) return;
       const allMetrics: HealthMetric[] = metricsRes?.metrics ?? [];

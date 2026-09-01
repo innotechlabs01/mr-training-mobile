@@ -99,8 +99,9 @@ export function ProfileScreen() {
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['athlete-profile'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/athlete/profile');
-      return (data.profile ?? data ?? null) as AthleteProfile | null;
+      const { data } = await apiClient.get('/users/me');
+      // Go backend returns { user: {...}, athlete_profile: {...} } — unwrap
+      return (data?.athlete_profile ?? data?.profile ?? data?.user ?? data ?? null) as AthleteProfile | null;
     },
     staleTime: 10 * 60 * 1000,
   });
@@ -190,7 +191,7 @@ export function ProfileScreen() {
       if (user) {
         await user.update({ firstName: fn, lastName: ln });
       }
-      await apiClient.put('/athlete/profile', { firstName: fn, lastName: ln });
+      await apiClient.put('/users/me', { name: `${fn} ${ln}`.trim() });
       await queryClient.invalidateQueries({ queryKey: ['athlete-profile'] });
       Alert.alert('Success', 'Your profile has been updated');
     } catch (err: unknown) {
@@ -207,7 +208,7 @@ export function ProfileScreen() {
     setModality(next);
     setModalitySaving(next);
     try {
-      await apiClient.put('/athlete/profile', { modality: next });
+      await apiClient.put('/athletes/me', { modality: next });
       await queryClient.invalidateQueries({ queryKey: ['athlete-profile'] });
     } catch (err: unknown) {
       setModality(prev);
@@ -221,7 +222,7 @@ export function ProfileScreen() {
   const handleSaveEmergency = async () => {
     setEmergencySaving(true);
     try {
-      await apiClient.put('/athlete/profile', { emergencyContact });
+      await apiClient.put('/athletes/me', { emergency_contact: emergencyContact });
       await queryClient.invalidateQueries({ queryKey: ['athlete-profile'] });
       Alert.alert('Guardado', 'Contacto de emergencia actualizado');
     } catch (err: unknown) {
@@ -245,7 +246,7 @@ export function ProfileScreen() {
     setScheduleSaving(true);
     try {
       const daysStr = Array.from(scheduleDays).join(',');
-      await apiClient.put('/athlete/profile', { scheduleDays: daysStr, scheduleTime });
+      await apiClient.put('/athletes/me', { schedule_days: daysStr, schedule_time: scheduleTime });
       await queryClient.invalidateQueries({ queryKey: ['athlete-profile'] });
       Alert.alert('Guardado', 'Horario de entrenamiento actualizado');
     } catch (err: unknown) {

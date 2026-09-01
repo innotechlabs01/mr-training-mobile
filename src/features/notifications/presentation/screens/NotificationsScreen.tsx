@@ -62,8 +62,9 @@ export function NotificationsScreen() {
   const { data: notifications, isLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/athlete/notifications');
-      return data as Array<{
+      const { data } = await apiClient.get('/notifications');
+      // Go backend returns { notifications: [...] } — unwrap
+      return (data?.notifications ?? data?.data ?? []) as Array<{
         id: string;
         type: string;
         title: string;

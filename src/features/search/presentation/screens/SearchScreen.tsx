@@ -4,7 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../../../infrastructure/api/client';
+import { goApiClient } from '../../../../infrastructure/api/client';
+import { listFavorites } from '../../../favorites/favoriteService';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -29,8 +30,9 @@ export function SearchScreen() {
   const { data: workouts, isLoading: workoutsLoading } = useQuery({
     queryKey: ['athlete-workouts'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/athlete/workouts');
-      return data as Array<{ id: string; contentName: string; modality: string; status: string }>;
+      const { data } = await goApiClient.get('/workouts');
+      // Go returns ListResponse {data: [...]} — unwrap
+      return (data?.data ?? data) as Array<{ id: string; contentName: string; modality: string; status: string }>;
     },
     staleTime: 60_000,
   });
@@ -38,7 +40,7 @@ export function SearchScreen() {
   const { data: exercises, isLoading: exercisesLoading } = useQuery({
     queryKey: ['exercises'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/exercises');
+      const { data } = await goApiClient.get('/exercises');
       return data as Array<{ id: string; name: string; category?: string; muscleGroup?: string }>;
     },
     staleTime: 300_000,
@@ -46,10 +48,7 @@ export function SearchScreen() {
 
   const { data: favoritesData } = useQuery({
     queryKey: ['favorites'],
-    queryFn: async () => {
-      const { data } = await apiClient.get('/athlete/favorites');
-      return data as Array<{ id: string; itemType: string; itemId: string; itemTitle: string; itemMeta: string }>;
-    },
+    queryFn: listFavorites,
     staleTime: 30_000,
   });
 
@@ -72,11 +71,11 @@ export function SearchScreen() {
       meta2: e.muscleGroup ?? '',
       emoji: '\uD83C\uDCAA',
     }));
-    const favoriteItems: SearchItem[] = (favoritesData ?? []).map((f) => ({
+    const favoriteItems: SearchItem[] = (favoritesData ?? []).map((f: any) => ({
       id: `fav-${f.id}`,
       type: 'exercise' as const,
-      title: f.itemTitle,
-      meta1: f.itemMeta ?? '',
+      title: f.itemTitle ?? f.title ?? '',
+      meta1: f.itemMeta ?? f.description ?? '',
       meta2: 'Favorite',
       emoji: '\u2B50',
     }));
@@ -243,9 +242,11 @@ const styles = StyleSheet.create({
   searchWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
   searchInput: {
     height: 40,
-    borderRadius: radius.full,
-    backgroundColor: '#FFFFFF',
-    color: '#111111',
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceRaised,
+    color: colors.text,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
     paddingHorizontal: 16,
     fontFamily: fontFamilies.body,
     fontSize: 14,

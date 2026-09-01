@@ -7,11 +7,13 @@ import {
   ScrollView,
   TextInput,
   Animated,
+  Image,
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '@clerk/clerk-expo';
 import { colors, radius, spacing, fontFamilies } from '../../../../shared/theme/tokens';
+import { onboardingHeroes } from '../../../../shared/theme/onboardingImages';
 import { CoachScheduleModal } from './CoachScheduleModal';
 
 type Props = {
@@ -61,7 +63,7 @@ const MODALITIES = [
 const GOALS = [
   { id: 'strength', label: 'Get Stronger', emoji: '💪', desc: 'Build muscle, increase your lifts, gain power' },
   { id: 'weight-loss', label: 'Lose Weight', emoji: '🔥', desc: 'Burn fat, improve body composition, get lean' },
-  { id: 'endurance', label: 'Build Endurance', emoji: '🫀', desc: 'Run longer, swim farther, last longer' },
+  { id: 'endurance', label: 'Build Endurance', emoji: '🏃', desc: 'Run longer, swim farther, last longer' },
   { id: 'performance', label: 'Performance', emoji: '🏆', desc: 'Compete, set PRs, reach peak condition' },
   { id: 'health', label: 'General Health', emoji: '✨', desc: 'Stay active, feel better, prevent injury' },
 ];
@@ -75,8 +77,8 @@ const LEVELS = [
 const FREQUENCIES = [2, 3, 4, 5, 6, 7];
 const DURATIONS = [30, 45, 60, 90];
 const EQUIPMENT_OPTIONS = [
-  { id: 'full-gym', label: 'Full Gym', emoji: '🏋️‍♂️', desc: 'Barbells, machines, cables, everything' },
-  { id: 'basic', label: 'Basic', emoji: '🪫', desc: 'Dumbbells, bands, pull-up bar' },
+  { id: 'full-gym', label: 'Full Gym', emoji: '🏋️', desc: 'Barbells, machines, cables, everything' },
+  { id: 'basic', label: 'Basic', emoji: '🎱', desc: 'Dumbbells, bands, pull-up bar' },
   { id: 'minimal', label: 'Minimal', emoji: '🏠', desc: 'Resistance bands, yoga mat' },
   { id: 'bodyweight', label: 'Bodyweight', emoji: '🧘', desc: 'No equipment, just your body' },
 ];
@@ -115,8 +117,6 @@ const HERO_HEADINGS = [
   'YOUR PLAN AWAITS',
   'START YOUR JOURNEY',
 ];
-
-const HERO_EMOJIS = ['🏋️', '🧭', '♂♀', '⚖️', '🎂', '📏', '🎯', '⚡', '📅', '🏠', '👤', '✨', '🚀'];
 
 // Weight ruler constants — Figma shows 73-77 centered on 75
 const WEIGHT_MIN = 40;
@@ -322,9 +322,11 @@ export function OnboardingScreen({ onComplete }: Props) {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Hero area — top 45% */}
       <View style={[styles.heroArea, { height: heroHeight }]}>
-        <View style={styles.heroPlaceholder}>
-          <Text style={styles.heroEmoji}>{HERO_EMOJIS[step] ?? '🏋️'}</Text>
-        </View>
+        <Image
+          source={{ uri: onboardingHeroes[step] ?? onboardingHeroes[0] }}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+        />
         <View style={styles.heroOverlay} />
         <View style={styles.heroContent}>
           <Text style={styles.heroHeading}>{HERO_HEADINGS[step]}</Text>
@@ -1259,26 +1261,19 @@ export function OnboardingScreen({ onComplete }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0e0e0e' },
+  container: { flex: 1, backgroundColor: colors.base },
   // Hero — top 45%
   heroArea: {
     width: '100%',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: colors.surface,
     overflow: 'hidden',
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  heroPlaceholder: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#1a1a1a',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heroEmoji: { fontSize: 72, opacity: 0.9 },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(14,14,14,0.45)',
+    backgroundColor: 'rgba(11,15,14,0.58)',
   },
   heroContent: {
     zIndex: 1,
@@ -1311,7 +1306,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 14,
-    backgroundColor: '#0e0e0e',
+    backgroundColor: colors.base,
   },
   dot: { height: 8, borderRadius: 4 },
   dotActive: { width: 24, backgroundColor: colors.primary },

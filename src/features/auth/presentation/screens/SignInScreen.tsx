@@ -45,7 +45,7 @@ export function SignInScreen() {
 
   const postOnboard = async (onboarding: OnboardingPayload | null | undefined) => {
     try {
-      await apiClient.post('/athlete/onboard', {
+      await apiClient.post('/athletes/onboard', {
         sports: onboarding?.sports ?? [],
         modality: onboarding?.modality ?? '',
         experienceLevel: onboarding?.experienceLevel ?? '',
@@ -110,7 +110,7 @@ export function SignInScreen() {
           await setActive({ session: result.createdSessionId });
           await flushPendingOnboarding();
           try {
-            await apiClient.post('/athlete/accept-invite', { code: normalizedCode });
+            await apiClient.post('/invites/accept', { code: normalizedCode });
           } catch (err) {
             console.error('[Auth] accept-invite failed on sign-in:', err);
           }
@@ -138,7 +138,7 @@ export function SignInScreen() {
           const onboarding = route.params?.onboardingData;
           await postOnboard(onboarding);
           try {
-            await apiClient.post('/athlete/accept-invite', { code: normalizedCode });
+            await apiClient.post('/invites/accept', { code: normalizedCode });
           } catch (err) {
             console.error('[Auth] accept-invite failed on sign-up:', err);
           }

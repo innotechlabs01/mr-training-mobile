@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert, Linking, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../../infrastructure/api/client';
 import { colors } from '../../../shared/theme/tokens';
+import { createCheckout } from '../../../features/polar/polarService';
 
 type Props = {
   membership: {
@@ -30,7 +30,7 @@ export function PaymentScreen({ membership }: Props) {
   const handlePay = async () => {
     setIsPaying(true);
     try {
-      const { data: res } = await apiClient.post('/polar/checkout', { membershipId: membership.id });
+      const res = await createCheckout(membership.athleteId, membership.id);
       if (res?.url) {
         await Linking.openURL(res.url);
       } else {

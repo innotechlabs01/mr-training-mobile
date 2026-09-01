@@ -92,8 +92,10 @@ export function MembershipScreen() {
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['athlete-membership'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/athlete/membership');
-      return data as MembershipResponse;
+      const { data } = await apiClient.get('/memberships');
+      // Go returns ListResponse {data:[membership]} or single — normalize to flat shape
+      const membership = data?.data?.[0] ?? data?.membership ?? data;
+      return { ...data, membership } as MembershipResponse;
     },
     staleTime: 2 * 60 * 1000,
   });
@@ -142,13 +144,15 @@ export function MembershipScreen() {
 
   const handlePay = async () => {
     const membershipId = rawMembership?.id ?? data?.id;
-    if (!membershipId) {
+    const athleteId = (rawMembership?.athleteId ?? data?.athleteId) as string | undefined;
+    if (!membershipId || !athleteId) {
       Alert.alert('Pay Membership', 'Membership is not available. Please contact your coach.');
       return;
     }
     setIsPaying(true);
     try {
-      const { data: res } = await apiClient.post('/polar/checkout', { membershipId });
+      const { createCheckout } = await import('@features/polar/polarService');
+      const res = await createCheckout(athleteId, membershipId);
       if (res?.url) {
         await Linking.openURL(res.url);
       } else {

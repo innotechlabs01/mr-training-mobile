@@ -53,7 +53,7 @@ export function InviteAcceptScreen() {
     setStatus('loading');
 
     try {
-      const { data } = await apiClient.post('/athlete/accept-invite', {
+      const { data } = await apiClient.post('/invites/accept', {
         code: coachCode.trim(),
       });
 

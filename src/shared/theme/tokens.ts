@@ -1,32 +1,40 @@
 /**
- * Apex Performance Design System — mobile tokens.
- * Dark-first. Electric Orange primary, Velocity Blue secondary.
- * Montserrat for headlines, Inter for body.
+ * MR Training Design System — mobile tokens.
+ * Unified AthletePro / Volt-style single-accent system.
+ * Dark-first. Accent: Electric Green (#16E37A). Inter throughout.
+ * Canonical source: apps/mobile/src/shared/theme/tokens.ts — dark-first.
+ * Style reference: uxpilot-export AthletePro (UX Pilot) — 13 screens.
  */
 
 export const colors = {
-  base: '#0A0A0B', // app background, deepest layer (midnight)
-  surface: '#131315', // cards, main surfaces
-  surfaceRaised: '#1E1E20', // elevated elements, inputs, chips
-  border: '#2C2C2E', // hairlines, separators
-  primary: '#FF5C00', // Electric Orange — high-priority CTA, progress, active states
-  primaryPressed: '#CC4A00', // Orange pressed state
-  primaryContainer: '#FF5C00', // filled containers
-  secondary: '#007AFF', // Velocity Blue — data viz, secondary interactive, community
-  secondaryPressed: '#0062CC', // Blue pressed state
-  text: '#FFFFFF', // primary text (pure white, WCAG AA on dark)
-  textSecondary: '#8E8E93', // muted gray — captions, secondary text
-  success: '#34D399',
+  base: '#0B0F0E', // App background, deepest layer
+  surface: '#151B19', // Cards, lists, main content surfaces
+  surfaceRaised: '#1C2320', // Elevated rows, inputs, chips, surface2
+  border: '#242B28', // Hairlines, separators (white/5 over base)
+  primary: '#16E37A', // Electric Green — the single accent (UX Pilot)
+  primaryPressed: '#12C66A', // Pressed state of Electric Green
+  secondary: '#3B9EFF', // Data-viz / macro secondary (carbs), sparingly
+  text: '#FFFFFF', // Primary text (WCAG AA on all surfaces)
+  textSecondary: '#9CA3AF', // Secondary text, captions, placeholders (gray-400)
+  success: '#34D399', // emerald-500
   warning: '#FBBF24',
-  error: '#FFB4AB',
-  errorContainer: '#93000A',
+  error: '#FF6B6B', // destructive / errors / logout
+  errorContainer: '#3A1010',
+  // Light-on-dark semantics (dark-first system)
+  background: '#0B0F0E', // alias for base — root canvas
+  onPrimary: '#0B0F0E', // text/icon on primary accent
+  onPrimaryVariant: '#68D391', // muted accent text
+  onSurface: '#FFFFFF', // text on cards/surfaces
+  onSurfaceVariant: '#9CA3AF', // secondary text on surfaces
+  outline: '#242B28', // borders/separators
+  onError: '#FFFFFF', // text on error states
 } as const;
 
 export const fontFamilies = {
-  displayBlack: 'Montserrat_900Black',
-  display: 'Montserrat_800ExtraBold',
-  displayBold: 'Montserrat_700Bold',
-  heading: 'Montserrat_600SemiBold',
+  displayBlack: 'Inter_800ExtraBold',
+  display: 'Inter_800ExtraBold',
+  displayBold: 'Inter_800ExtraBold',
+  heading: 'Inter_700Bold',
   body: 'Inter_400Regular',
   bodyMedium: 'Inter_500Medium',
   bodySemiBold: 'Inter_600SemiBold',
@@ -35,23 +43,28 @@ export const fontFamilies = {
 } as const;
 
 export const typography = {
-  displayXL: { fontFamily: fontFamilies.display, fontSize: 48, lineHeight: 52, letterSpacing: -0.02 },
-  display: { fontFamily: fontFamilies.displayBold, fontSize: 40, lineHeight: 44 },
-  headlineLG: { fontFamily: fontFamilies.displayBold, fontSize: 32, lineHeight: 38 },
-  headlineMD: { fontFamily: fontFamilies.displayBold, fontSize: 24, lineHeight: 32 },
-  title: { fontFamily: fontFamilies.heading, fontSize: 20, lineHeight: 26 },
-  bodyLG: { fontFamily: fontFamilies.body, fontSize: 18, lineHeight: 28 },
-  body: { fontFamily: fontFamilies.body, fontSize: 16, lineHeight: 24 },
-  bodyStrong: { fontFamily: fontFamilies.bodySemiBold, fontSize: 16, lineHeight: 24 },
-  caption: { fontFamily: fontFamilies.bodyMedium, fontSize: 13, lineHeight: 17 },
+  // Unified type scale (Inter, tracking-tight for display)
+  display: { fontFamily: fontFamilies.display, fontSize: 34, lineHeight: 40, letterSpacing: -0.02, textTransform: 'uppercase' as const },
+  h1: { fontFamily: fontFamilies.displayBold, fontSize: 30, lineHeight: 36, letterSpacing: -0.01, textTransform: 'uppercase' as const },
+  h2: { fontFamily: fontFamilies.displayBold, fontSize: 24, lineHeight: 30, letterSpacing: -0.01, textTransform: 'uppercase' as const },
+  h3: { fontFamily: fontFamilies.heading, fontSize: 20, lineHeight: 26, letterSpacing: 0 },
+  h4: { fontFamily: fontFamilies.heading, fontSize: 17, lineHeight: 22, letterSpacing: 0 },
+  bodyLG: { fontFamily: fontFamilies.body, fontSize: 16, lineHeight: 26, letterSpacing: 0 },
+  body: { fontFamily: fontFamilies.body, fontSize: 16, lineHeight: 22, letterSpacing: 0 },
+  bodySmall: { fontFamily: fontFamilies.body, fontSize: 13, lineHeight: 18, letterSpacing: 0.01 },
+  caption: { fontFamily: fontFamilies.bodyMedium, fontSize: 11, lineHeight: 15, letterSpacing: 0.02 },
+  overline: { fontFamily: fontFamilies.heading, fontSize: 10, lineHeight: 14, letterSpacing: 0.1, textTransform: 'uppercase' as const },
+  // Component-specific aliases
+  title: { fontFamily: fontFamilies.heading, fontSize: 20, lineHeight: 26, letterSpacing: 0 },
+  bodyStrong: { fontFamily: fontFamilies.bodySemiBold, fontSize: 14, lineHeight: 22, letterSpacing: 0 },
   label: {
-    fontFamily: fontFamilies.bodySemiBold,
-    fontSize: 14,
-    lineHeight: 20,
-    letterSpacing: 0.05,
+    fontFamily: fontFamilies.heading,
+    fontSize: 13,
+    lineHeight: 16,
+    letterSpacing: 0.08,
     textTransform: 'uppercase' as const,
   },
-  statsNumber: { fontFamily: fontFamilies.displayBlack, fontSize: 48, lineHeight: 48 },
+  statsNumber: { fontFamily: fontFamilies.displayBlack, fontSize: 36, lineHeight: 36, letterSpacing: -0.02 },
 } as const;
 
 export const spacing = {
@@ -65,23 +78,25 @@ export const spacing = {
 } as const;
 
 export const radius = {
-  sm: 2, // 0.125rem — sharp, technical
-  md: 4, // 0.25rem — buttons, inputs
-  lg: 8, // 0.5rem — cards, containers
-  xl: 12, // 0.75rem — large cards
+  sm: 8, // rounded-lg — chips, small containers
+  md: 12, // rounded-xl — buttons, inputs
+  lg: 16, // rounded-2xl — default cards, lists
+  xl: 24, // rounded-3xl — large media cards
   full: 9999,
 } as const;
 
 export const shadows = {
-  sm: { shadowColor: '#000000', shadowOpacity: 0.2, shadowRadius: 4, elevation: 2 },
-  md: { shadowColor: '#000000', shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  sm: { shadowColor: '#000000', shadowOpacity: 0.15, shadowRadius: 8, elevation: 2 },
+  md: { shadowColor: '#000000', shadowOpacity: 0.25, shadowRadius: 16, elevation: 6 },
+  glow: { shadowColor: '#16E37A', shadowOpacity: 0.3, shadowRadius: 20, elevation: 8 },
 } as const;
 
 export const layout = {
-  pagePadding: spacing.md,
+  pagePadding: spacing.lg,
   cardPadding: spacing.md,
   touchTarget: 48,
   headerHeight: 56,
+  navDockRaise: 20, // FAB center raise (-mt)
 } as const;
 
 export const tokens = { colors, typography, spacing, radius, shadows, layout, fontFamilies };

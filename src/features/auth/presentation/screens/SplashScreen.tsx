@@ -1,49 +1,41 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Animated, Image, useWindowDimensions } from 'react-native';
+import { brandIcon } from '../../../../shared/theme/brandAssets';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 import { useAuth } from '@clerk/clerk-expo';
-import { colors } from '../../../../shared/theme/tokens';
+import { colors, fontFamilies, shadows } from '../../../../shared/theme/tokens';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 
 export function SplashScreen({ navigation }: Props) {
   const { isSignedIn } = useAuth();
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
-  const scannerAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
   const dot3 = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const scannerLoop = Animated.loop(
-      Animated.timing(scannerAnim, {
-        toValue: 1,
-        duration: 3000,
-        useNativeDriver: false,
-      }),
-    );
-    scannerLoop.start();
-
+    // Pulsing halo behind the brand icon
     const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 2000,
+          duration: 1800,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 0,
-          duration: 2000,
+          duration: 1800,
           useNativeDriver: true,
         }),
       ]),
     );
     pulseLoop.start();
 
-    // Staggered bounce: -0.3s / -0.15s / 0 approximated via initial delays
+    // Staggered bounce dots
     const b1 = Animated.loop(
       Animated.sequence([
         Animated.timing(dot1, { toValue: 1, duration: 300, useNativeDriver: true }),
@@ -70,33 +62,31 @@ export function SplashScreen({ navigation }: Props) {
     b2.start();
     b3.start();
 
+    // Route after a brief brand moment. Signed-in users skip straight in.
     const timer = setTimeout(() => {
-      navigation.replace(isSignedIn ? 'AthleteTabs' : 'Welcome');
-    }, 10000);
+      navigation.replace(isSignedIn ? 'AthleteTabs' : 'Sliders');
+    }, 3500);
 
     return () => {
       clearTimeout(timer);
-      scannerLoop.stop();
       pulseLoop.stop();
       b1.stop();
       b2.stop();
       b3.stop();
     };
-  }, [scannerAnim, pulseAnim, dot1, dot2, dot3, navigation, isSignedIn]);
+  }, [pulseAnim, dot1, dot2, dot3, navigation, isSignedIn]);
 
-  const scannerTop = scannerAnim.interpolate({
+  const haloOpacity = pulseAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, height],
+    outputRange: [0.35, 0.75],
   });
-
-  const pulseOpacity = pulseAnim.interpolate({
+  const haloScale = pulseAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.6],
+    outputRange: [1, 1.18],
   });
-
-  const pulseScale = pulseAnim.interpolate({
+  const iconScale = pulseAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.05],
+    outputRange: [1, 1.04],
   });
 
   const dotTranslate = (anim: Animated.Value) =>
@@ -105,68 +95,36 @@ export function SplashScreen({ navigation }: Props) {
       outputRange: [0, -6],
     });
 
-  // Grid lines every 40px
-  const verticalLines = Math.ceil(width / 40);
-  const horizontalLines = Math.ceil(height / 40);
-
   return (
     <View style={styles.container}>
-      {/* Grid texture */}
+      {/* Deep brand background */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        {Array.from({ length: verticalLines }).map((_, i) => (
-          <View
-            key={`v-${i}`}
-            style={[styles.gridV, { left: i * 40 }]}
-          />
-        ))}
-        {Array.from({ length: horizontalLines }).map((_, i) => (
-          <View
-            key={`h-${i}`}
-            style={[styles.gridH, { top: i * 40 }]}
-          />
-        ))}
+        {/* Soft radial vignette — solid brand glow centered */}
+        <View
+          style={[
+            styles.radialVignette,
+            { width: width * 1.6, height: width * 1.6, borderRadius: width * 0.8, marginLeft: -width * 0.8, marginTop: -width * 0.8 },
+          ]}
+        />
       </View>
 
-      {/* Radial gradient — primary-container/10 */}
-      <View style={styles.radialGradient} pointerEvents="none" />
-
-      {/* Scanner line */}
-      <Animated.View
-        style={[
-          styles.scannerLine,
-          {
-            top: scannerTop,
-          },
-        ]}
-        pointerEvents="none"
-      />
-
-      {/* Corner accents */}
-      <View style={styles.cornerTopLeft} />
-      <View style={styles.cornerTopRight} />
-      <View style={styles.cornerBottomLeft} />
-      <View style={styles.cornerBottomRight} />
-
-      {/* Center content */}
-      <View style={styles.centerContent}>
-        {/* Bolt icon with glow */}
-        <View style={styles.boltWrapper}>
+      {/* Center brand */}
+      <View style={styles.center}>
+        <Animated.View style={[styles.logoWrapper, { transform: [{ scale: iconScale }] }]}>
+          {/* Pulsing halo */}
           <Animated.View
             style={[
-              styles.pulseGlow,
-              {
-                opacity: pulseOpacity,
-                transform: [{ scale: pulseScale }],
-              },
+              styles.halo,
+              { opacity: haloOpacity, transform: [{ scale: haloScale }] },
             ]}
           />
-          <Text style={styles.boltIcon}>⚡</Text>
-        </View>
+          {/* White disc so the icon pops */}
+          <View style={styles.whiteDisc}>
+            <Image source={brandIcon} style={styles.logo} resizeMode="contain" />
+          </View>
+        </Animated.View>
 
-        {/* Title */}
         <Text style={styles.title}>MR TRAINING</Text>
-
-        {/* Subtitle with flanking lines */}
         <View style={styles.subtitleRow}>
           <View style={styles.subtitleLine} />
           <Text style={styles.subtitle}>Elite Performance</Text>
@@ -174,14 +132,14 @@ export function SplashScreen({ navigation }: Props) {
         </View>
       </View>
 
-      {/* Loading indicator bottom-16 */}
+      {/* Loading indicator */}
       <View style={styles.loadingContainer}>
         <View style={styles.dotsRow}>
           <Animated.View style={[styles.dot, { transform: [{ translateY: dotTranslate(dot1) }] }]} />
           <Animated.View style={[styles.dot, { transform: [{ translateY: dotTranslate(dot2) }] }]} />
           <Animated.View style={[styles.dot, { transform: [{ translateY: dotTranslate(dot3) }] }]} />
         </View>
-        <Text style={styles.loadingText}>Initializing Protocol</Text>
+        <Text style={styles.loadingText}>Preparing your experience</Text>
       </View>
     </View>
   );
@@ -190,164 +148,72 @@ export function SplashScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0e0e0e',
+    backgroundColor: '#070A09',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  gridV: {
+  radialVignette: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 1,
-    backgroundColor: 'rgba(255,92,0,0.05)',
-  },
-  gridH: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: 'rgba(255,92,0,0.05)',
-  },
-  radialGradient: {
-    position: 'absolute',
-    width: 800,
-    height: 800,
-    borderRadius: 400,
-    backgroundColor: 'rgba(255,92,0,0.10)',
-    top: '50%',
+    top: '22%',
     left: '50%',
-    marginLeft: -400,
-    marginTop: -400,
-    opacity: 0.6,
+    backgroundColor: `${colors.primary}0F`,
   },
-  scannerLine: {
+  center: { alignItems: 'center', justifyContent: 'center' },
+  logoWrapper: { width: 168, height: 168, justifyContent: 'center', alignItems: 'center', marginBottom: 28 },
+  halo: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: '#ff5c00',
-    opacity: 0.2,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: `${colors.primary}40`,
   },
-  cornerTopLeft: {
-    position: 'absolute',
-    top: 24,
-    left: 24,
-    width: 64,
-    height: 64,
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-    borderColor: 'rgba(255,92,0,0.2)',
-  },
-  cornerTopRight: {
-    position: 'absolute',
-    top: 24,
-    right: 24,
-    width: 64,
-    height: 64,
-    borderTopWidth: 2,
-    borderRightWidth: 2,
-    borderColor: 'rgba(255,92,0,0.2)',
-  },
-  cornerBottomLeft: {
-    position: 'absolute',
-    bottom: 24,
-    left: 24,
-    width: 64,
-    height: 64,
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
-    borderColor: 'rgba(255,92,0,0.2)',
-  },
-  cornerBottomRight: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 64,
-    height: 64,
-    borderBottomWidth: 2,
-    borderRightWidth: 2,
-    borderColor: 'rgba(255,92,0,0.2)',
-  },
-  centerContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  boltWrapper: {
-    width: 160,
-    height: 160,
+  whiteDisc: {
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    ...shadows.glow,
+    shadowColor: '#16E37A',
+    // extra soft glow
+    elevation: 10,
   },
-  pulseGlow: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255,92,0,0.2)',
-  },
-  boltIcon: {
-    fontSize: 120,
-    color: '#ff5c00',
-    textShadowColor: 'rgba(255,92,0,0.4)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 15,
-    includeFontPadding: false,
-    textAlign: 'center',
-  },
+  logo: { width: 96, height: 96 },
   title: {
-    fontFamily: 'Montserrat_900Black',
-    fontStyle: 'italic',
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#ff5c00',
-    letterSpacing: 6,
+    fontFamily: fontFamilies.displayBlack,
+    fontSize: 30,
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: 5,
     textAlign: 'center',
   },
-  subtitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    gap: 12,
-  },
-  subtitleLine: {
-    width: 32,
-    height: 1,
-    backgroundColor: 'rgba(91,65,55,0.4)',
-  },
+  subtitleRow: { flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 12 },
+  subtitleLine: { width: 28, height: 1, backgroundColor: colors.textSecondary, opacity: 0.6 },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#e4beb1',
+    color: colors.textSecondary,
     letterSpacing: 3,
     textTransform: 'uppercase',
   },
   loadingContainer: {
     position: 'absolute',
-    bottom: 64,
+    bottom: 72,
     left: 0,
     right: 0,
     alignItems: 'center',
     gap: 12,
   },
-  dotsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#ff5c00',
-  },
+  dotsRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary },
   loadingText: {
     fontSize: 12,
     fontWeight: '400',
-    color: '#ab897d',
+    color: colors.textSecondary,
     letterSpacing: 2,
     textTransform: 'uppercase',
-    opacity: 0.6,
+    opacity: 0.65,
     marginTop: 8,
   },
 });

@@ -3,8 +3,8 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput as RNTextInput, View } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMutation } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, typography } from '../../../../shared/theme/tokens';
+import { importData } from '../../../import/importService';
 import { Card } from '../../../../shared/components/ui/Card';
 import { PrimaryButton } from '../../../../shared/components/ui/PrimaryButton';
 import { ScreenHeader } from '../../../../shared/components/ui/ScreenHeader';
@@ -28,8 +28,9 @@ export function ImportHistoryScreen({ navigation }: Props) {
 
   const importMutation = useMutation({
     mutationFn: async () => {
-      const { data } = await apiClient.post('/athlete/import', { csv });
-      return data as ImportResult;
+      const athleteID = 'current'; // replace with real auth context
+      const source = 'csv';
+      return importData(athleteID, source, csv);
     },
     onSuccess: (data) => {
       setResult(data);

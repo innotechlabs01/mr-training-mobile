@@ -34,30 +34,33 @@ export function MembershipGate({ children, athleteId }: { children: React.ReactN
     let cancelled = false;
     async function check() {
       try {
-        const { data } = await apiClient.get('/athlete/membership');
+        const { data } = await apiClient.get('/memberships');
         if (cancelled) return;
 
+        // Go returns ListResponse {data:[...]} or single membership — handle both
+        const membership = data?.data?.[0] ?? data?.membership ?? data;
+        
         // New athlete or no membership — let them in
-        if (!data || data.error || data.status === 'no_membership') {
+        if (!membership || membership.error || membership.status === 'no_membership') {
           setState({ status: 'active' });
           return;
         }
 
         // Suspended membership — show payment screen
-        if (data.status === 'suspended') {
+        if (membership.status === 'suspended') {
           setState({
             status: 'suspended',
             membership: {
-              id: data.id, planName: data.planName, planPrice: data.planPrice,
-              paymentDueDate: data.paymentDueDate, currentPeriodEnd: data.currentPeriodEnd,
-              athleteId: data.athleteId, coachId: data.coachId,
+              id: membership.id, planName: membership.planName ?? membership.plan_name, planPrice: membership.planPrice ?? membership.plan_price,
+              paymentDueDate: membership.paymentDueDate ?? membership.payment_due_date, currentPeriodEnd: membership.currentPeriodEnd ?? membership.current_period_end,
+              athleteId: membership.athleteId ?? membership.athlete_id, coachId: membership.coachId ?? membership.coach_id,
             },
           });
           return;
         }
 
         // All other statuses — let them in
-        setState({ status: data.status || 'active' });
+        setState({ status: membership.status || 'active' });
       } catch {
         // API error — don't block the user
         if (!cancelled) setState({ status: 'active' });

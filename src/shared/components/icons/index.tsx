@@ -79,6 +79,14 @@ export function MembershipIcon({ size = S, color = colors.primary }: IconProps) 
   );
 }
 
+export function PlusIcon({ size = S, color = colors.primary }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth={2.5} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 export function PlayIcon({ size = S, color = colors.primary }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">

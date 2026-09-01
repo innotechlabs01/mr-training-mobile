@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth, useUser, ClerkLoaded } from '@clerk/clerk-expo';
 import { SplashScreen } from '../features/auth/presentation/screens/SplashScreen';
+import { OnboardingSlidersScreen } from '../features/auth/presentation/screens/OnboardingSlidersScreen';
 import { WelcomeScreen } from '../features/auth/presentation/screens/WelcomeScreen';
 import { SignInScreen } from '../features/auth/presentation/screens/SignInScreen';
 import { InviteAcceptScreen } from '../features/auth/presentation/screens/InviteAcceptScreen';
@@ -59,6 +60,7 @@ const linking = {
   config: {
     screens: {
       Splash: '',
+      Sliders: 'sliders',
       Welcome: 'welcome',
       Auth: 'auth',
       Onboarding: 'onboarding',
@@ -91,6 +93,7 @@ const linking = {
 // --- Types ---
 export type RootStackParamList = {
   Splash: undefined;
+  Sliders: undefined;
   Welcome: undefined;
   Auth: { code?: string; mode?: 'signin' | 'signup'; onboardingData?: OnboardingData } | undefined;
   Onboarding: undefined;
@@ -173,6 +176,7 @@ function RootNavigator() {
         // Auth stack
         <>
           <Stack.Screen name="Splash" component={SplashScreen} />
+          <Stack.Screen name="Sliders" component={OnboardingSlidersScreen} />
           <Stack.Screen name="Welcome" component={WelcomeScreenWrapper} />
           <Stack.Screen name="Auth" component={SignInScreen} />
           <Stack.Screen name="Onboarding" component={OnboardingScreenWrapper} />

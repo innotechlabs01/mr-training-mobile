@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import { listFavorites, Favorite } from '@features/favorites/favoriteService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,56 +10,7 @@ import type { RootStackParamList } from '../../../../navigation/Navigation';
 
 type FavoriteFilter = 'All' | 'Video' | 'Article';
 
-type FavoriteItem = {
-  id: string;
-  type: 'workout' | 'video' | 'article';
-  title: string;
-  description?: string;
-  duration?: string;
-  calories?: string;
-  exercises?: string;
-};
-
 const FILTERS: FavoriteFilter[] = ['All', 'Video', 'Article'];
-
-const MOCK_FAVORITES: FavoriteItem[] = [
-  {
-    id: '1',
-    type: 'workout',
-    title: 'Upper Body Push',
-    duration: '35 min',
-    calories: '320 Kcal',
-    exercises: '5 Exercises',
-  },
-  {
-    id: '2',
-    type: 'video',
-    title: 'Proper Deadlift Form',
-    description: 'Learn the fundamentals of deadlifting safely',
-    duration: '12 min',
-  },
-  {
-    id: '3',
-    type: 'article',
-    title: 'Nutrition for Recovery',
-    description: 'What to eat before and after training for optimal results',
-  },
-  {
-    id: '4',
-    type: 'workout',
-    title: 'Leg Day Power',
-    duration: '45 min',
-    calories: '480 Kcal',
-    exercises: '6 Exercises',
-  },
-  {
-    id: '5',
-    type: 'video',
-    title: 'Mobility Warm-Up Routine',
-    description: 'A 10-minute routine to prep your joints before any session',
-    duration: '10 min',
-  },
-];
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -65,10 +18,16 @@ export function FavoritesScreen() {
   const navigation = useNavigation<Nav>();
   const [filter, setFilter] = useState<FavoriteFilter>('All');
 
+  const { data: favoritesData } = useQuery({
+    queryKey: ['favorites'],
+    queryFn: listFavorites,
+    staleTime: 300_000,
+  });
   const filtered = useMemo(() => {
-    if (filter === 'All') return MOCK_FAVORITES;
-    return MOCK_FAVORITES.filter((item) => item.type === filter.toLowerCase());
-  }, [filter]);
+    const list = favoritesData ?? [];
+    if (filter === 'All') return list;
+    return list.filter((item) => item.type === filter.toLowerCase());
+  }, [filter, favoritesData]);
 
   return (
     <SafeAreaView style={styles.container}>

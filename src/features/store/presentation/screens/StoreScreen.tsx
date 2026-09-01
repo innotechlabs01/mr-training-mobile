@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../../../infrastructure/api/client';
+import { listStore, purchaseProduct } from '../../storeService';
 import { colors } from '../../../../shared/theme/tokens';
 import { ScreenHeader } from '../../../../shared/components/ui/ScreenHeader';
 import { PrimaryButton } from '../../../../shared/components/ui/PrimaryButton';
@@ -32,22 +32,12 @@ export function StoreScreen() {
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['athlete-store'],
-    queryFn: async () => {
-      const { data } = await apiClient.get('/athlete/store');
-      if (Array.isArray(data)) return data as Product[];
-      if (Array.isArray(data.products)) return data.products as Product[];
-      if (Array.isArray(data.data)) return data.data as Product[];
-      if (Array.isArray(data.items)) return data.items as Product[];
-      return [] as Product[];
-    },
+    queryFn: listStore,
     staleTime: 2 * 60 * 1000,
   });
 
   const purchaseMutation = useMutation({
-    mutationFn: async (productId: string) => {
-      const { data } = await apiClient.post('/athlete/store/purchase', { productId, quantity: 1 });
-      return data;
-    },
+    mutationFn: async (productId: string) => purchaseProduct(productId, 1),
     onSuccess: () => {
       Alert.alert('Success', 'Producto agregado correctamente.');
       queryClient.invalidateQueries({ queryKey: ['athlete-store'] });

@@ -123,7 +123,7 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['workout-detail', workoutId],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/athlete/workouts/${workoutId}`);
+      const { data } = await apiClient.get(`/workouts/${workoutId}/detail`);
       return data as WorkoutDetailData;
     },
     staleTime: 5 * 60 * 1000,
@@ -133,7 +133,7 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
   const { data: prescription } = useQuery({
     queryKey: ['workout-prescription', workoutId],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/athlete/workouts/${workoutId}/prescription`);
+      const { data } = await apiClient.get(`/workouts/${workoutId}/prescription`);
       return data as PrescriptionData;
     },
     staleTime: 5 * 60 * 1000,
@@ -194,7 +194,7 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
    */
   const collectPrs = async (): Promise<Array<{ name: string; est: number }>> => {
     try {
-      const { data } = await apiClient.get(`/athlete/workouts/${workoutId}/session`);
+      const { data } = await apiClient.get(`/workouts/sessions/${sessionId}`);
       const live = data as SessionLiveData;
       return (live.exercises ?? [])
         .filter((e) => e.pr)
@@ -207,7 +207,8 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
   const logSetMutation = useMutation({
     mutationFn: async (payload: SetPayload): Promise<{ advance: Advance; resume: SessionResume | null }> => {
       const exercise = exercises[currentExerciseIndex] as Exercise;
-      await apiClient.post(`/athlete/sessions/${sessionId}/sets`, {
+      // Go backend keys by workoutId, not sessionId
+      await apiClient.post(`/workouts/${workoutId}/sets`, {
         exerciseId: exercise.id,
         setIndex: currentSetIndex,
         weightKg: payload.weightKg,
@@ -230,7 +231,7 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
 
       if (isLastExercise) {
         const prs = await collectPrs();
-        await apiClient.post(`/athlete/sessions/${sessionId}/complete`, {});
+        await apiClient.post(`/workouts/sessions/${sessionId}/complete`, {});
         setCompletedPrs(prs);
         // Fire-and-forget: pull the session's real load from the watch into the backend
         // so the coach sees actual vs prescribed. Never blocks the completion UX.

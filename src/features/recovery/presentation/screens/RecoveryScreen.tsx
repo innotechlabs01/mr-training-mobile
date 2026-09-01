@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   scoreHero: { alignItems: 'center', marginBottom: spacing.lg, gap: spacing.sm },
   outerRing: { width: 120, height: 120, borderRadius: 60, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   innerCircle: { width: 84, height: 84, borderRadius: 42, alignItems: 'center', justifyContent: 'center' },
-  scoreValue: { fontSize: 36, fontWeight: '800', color: '#FFFFFF', lineHeight: 36 },
+  scoreValue: { fontFamily: typography.statsNumber.fontFamily, fontSize: 36, fontWeight: '800', color: colors.text, lineHeight: 36 },
   scoreHint: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
 
   connectBanner: { gap: spacing.sm, padding: spacing.md },

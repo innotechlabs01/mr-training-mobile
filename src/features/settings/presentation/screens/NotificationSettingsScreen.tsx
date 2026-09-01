@@ -12,14 +12,15 @@ type NotificationType = {
   key: string;
   icon: string;
   label: string;
+  description?: string;
 };
 
 const NOTIFICATION_TYPES: NotificationType[] = [
-  { key: 'workoutReminders', icon: '\uD83D\uDCAA', label: 'Workout Reminders' },
-  { key: 'weeklyChallenges', icon: '\uD83C\uDFC6', label: 'Weekly Challenges' },
-  { key: 'newArticles', icon: '\uD83D\uDCC4', label: 'New Articles' },
-  { key: 'communityUpdates', icon: '\uD83D\uDC65', label: 'Community Updates' },
-  { key: 'progressReports', icon: '\uD83D\uDCCA', label: 'Progress Reports' },
+  { key: 'workoutReminders', icon: '\uD83D\uDCAA', label: 'Workout Reminders', description: 'Receive notifications when a workout is assigned' },
+  { key: 'weeklyChallenges', icon: '\uD83C\uDFC6', label: 'Weekly Challenges', description: 'Weekly training challenge notifications' },
+  { key: 'newArticles', icon: '\uD83D\uDCC4', label: 'New Articles', description: 'New blog/marketing articles' },
+  { key: 'communityUpdates', icon: '\uD83D\uDC65', label: 'Community Updates', description: 'Community forum and discussion updates' },
+  { key: 'progressReports', icon: '\uD83D\uDCCA', label: 'Progress Reports', description: 'Progress summary and achievement notifications' },
 ];
 
 export function NotificationSettingsScreen() {
@@ -55,13 +56,16 @@ export function NotificationSettingsScreen() {
       </View>
 
       {/* Toggle rows */}
-      <View style={styles.bodyWrap}>
+      <View style={styles.contentWrap}>
         {NOTIFICATION_TYPES.map((item) => (
           <View key={item.key} style={styles.row}>
             <View style={styles.iconCircle}>
               <Text style={styles.iconText}>{item.icon}</Text>
             </View>
             <Text style={styles.rowLabel}>{item.label}</Text>
+            {item.description && (
+              <Text style={styles.rowDescription}>{item.description}</Text>
+            )}
             <Switch
               value={toggles[item.key]}
               onValueChange={() => handleToggle(item.key)}
@@ -85,6 +89,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     gap: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   backButton: {
     width: 32,
@@ -102,7 +108,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   headerSpacer: { width: 32 },
-  bodyWrap: { padding: spacing.md, gap: spacing.md },
+  contentWrap: { padding: spacing.md, gap: spacing.md },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -122,6 +128,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  iconText: { fontSize: 14, color: '#FFFFFF', textAlign: 'center' },
+  iconText: { fontSize: 14, color: colors.text, textAlign: 'center' },
   rowLabel: { flex: 1, ...typography.bodyStrong, color: colors.text },
+  rowDescription: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginLeft: spacing.sm,
+    marginTop: 2,
+  },
 });

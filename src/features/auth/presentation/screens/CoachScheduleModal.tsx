@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
-import { apiClient } from '../../../../infrastructure/api/client';
+import { getAvailability, createAppointment } from '../../schedulingService';
 import { colors, spacing, typography, radius } from '../../../../shared/theme/tokens';
 
 type Props = {
@@ -39,8 +39,8 @@ export function CoachScheduleModal({ visible, coachId, athleteId, athleteName, o
   const fetchAvailability = async () => {
     setFetching(true);
     try {
-      const { data } = await apiClient.get('/athlete/availability');
-      setAvailability(data.availability || []);
+      const slots = await getAvailability();
+      setAvailability(slots);
     } catch {
       // Coach might not have set availability yet
       setAvailability([]);
@@ -78,7 +78,7 @@ export function CoachScheduleModal({ visible, coachId, athleteId, athleteName, o
 
     setLoading(true);
     try {
-      await apiClient.post('/athlete/appointments', {
+      await createAppointment({
         date: selectedDate,
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,

@@ -11,8 +11,8 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
-import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, typography } from '../../../../shared/theme/tokens';
+import { recordView } from '../../../videoViews/videoViewService';
 import { PlayIcon } from '../../../../shared/components/icons';
 
 type Props = {
@@ -32,8 +32,8 @@ export function TrackedVideoPlayer({ videoUrl, exerciseId, athleteId }: Props) {
 
   // Fire-and-forget POST — never blocks the player.
   const track = useCallback((action: string, data: Record<string, unknown> = {}) => {
-    apiClient.post('/athlete/video-views', { exerciseId, action, ...data }).catch(() => {});
-  }, [exerciseId]);
+    recordView({ exerciseID: exerciseId, athleteID: athleteId, action, ...data }).catch(() => {});
+  }, [exerciseId, athleteId]);
 
   const handlePlaybackStatusUpdate = useCallback((s: any) => {
     if (!s.isLoaded) return;
@@ -64,8 +64,8 @@ export function TrackedVideoPlayer({ videoUrl, exerciseId, athleteId }: Props) {
     if (!videoRef.current) return;
     try {
       // Start view tracking session.
-      const { data } = await apiClient.post('/athlete/video-views', { exerciseId, action: 'start' }).catch(() => ({ data: { viewId: null } }));
-      viewIdRef.current = data?.viewId ?? null;
+      const res = await recordView({ exerciseID: exerciseId, athleteID: athleteId, action: 'start' }).catch(() => null);
+      viewIdRef.current = res?.viewId ?? null;
       reportedMarks.current.clear();
       await videoRef.current.playAsync();
       setPlaying(true);
