@@ -9,6 +9,7 @@ import { EmptyState } from '../../../../shared/components/ui/EmptyState';
 import { PrimaryButton } from '../../../../shared/components/ui/PrimaryButton';
 import { ScreenHeader } from '../../../../shared/components/ui/ScreenHeader';
 import { TrackedVideoPlayer } from '../components/TrackedVideoPlayer';
+import { RunningRouteView } from '../components/RunningRouteView';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
 type Exercise = {
@@ -21,6 +22,7 @@ type Exercise = {
   sortOrder: number;
   notes: string | null;
   videoUrl?: string | null;
+  gpsRoute?: string | null;
   mode?: string;
   phase?: string;
 };
@@ -50,6 +52,7 @@ type PrescriptionExercise = {
   mode?: string;
   phase?: string;
   videoUrl?: string | null;
+  gpsRoute?: string | null;
   bodyPart?: string;
   muscleGroups?: string;
 };
@@ -93,6 +96,7 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
     sortOrder: ex.sortOrder,
     notes: ex.notes ?? '',
     videoUrl: ex.videoUrl ?? undefined,
+    gpsRoute: ex.gpsRoute ?? undefined,
     mode: ex.mode,
     phase: ex.phase,
   })) || [];
@@ -167,6 +171,11 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
                       exerciseId={ex.id}
                       athleteId={athleteId}
                     />
+                  </View>
+                ) : null}
+                {ex.gpsRoute ? (
+                  <View style={{ marginTop: spacing.sm }}>
+                    <RunningRouteView gpsRoute={ex.gpsRoute} />
                   </View>
                 ) : null}
               </Card>

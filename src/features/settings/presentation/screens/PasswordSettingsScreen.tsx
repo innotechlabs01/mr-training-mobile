@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, TextInput, Alert, KeyboardAvoidingVi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useUser } from '@clerk/clerk-expo';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
@@ -17,8 +18,10 @@ export function PasswordSettingsScreen() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { user } = useUser();
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields.');
       return;
@@ -32,11 +35,19 @@ export function PasswordSettingsScreen() {
       return;
     }
 
-    // TODO: Integrate with Clerk user?.updatePassword({ currentPassword, newPassword }) when available
-    Alert.alert('Success', 'Password updated successfully.');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+    setLoading(true);
+    try {
+      await user?.updatePassword({ currentPassword, newPassword });
+      Alert.alert('Success', 'Password updated successfully.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to update password';
+      Alert.alert('Error', message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleForgotPassword = () => {
@@ -131,10 +142,11 @@ export function PasswordSettingsScreen() {
 
           {/* CTA */}
           <Pressable
-            style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaPressed]}
+            style={({ pressed }) => [styles.ctaButton, (pressed || loading) && styles.ctaPressed]}
             onPress={handleChangePassword}
+            disabled={loading}
           >
-            <Text style={styles.ctaText}>Change Password</Text>
+            <Text style={styles.ctaText}>{loading ? 'Updating...' : 'Change Password'}</Text>
           </Pressable>
 
           {/* Forgot password link */}

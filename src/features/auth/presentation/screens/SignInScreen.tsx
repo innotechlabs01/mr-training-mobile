@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import {
   savePendingOnboarding,
   type OnboardingPayload,
 } from './onboardingPending';
+import { getCachedCoachCode, cacheCoachCode } from './coachCodeCache';
 
 type AuthNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Auth'>;
 type AuthRouteProp = RouteProp<RootStackParamList, 'Auth'>;
@@ -42,6 +43,20 @@ export function SignInScreen() {
   const [coachCode, setCoachCode] = useState(route.params?.code ?? '');
   const [mode, setMode] = useState<'signin' | 'signup'>(route.params?.mode ?? 'signin');
   const [loading, setLoading] = useState(false);
+
+  // Returning athletes do not need to retype the invite code; auto-fill from cache.
+  useEffect(() => {
+    let mounted = true;
+    getCachedCoachCode().then((cached) => {
+      if (mounted && cached && !coachCode) {
+        setCoachCode(cached);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const postOnboard = async (onboarding: OnboardingPayload | null | undefined) => {
     try {
@@ -88,7 +103,7 @@ export function SignInScreen() {
       return;
     }
 
-    if (!coachCode.trim()) {
+    if (mode === 'signup' && !coachCode.trim()) {
       showToast('error', 'Error', 'El código de coach es obligatorio');
       return;
     }
@@ -107,12 +122,15 @@ export function SignInScreen() {
           password,
         });
         if (result.status === 'complete') {
+          if (normalizedCode) cacheCoachCode(normalizedCode);
           await setActive({ session: result.createdSessionId });
           await flushPendingOnboarding();
-          try {
-            await apiClient.post('/invites/accept', { code: normalizedCode });
-          } catch (err) {
-            console.error('[Auth] accept-invite failed on sign-in:', err);
+          if (normalizedCode) {
+            try {
+              await apiClient.post('/invites/accept', { code: normalizedCode });
+            } catch (err) {
+              console.error('[Auth] accept-invite failed on sign-in:', err);
+            }
           }
         }
       } catch (err: unknown) {
@@ -134,13 +152,16 @@ export function SignInScreen() {
           unsafeMetadata: { coachCode: normalizedCode },
         });
         if (result.status === 'complete') {
+          if (normalizedCode) cacheCoachCode(normalizedCode);
           await setActiveSignUp({ session: result.createdSessionId });
           const onboarding = route.params?.onboardingData;
           await postOnboard(onboarding);
-          try {
-            await apiClient.post('/invites/accept', { code: normalizedCode });
-          } catch (err) {
-            console.error('[Auth] accept-invite failed on sign-up:', err);
+          if (normalizedCode) {
+            try {
+              await apiClient.post('/invites/accept', { code: normalizedCode });
+            } catch (err) {
+              console.error('[Auth] accept-invite failed on sign-up:', err);
+            }
           }
         } else {
           const onboarding = route.params?.onboardingData;
@@ -291,8 +312,8 @@ export function SignInScreen() {
               </>
             )}
 
-            {/* Coach Code — mandatory MR field, styled like FitBody inputs */}
-            <Text style={styles.fieldLabel}>Coach Code *</Text>
+            {/* Coach Code — required for sign-up; optional auto-fill for returning athletes */}
+            <Text style={styles.fieldLabel}>Coach Code{mode === 'signup' ? ' *' : ''}</Text>
             <View style={styles.inputWrapper}>
               <Text style={styles.inputIcon}>🏷</Text>
               <TextInput
@@ -307,7 +328,11 @@ export function SignInScreen() {
                 accessibilityLabel="Coach invite code"
               />
             </View>
-            <Text style={styles.codeHint}>Required — enter your coach&apos;s code to connect with your coach</Text>
+            <Text style={styles.codeHint}>
+              {mode === 'signup'
+                ? 'Required — enter your coach\'s code to connect with your coach'
+                : 'Optional — saved on this device after first login'}
+            </Text>
 
             {/* Forgot Password link — right-aligned, only in sign-in mode (FitBody) */}
             {mode === 'signin' && (
