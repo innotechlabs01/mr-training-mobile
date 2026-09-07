@@ -29,8 +29,8 @@ export class FormEngine {
     const minKnee = Math.min(...samples.map((s) => s.kneeAngleDeg));
 
     let score = 100;
-    const swayPenalty = this.cap(sway - def.form.maxLateralSway, 0, 0.1) * 100;
-    const symPenalty = this.cap(def.form.minSymmetry - symmetry, 0, 0.15) * 80;
+    const swayPenalty = this.cap(sway - def.form.maxLateralSway, 0, 0.25) * 100;
+    const symPenalty = this.cap(def.form.minSymmetry - symmetry, 0, 0.3) * 80;
     const depthBonus = Math.max(0, def.form.minKneeForGoodDeg - minKnee); // deeper = bonus pool
     score = Math.round(score - swayPenalty - symPenalty + this.cap(depthBonus, 0, 5));
 

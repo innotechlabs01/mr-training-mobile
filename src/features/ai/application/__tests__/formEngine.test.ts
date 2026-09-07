@@ -106,26 +106,25 @@ describe('FormEngine', () => {
     expect(() => eng.track({ kneeAngleDeg: 80, hipDrop: 0, velocityDegPerSec: 0, symmetry: 0.95, lateralSway: 0.02 })).not.toThrow();
   });
 
-  it('maps score to GOOD and REGULAR but never BAD under current weights', () => {
+  it('maps score to GOOD, REGULAR and BAD', () => {
     // GOOD: clean metrics, no depth bonus
     const engGood = new FormEngine();
     const clean: MovementMetrics = { kneeAngleDeg: 90, hipDrop: 0, velocityDegPerSec: 0, symmetry: 0.95, lateralSway: 0.02 };
     const rGood = engGood.scoreRep(makeResult(), [clean], makeDef());
     expect(rGood.quality).toBe('GOOD');
 
-    // REGULAR: worst-case sway + low symmetry, no depth bonus
+    // REGULAR: noticeable but not extreme sway + asymmetry
     const engReg = new FormEngine();
-    const mediocre: MovementMetrics = { kneeAngleDeg: 90, hipDrop: 0, velocityDegPerSec: 0, symmetry: 0.70, lateralSway: 0.18 };
+    const mediocre: MovementMetrics = { kneeAngleDeg: 90, hipDrop: 0, velocityDegPerSec: 0, symmetry: 0.70, lateralSway: 0.12 };
     const rReg = engReg.scoreRep(makeResult(), [mediocre], makeDef());
     expect(rReg.quality).toBe('REGULAR');
 
-    // BAD is unreachable: max sway (10) + max symmetry (12) penalties
-    // and a +5 depth bonus cap leave a floor of ~73+.
+    // BAD: extreme sway (hip well off-center) + strong asymmetry drops below 60
     const engBad = new FormEngine();
-    const worst: MovementMetrics = { kneeAngleDeg: 80, hipDrop: 0, velocityDegPerSec: 0, symmetry: 0.50, lateralSway: 0.18 };
+    const worst: MovementMetrics = { kneeAngleDeg: 80, hipDrop: 0, velocityDegPerSec: 0, symmetry: 0.50, lateralSway: 0.40 };
     const rBad = engBad.scoreRep(makeResult(), [worst], makeDef());
-    expect(rBad.quality).not.toBe('BAD');
-    expect(rBad.score).toBeGreaterThanOrEqual(60);
+    expect(rBad.quality).toBe('BAD');
+    expect(rBad.score).toBeLessThan(60);
   });
 
   it('kneeValgusToleranceDeg from form rules does not affect scoring', () => {
