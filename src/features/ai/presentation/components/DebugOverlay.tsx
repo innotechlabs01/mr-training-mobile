@@ -8,19 +8,26 @@ interface Props {
   visible: boolean;
 }
 
-function row(label: string, raw: number): string {
-  return `${label}: ${Number.isFinite(raw) ? raw.toFixed(raw < 10 ? 1 : 0) : '—'}`;
+function num(label: string, value: number, unit = ''): string {
+  const v = Number.isFinite(value) ? value.toFixed(value < 10 ? 1 : 0) : '—';
+  return `${label}: ${v}${unit}`;
 }
 
 export function DebugOverlay({ info, visible }: Props): React.JSX.Element | null {
   if (!visible) return null;
   return (
     <View pointerEvents="none" accessibilityRole="summary" accessibilityLabel="Debug overlay" style={styles.root}>
-      <Text style={styles.text}>{row('FPS', info.fps)} · {row('AI', info.aiFps)}</Text>
-      <Text style={styles.text}>model: {info.model}</Text>
+      <Text style={styles.text}>{num('FPS', info.fps)} · {num('AI', info.aiFps)} · {num('latency', info.inferenceLatencyMs, 'ms')}</Text>
+      <Text style={styles.text}>{num('cpu', 0, '%')} · {num('gpu', 0, '%')} · ram: —</Text>
+      <Text style={styles.text}>{num('battery', info.battery, '%')} · temp: {info.temperature}</Text>
+      <Text style={styles.text}>model: {info.model} · v{info.modelVersion}</Text>
+      <Text style={styles.text}>{num('landmarks', info.landmarks)} · {num('conf', info.confidence)}</Text>
+      <Text style={styles.text}>{num('dist', info.spread)} · framing: {info.framing}</Text>
+      <Text style={styles.text}>exercise: {info.exercise}</Text>
       <Text style={styles.text}>phase: {info.phase}</Text>
-      <Text style={styles.text}>{row('ROM', info.rom)}° · {row('vel', info.velocity)}°/s</Text>
-      <Text style={styles.text}>{row('form', info.form)} · {row('failure', info.failure)}</Text>
+      <Text style={styles.text}>{num('ROM', info.rom, '°')} · {num('vel', info.velocity, '°/s')} · {num('tempo', info.tempo, 'ms')}</Text>
+      <Text style={styles.text}>{num('reps', info.reps)} · quality: {info.repQuality}</Text>
+      <Text style={styles.text}>{num('form', info.form)} · {num('failure', info.failure)}</Text>
     </View>
   );
 }
@@ -31,7 +38,7 @@ const styles = StyleSheet.create({
     top: spacing.xl,
     left: spacing.md,
     padding: spacing.sm,
-    backgroundColor: 'rgba(11, 15, 14, 0.8)',
+    backgroundColor: 'rgba(11, 15, 14, 0.85)',
     borderRadius: 6,
   },
   text: {

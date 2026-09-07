@@ -8,6 +8,7 @@ import { tokens } from '../../../../shared/theme/tokens';
 import { useAiWorkout } from '../hooks/useAiWorkout';
 import { FramingOverlay } from '../components/FramingOverlay';
 import { DebugOverlay } from '../components/DebugOverlay';
+import { SessionSummaryOverlay } from '../components/SessionSummaryOverlay';
 import { MediaPipePoseRuntime } from '../../infrastructure/pose/MediaPipePoseRuntime';
 
 const { colors, spacing, typography, radius } = tokens;
@@ -79,6 +80,7 @@ export function AiWorkoutScreen({ route }: { route: { params: { exerciseId: stri
       <FramingOverlay status={ai.status} />
       <Countdown active={counting} />
       <DebugOverlay visible={__DEV__ && ai.debug.aiFps > 0} info={ai.debug} />
+      <SessionSummaryOverlay summary={ai.summary} visible={ai.sessionCompleted} />
       <View style={styles.topBar}>
         <Text style={styles.repCounter}>
           {ai.repCount} / {ai.target}
