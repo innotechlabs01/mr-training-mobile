@@ -18,7 +18,7 @@ export function DebugOverlay({ info, visible }: Props): React.JSX.Element | null
   return (
     <View pointerEvents="none" accessibilityRole="summary" accessibilityLabel="Debug overlay" style={styles.root}>
       <Text style={styles.text}>{num('FPS', info.fps)} · {num('AI', info.aiFps)} · {num('latency', info.inferenceLatencyMs, 'ms')}</Text>
-      <Text style={styles.text}>{num('cpu', 0, '%')} · {num('gpu', 0, '%')} · ram: —</Text>
+      <Text style={styles.text}>cpu: — · gpu: — · ram: —</Text>
       <Text style={styles.text}>{num('battery', info.battery, '%')} · temp: {info.temperature}</Text>
       <Text style={styles.text}>model: {info.model} · v{info.modelVersion}</Text>
       <Text style={styles.text}>{num('landmarks', info.landmarks)} · {num('conf', info.confidence)}</Text>
