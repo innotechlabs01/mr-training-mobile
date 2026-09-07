@@ -41,6 +41,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "MR Training usa tu ubicación para mostrarte tu posición en tiempo real durante las rutas de running.",
+        "NSCameraUsageDescription": "MR Training usa la cámara para guiar tu técnica de ejercicio con inteligencia artificial en tiempo real.",
         "NSHealthShareUsageDescription": "MR Training lee tus datos de salud (HRV, sue\u00f1o, pulso) para medir tu recuperaci\u00f3n y optimizar tu entrenamiento.",
         "NSHealthUpdateUsageDescription": "MR Training guarda tus entrenamientos en Apple Health.",
         "UIBackgroundModes": [
@@ -84,6 +85,7 @@
         }
       ],
       "permissions": [
+        "android.permission.CAMERA",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.health.READ_HEART_RATE",
