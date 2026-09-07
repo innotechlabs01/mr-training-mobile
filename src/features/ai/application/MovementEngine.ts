@@ -8,6 +8,7 @@ export interface MovementMetrics {
   velocityDegPerSec: number;
   symmetry: number;
   lateralSway: number;
+  timestampMs?: number;
 }
 
 function resolveLandmark(
@@ -59,9 +60,9 @@ export function compute(lm: LandmarkFrame, prev?: MovementMetrics): MovementMetr
     : 1 - Math.min(1, Math.abs(leftKnee - rightKnee) / 90);
   const lateralSway = hip ? Math.abs(hip.x - 0.5) : 0;
 
-  const velocityDegPerSec = prev && lm.timestamp > 0
-    ? Math.abs(kneeAngleDeg - prev.kneeAngleDeg) / Math.max(0.001, lm.timestamp - 0)
+  const velocityDegPerSec = prev && prev.timestampMs != null && lm.timestamp > prev.timestampMs
+    ? Math.abs(kneeAngleDeg - prev.kneeAngleDeg) / ((lm.timestamp - prev.timestampMs) / 1000)
     : 0;
 
-  return { kneeAngleDeg, hipDrop, velocityDegPerSec, symmetry, lateralSway };
+  return { kneeAngleDeg, hipDrop, velocityDegPerSec, symmetry, lateralSway, timestampMs: lm.timestamp };
 }
