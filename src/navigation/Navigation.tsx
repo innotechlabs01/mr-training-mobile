@@ -16,6 +16,7 @@ import { StoreScreen } from '../features/store/presentation/screens/StoreScreen'
 import { EventDetailScreen } from '../features/events/presentation/screens/EventDetailScreen';
 import { WorkoutDetailScreen } from '../features/training/presentation/screens/WorkoutDetailScreen';
 import { WorkoutExecutionScreen } from '../features/training/presentation/screens/WorkoutExecutionScreen';
+import { AiWorkoutScreen } from '../features/ai/presentation/screens/AiWorkoutScreen';
 import { ImportHistoryScreen } from '../features/training/presentation/screens/ImportHistoryScreen';
 import { SearchScreen } from '../features/search/presentation/screens/SearchScreen';
 import { SettingsScreen } from '../features/settings/presentation/screens/SettingsScreen';
@@ -103,6 +104,7 @@ export type RootStackParamList = {
   Store: undefined;
   WorkoutDetail: { workoutId: string };
   WorkoutExecution: { sessionId: string; workoutId: string };
+  AiWorkout: { sessionId: string; workoutId: string; exerciseId: string; target: number };
   EventDetail: { eventId: string };
   ImportHistory: undefined;
   Search: undefined;
@@ -193,6 +195,7 @@ function RootNavigator() {
           <Stack.Screen name="InviteAccept" component={InviteAcceptScreen} />
           <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
           <Stack.Screen name="WorkoutExecution" component={WorkoutExecutionScreen} options={{ presentation: 'modal' }} />
+          <Stack.Screen name="AiWorkout" component={AiWorkoutScreen} options={{ presentation: 'modal' }} />
           <Stack.Screen name="ImportHistory" component={ImportHistoryScreen} options={{ presentation: 'modal' }} />
           <Stack.Screen name="Search" component={SearchScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />

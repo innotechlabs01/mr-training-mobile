@@ -19,6 +19,8 @@ import {
   type SessionResume,
 } from './executionResume';
 import { syncIfPossible } from '../../../../infrastructure/health';
+import { definitionFor } from '../../../ai/application/definitions';
+import { shouldUseAiFor } from './aiWorkoutTrigger';
 
 type ExerciseMode = 'reps' | 'time' | 'cardio';
 
@@ -147,6 +149,18 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
   const currentPrescription = currentExercise
     ? prescriptionByExerciseId.get(currentExercise.id)
     : undefined;
+
+  const aiActive = currentExercise ? shouldUseAiFor(currentExercise) : false;
+  const aiExerciseId =
+    aiActive && currentExercise
+      ? definitionFor(currentExercise.name.trim().toLowerCase())?.id ?? null
+      : null;
+  const aiTarget = currentPrescription?.reps ?? currentExercise?.reps ?? 0;
+
+  const handleOpenAiWorkout = () => {
+    if (!aiExerciseId) return;
+    navigation.navigate('AiWorkout', { sessionId, workoutId, exerciseId: aiExerciseId, target: aiTarget });
+  };
 
   const isTimeMode = currentExercise?.mode === 'time';
   const isCardioMode = currentExercise?.mode === 'cardio';
@@ -366,6 +380,17 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
               </Text>
             </View>
 
+            {aiActive ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Entrenar con IA"
+                onPress={handleOpenAiWorkout}
+                style={styles.aiCta}
+              >
+                <Text style={styles.aiCtaLabel}>Entrenar con IA</Text>
+              </Pressable>
+            ) : null}
+
             <View style={styles.inputsRow}>
               {!isBodyweight && !isTimeMode ? (
                 <View style={styles.inputCol}>
@@ -444,6 +469,18 @@ const styles = StyleSheet.create({
   inputsRow: { flexDirection: 'row', gap: spacing.md },
   inputCol: { flex: 1 },
   rirCol: { width: 84 },
+
+  aiCta: {
+    minHeight: 44,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiCtaLabel: { ...typography.bodyStrong, color: colors.primary, textTransform: 'uppercase' },
 
   summaryWrap: { flex: 1, justifyContent: 'center' },
   summaryCard: { alignItems: 'center', gap: spacing.sm, padding: spacing.xl },
