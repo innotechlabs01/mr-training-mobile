@@ -96,7 +96,7 @@ export const radius = {
 export const shadows = {
   sm: { shadowColor: '#000000', shadowOpacity: 0.15, shadowRadius: 8, elevation: 2 },
   md: { shadowColor: '#000000', shadowOpacity: 0.25, shadowRadius: 16, elevation: 6 },
-  glow: { shadowColor: '#16E37A', shadowOpacity: 0.3, shadowRadius: 20, elevation: 8 },
+  glow: { shadowColor: '#C8FF00', shadowOpacity: 0.3, shadowRadius: 20, elevation: 8 },
 } as const;
 
 export const layout = {
