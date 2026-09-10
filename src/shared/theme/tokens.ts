@@ -1,7 +1,7 @@
 /**
  * MR Training Design System — mobile tokens.
  * Unified AthletePro / Volt-style single-accent system.
- * Dark-first. Accent: Electric Green (#16E37A). Inter throughout.
+ * Dark-first. Accent: Volt (#C8FF00). Inter throughout.
  * Canonical source: apps/mobile/src/shared/theme/tokens.ts — dark-first.
  * Style reference: uxpilot-export AthletePro (UX Pilot) — 13 screens.
  */
@@ -11,8 +11,8 @@ export const colors = {
   surface: '#151B19', // Cards, lists, main content surfaces
   surfaceRaised: '#1C2320', // Elevated rows, inputs, chips, surface2
   border: '#242B28', // Hairlines, separators (white/5 over base)
-  primary: '#16E37A', // Electric Green — the single accent (UX Pilot)
-  primaryPressed: '#12C66A', // Pressed state of Electric Green
+  primary: '#C8FF00', // Volt — the single accent
+  primaryPressed: '#A8D900', // Pressed state of Volt
   secondary: '#3B9EFF', // Data-viz / macro secondary (carbs), sparingly
   text: '#FFFFFF', // Primary text (WCAG AA on all surfaces)
   textSecondary: '#9CA3AF', // Secondary text, captions, placeholders (gray-400)
@@ -20,6 +20,9 @@ export const colors = {
   warning: '#FBBF24',
   error: '#FF6B6B', // destructive / errors / logout
   errorContainer: '#3A1010',
+  info: '#3B9EFF', // alias of secondary — info toasts/banners, sparingly
+  skeletonBase: '#1C2320', // resting skeleton block fill (= surfaceRaised)
+  skeletonHighlight: '#2A3330', // shimmer sweep (≈8% lighter than base)
   // Light-on-dark semantics (dark-first system)
   background: '#0B0F0E', // alias for base — root canvas
   onPrimary: '#0B0F0E', // text/icon on primary accent
@@ -65,6 +68,11 @@ export const typography = {
     textTransform: 'uppercase' as const,
   },
   statsNumber: { fontFamily: fontFamilies.displayBlack, fontSize: 36, lineHeight: 36, letterSpacing: -0.02 },
+  // v2 metric display scale (big scoreboard numerals, tabular-nums)
+  metricXL: { fontFamily: fontFamilies.displayBlack, fontSize: 56, lineHeight: 56, letterSpacing: -0.03, fontVariant: ['tabular-nums'] },
+  metricLG: { fontFamily: fontFamilies.displayBlack, fontSize: 44, lineHeight: 44, letterSpacing: -0.025, fontVariant: ['tabular-nums'] },
+  metricMD: { fontFamily: fontFamilies.displayBlack, fontSize: 32, lineHeight: 32, letterSpacing: -0.02, fontVariant: ['tabular-nums'] },
+  metricSM: { fontFamily: fontFamilies.displayBlack, fontSize: 24, lineHeight: 28, letterSpacing: -0.015, fontVariant: ['tabular-nums'] },
 } as const;
 
 export const spacing = {
@@ -99,5 +107,11 @@ export const layout = {
   navDockRaise: 20, // FAB center raise (-mt)
 } as const;
 
-export const tokens = { colors, typography, spacing, radius, shadows, layout, fontFamilies };
+/** Skeleton shimmer system — millisecond cycle + default block corner. */
+export const skeleton = {
+  duration: 1400, // ms per shimmer cycle
+  radius: radius.sm,
+} as const;
+
+export const tokens = { colors, typography, spacing, radius, shadows, layout, fontFamilies, skeleton };
 export default tokens;
