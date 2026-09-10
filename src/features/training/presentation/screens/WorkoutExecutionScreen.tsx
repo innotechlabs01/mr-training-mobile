@@ -26,6 +26,10 @@ import { FormAnalyzer, type FormMetrics } from '../components/FormAnalyzer';
 import { RepCounter } from '../components/RepCounter';
 import { WeightInput } from '../components/WeightInput';
 import { UpNextPreview, type UpNextExercise } from '../components/UpNextPreview';
+import { BadgeUnlockToast } from '../../../../shared/components/gamification/BadgeUnlockToast';
+import { PRCelebrationAnimation } from '../../../../shared/components/gamification/PRCelebrationAnimation';
+import { StreakBadge } from '../../../../shared/components/gamification/StreakBadge';
+import { AchievementBadge } from '../../../../shared/components/gamification/AchievementBadge';
 
 type ExerciseMode = 'reps' | 'time' | 'cardio';
 
@@ -145,6 +149,13 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
   const [formMetrics, setFormMetrics] = useState<FormMetrics>(DEFAULT_FORM_METRICS);
   const [formFeedback, setFormFeedback] = useState<string | null>(null);
 
+  // Gamification state
+  const [streak, setStreak] = useState(0);
+  const [unlockedBadges, setUnlockedBadges] = useState<Array<{ id: string; title: string }>>([]);
+  const [showBadgeToast, setShowBadgeToast] = useState(false);
+  const [currentBadgeName, setCurrentBadgeName] = useState('');
+  const [showPrAnimation, setShowPrAnimation] = useState(false);
+
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['workout-detail', workoutId],
     queryFn: async () => {
@@ -225,6 +236,13 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
       setWeightValue(0);
     }
   }, [currentExerciseIndex, currentPrescription, currentExercise]);
+
+  // Trigger PR celebration when workout completes with PRs
+  useEffect(() => {
+    if (completed && completedPrs.length > 0) {
+      setShowPrAnimation(true);
+    }
+  }, [completed, completedPrs]);
 
   const showsResume =
     !!resume &&
@@ -307,9 +325,21 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
       } else if (advance === 'next-exercise') {
         setCurrentExerciseIndex((i) => i + 1);
         setCurrentSetIndex(0);
+
+        // Check for streak milestone badge
+        const newSetIndex = 0;
+        const newExerciseIndex = currentExerciseIndex + 1;
+        if (newExerciseIndex === Math.floor(exercises.length / 2)) {
+          setCurrentBadgeName('Medio Camino');
+          setShowBadgeToast(true);
+        }
       } else {
         setFinalDuration(durationSeconds);
         setCompleted(true);
+
+        // Unlock workout completion badge
+        setCurrentBadgeName('Entrenamiento Completado');
+        setShowBadgeToast(true);
       }
 
       if (nextResume) {
@@ -370,7 +400,15 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader title={title} onBack={() => navigation.goBack()} />
+      <BadgeUnlockToast
+        badgeName={currentBadgeName}
+        visible={showBadgeToast}
+        onDismiss={() => setShowBadgeToast(false)}
+      />
+      <View style={styles.headerRow}>
+        <ScreenHeader title={title} onBack={() => navigation.goBack()} />
+        {streak > 0 && <StreakBadge count={streak} />}
+      </View>
       <ScrollView contentContainerStyle={styles.content}>
         {isLoading ? (
           <EmptyState variant="loading" message="Loading workout..." />
@@ -380,6 +418,10 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
           <EmptyState variant="empty" message="No exercises" />
         ) : completed ? (
           <View style={styles.summaryWrap}>
+            <PRCelebrationAnimation
+              visible={showPrAnimation}
+              onComplete={() => setShowPrAnimation(false)}
+            />
             <Card style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>WORKOUT COMPLETE</Text>
               <Text style={styles.summaryTitle}>{data.workout.contentName}</Text>
@@ -400,6 +442,11 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
                   ))}
                 </View>
               ) : null}
+              <View style={styles.badgesWrap}>
+                {unlockedBadges.map((badge) => (
+                  <AchievementBadge key={badge.id} title={badge.title} unlocked />
+                ))}
+              </View>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => navigation.goBack()}
@@ -527,6 +574,11 @@ export function WorkoutExecutionScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.base },
   content: { padding: spacing.lg, paddingBottom: 120, gap: spacing.lg },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
 
   resumeBanner: {
     backgroundColor: `${colors.primary}1A`,
@@ -581,6 +633,13 @@ const styles = StyleSheet.create({
   prWrap: { alignItems: 'center', gap: spacing.xs },
   prHeading: { ...typography.label, color: colors.primary, marginTop: spacing.sm },
   prLine: { ...typography.caption, color: colors.text },
+  badgesWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
   summaryButton: {
     marginTop: spacing.md,
     backgroundColor: colors.primary,
