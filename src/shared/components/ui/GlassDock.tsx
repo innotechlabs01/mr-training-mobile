@@ -9,13 +9,14 @@ import {
   HeartPulseIcon,
   UserIcon,
 } from '../icons';
+import { texts } from '../../i18n/texts';
 
 const TAB_META: Record<string, { label: string; Icon: (p: { size: number; color: string }) => React.ReactElement }> = {
-  Today: { label: 'Today', Icon: HomeIcon },
-  Plan: { label: 'Plan', Icon: BarbellIcon },
-  Events: { label: 'Events', Icon: CalendarIcon },
-  Recovery: { label: 'Recovery', Icon: HeartPulseIcon },
-  Profile: { label: 'Profile', Icon: UserIcon },
+  Today: { label: texts.tabs.today, Icon: HomeIcon },
+  Plan: { label: texts.tabs.plan, Icon: BarbellIcon },
+  Events: { label: texts.tabs.events, Icon: CalendarIcon },
+  Recovery: { label: texts.tabs.recovery, Icon: HeartPulseIcon },
+  Profile: { label: texts.tabs.profile, Icon: UserIcon },
 };
 
 export function GlassDock({ state, descriptors, navigation, insets }: BottomTabBarProps) {
@@ -55,15 +56,38 @@ export function GlassDock({ state, descriptors, navigation, insets }: BottomTabB
 const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(11,15,14,0.94)',
-    borderTopColor: 'rgba(255,255,255,0.06)',
+    // Frosted glass: semi-transparent base with subtle noise
+    backgroundColor: 'rgba(11,15,14,0.82)',
+    // Subtle top border glow for depth
+    borderTopColor: 'rgba(200,255,0,0.08)',
     borderTopWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     paddingHorizontal: spacing.sm,
+    // Frosted glass shadow layers
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 16,
   },
-  tab: { flex: 1, minHeight: 56, alignItems: 'center', justifyContent: 'center', gap: 3 },
-  tabPressed: { opacity: 0.8 },
-  tabFocused: {},
-  label: { fontFamily: fontFamilies.bodySemiBold, fontSize: 10, letterSpacing: 0.5, color: colors.textSecondary },
+  tab: {
+    flex: 1,
+    minHeight: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    // Subtle active tab highlight
+    borderRadius: radius.md,
+  },
+  tabPressed: { opacity: 0.7, backgroundColor: 'rgba(200,255,0,0.06)' },
+  tabFocused: {
+    backgroundColor: 'rgba(200,255,0,0.10)',
+  },
+  label: {
+    fontFamily: fontFamilies.bodySemiBold,
+    fontSize: 10,
+    letterSpacing: 0.5,
+    color: colors.textSecondary,
+  },
   labelFocused: { color: colors.primary },
 });
