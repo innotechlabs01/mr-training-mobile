@@ -1,27 +1,26 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { colors } from '../../theme/tokens';
 
 type Props = {
-  move: number;      // 0-1
-  exercise: number;  // 0-1
-  recovery: number;  // 0-1
+  move: number;
+  exercise: number;
+  recovery: number;
   size?: number;
 };
 
-const MOVE_COLOR = colors.primary;      // Volt #C8FF00
-const EXERCISE_COLOR = colors.success;  // Success #34D399
-const RECOVERY_COLOR = colors.info;     // Info #3B9EFF
+const MOVE_COLOR = '#C8FF00';
+const EXERCISE_COLOR = '#34D399';
+const RECOVERY_COLOR = '#3B9EFF';
 
 export function ActivityRings({ move, exercise, recovery, size = 200 }: Props) {
   const strokeWidth = size * 0.08;
   const radius = (size - strokeWidth * 2) / 2;
 
   const rings = [
-    { progress: move, color: MOVE_COLOR, r: radius },
-    { progress: exercise, color: EXERCISE_COLOR, r: radius - strokeWidth * 2.5 },
-    { progress: recovery, color: RECOVERY_COLOR, r: radius - strokeWidth * 5 },
+    { progress: Math.min(1, Math.max(0, move)), color: MOVE_COLOR, r: radius },
+    { progress: Math.min(1, Math.max(0, exercise)), color: EXERCISE_COLOR, r: radius - strokeWidth * 2.5 },
+    { progress: Math.min(1, Math.max(0, recovery)), color: RECOVERY_COLOR, r: radius - strokeWidth * 5 },
   ];
 
   return (
