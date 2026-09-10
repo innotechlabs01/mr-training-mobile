@@ -52,7 +52,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
     const token = tokenData.data;
 
     // Register with backend (fire-and-forget).
-    apiClient.post('/devices', {
+    apiClient.post('/athlete/push-tokens', {
       token,
       platform: Platform.OS,
     }).catch(() => {});

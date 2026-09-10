@@ -21,6 +21,6 @@ describe('EmptyState', () => {
 
   it('empty variant shows default message', () => {
     const { getByText } = render(<EmptyState variant="empty" />);
-    expect(getByText('Nothing here yet')).toBeTruthy();
+    expect(getByText('Sin datos')).toBeTruthy();
   });
 });

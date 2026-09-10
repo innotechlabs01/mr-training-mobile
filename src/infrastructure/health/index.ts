@@ -58,16 +58,16 @@ export async function syncHealthData(bridge: HealthBridge): Promise<SyncResult> 
 
     let metricsPushed = 0;
     if (metrics.length > 0) {
-      // Go backend expects single metric per POST /health/metrics — loop
+      // Backend expects single metric per POST /athlete/health/metrics — loop
       for (const m of metrics) {
-        await apiClient.post('/health/metrics', m);
+        await apiClient.post('/athlete/health/metrics', m);
         metricsPushed++;
       }
     }
 
     let sleepPushed = false;
     if (sleep) {
-      await apiClient.post('/health/sleep', sleep);
+      await apiClient.post('/athlete/health/sleep', sleep);
       sleepPushed = true;
     }
 
@@ -95,7 +95,7 @@ export async function syncIfPossible(): Promise<SyncResult | null> {
 
 async function registerDeviceIfNeeded(platform: HealthPlatform): Promise<void> {
   try {
-    await apiClient.post('/health/devices', {
+    await apiClient.post('/athlete/health/devices', {
       platform,
       deviceName: platform === 'healthkit' ? 'Apple Watch' : 'Wearable',
       deviceBrand: platform === 'healthkit' ? 'Apple' : '',

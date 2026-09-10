@@ -1,10 +1,11 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, typography, fontFamilies } from '../../theme/tokens';
-import { EmptyIcon } from '../icons/EmptyIcon';
-import { ErrorIcon } from '../icons/ErrorIcon';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, radius, spacing, typography } from '../../theme/tokens';
+import { InfoIcon, AlertIcon } from '../icons';
+import { Skeleton } from './Skeleton';
+import { texts } from '../../i18n/texts';
 
-type Variant = 'loading' | 'error' | 'empty';
+type Variant = 'empty' | 'error' | 'loading' | 'skeleton';
 
 type Props = {
   variant: Variant;
@@ -15,54 +16,53 @@ type Props = {
   onRetry?: () => void;
 };
 
-const DEFAULT_CONTENT: Record<Variant, { title: string; message: string }> = {
-  loading: { title: 'Loading…', message: '' },
-  empty: { title: 'Nothing here yet', message: 'Pull to refresh or tap the action below to get started.' },
-  error: { title: 'Something went wrong', message: 'Please check your connection and try again.' },
+const DEFAULT_TITLE: Record<'empty' | 'error', string> = {
+  empty: texts.common.noData,
+  error: texts.state.errorTitle,
+};
+const DEFAULT_MESSAGE: Record<'empty' | 'error', string> = {
+  empty: 'No hay información todavía. Intenta refrescar o vuelve más tarde.',
+  error: texts.state.errorMessage,
 };
 
+/** Empty / error / skeleton states — never a perpetual spinner. Skeleton mirrors the final layout. */
 export function EmptyState({ variant, title, message, actionLabel, onAction, onRetry }: Props) {
-  const buttonLabel = actionLabel ?? (onRetry ? 'Retry' : undefined);
+  const isSkeleton = variant === 'loading' || variant === 'skeleton';
+  const buttonLabel = actionLabel ?? (onRetry ? texts.common.retry : undefined);
 
-  const content = DEFAULT_CONTENT[variant];
-  const displayTitle = title ?? content.title;
-  const displayMessage = message ?? content.message;
+  if (isSkeleton) {
+    return (
+      <View testID="empty-state-loading" style={styles.skeletonWrap}>
+        <Skeleton.Screen />
+      </View>
+    );
+  }
+
+  const displayTitle = title ?? DEFAULT_TITLE[variant];
+  const displayMessage = message ?? DEFAULT_MESSAGE[variant];
 
   return (
     <View style={styles.container} testID={`empty-state-${variant}`}>
-      {variant === 'loading' ? (
-          <View accessibilityLabel={displayTitle} style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator
-              color={colors.primary}
-              size="large"
-            />
-          </View>
-      ) : (
-        <View style={styles.illustration}>
-          {variant === 'empty' && <EmptyIcon size={64} />}
-          {variant === 'error' && <ErrorIcon size={64} />}
-        </View>
-      )}
+      <View style={styles.illustration}>
+        {variant === 'empty' ? <InfoIcon size={32} color={colors.textSecondary} /> : <AlertIcon size={32} color={colors.error} />}
+      </View>
       <Text style={styles.title}>{displayTitle}</Text>
       {displayMessage ? <Text style={styles.message}>{displayMessage}</Text> : null}
-{buttonLabel && (onAction || onRetry) ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={onAction ?? onRetry}
-            style={({ pressed }) => [
-              styles.action,
-              { backgroundColor: colors.primary },
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={styles.actionLabel}>{buttonLabel}</Text>
-          </Pressable>
-        ) : null}
+      {buttonLabel && (onAction || onRetry) ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onAction ?? onRetry}
+          style={({ pressed }) => [styles.action, { backgroundColor: colors.primary }, pressed && styles.pressed]}
+        >
+          <Text style={styles.actionLabel}>{buttonLabel}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  skeletonWrap: { paddingVertical: spacing.md },
   container: {
     alignItems: 'center',
     flex: 1,
@@ -78,7 +78,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  illustrationText: { fontSize: 28 },
   title: { ...typography.h3, color: colors.text, textAlign: 'center' },
   message: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.xs },
   action: {

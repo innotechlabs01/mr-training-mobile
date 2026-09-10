@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, Alert, Linking, AppState } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { colors } from '../../../shared/theme/tokens';
+import { LockIcon } from '../../../shared/components/icons';
 import { createCheckout } from '../../../features/polar/polarService';
 
 type Props = {
@@ -53,7 +54,7 @@ export function PaymentScreen({ membership }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <View style={styles.iconCircle}><Text style={styles.iconText}>🔒</Text></View>
+        <View style={styles.iconCircle}><LockIcon size={36} color={colors.error} /></View>
         <Text style={styles.title}>Membership Expired</Text>
         <Text style={styles.subtitle}>
           Your plan <Text style={styles.highlight}>{membership.planName}</Text> expired on{' '}

@@ -8,6 +8,7 @@ import { importData } from '../../../import/importService';
 import { Card } from '../../../../shared/components/ui/Card';
 import { PrimaryButton } from '../../../../shared/components/ui/PrimaryButton';
 import { ScreenHeader } from '../../../../shared/components/ui/ScreenHeader';
+import { CheckIcon } from '../../../../shared/components/icons';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ImportHistory'>;
@@ -55,7 +56,10 @@ export function ImportHistoryScreen({ navigation }: Props) {
 
         {result ? (
           <Card style={styles.resultCard}>
-            <Text style={styles.resultTitle}>✅ Importación lista</Text>
+            <View style={styles.resultTitleRow}>
+              <CheckIcon size={20} color={colors.success} />
+              <Text style={styles.resultTitle}>Importación lista</Text>
+            </View>
             <Text style={styles.resultLine}>{result.sessionsImported} sesiones importadas</Text>
             <Text style={styles.resultLine}>{result.setsImported} series registradas</Text>
             {result.exercisesCreated && result.exercisesCreated.length > 0 ? (
@@ -115,6 +119,7 @@ const styles = StyleSheet.create({
   },
 
   resultCard: { alignItems: 'center', gap: spacing.sm, padding: spacing.xl },
+  resultTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   resultTitle: { ...typography.title, color: colors.text },
   resultLine: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
 });

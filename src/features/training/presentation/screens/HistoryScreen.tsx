@@ -34,7 +34,7 @@ type TrainingSession = {
   status: string;
 };
 
-// Aggregated weekly summary computed server-side (GET /progress/summary).
+// Aggregated weekly summary computed server-side (GET /athlete/progress/summary).
 type ProgressSummary = {
   athleteId: string;
   startDate: string;
@@ -54,7 +54,7 @@ type HistoryNav = CompositeNavigationProp<
 
 type BadgeTone = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 function toneForStatus(status: string): BadgeTone {
   const s = status.toLowerCase();
@@ -63,7 +63,7 @@ function toneForStatus(status: string): BadgeTone {
   return 'neutral';
 }
 
-// Format an ISO/UTC date-time into "MMM d, HH:mm" using local device time.
+// Format an ISO/UTC date-time into "d MMM, HH:mm" using local device time (Spanish).
 function formatDateTime(dateString: string): string {
   if (!dateString) return '';
   const d = new Date(dateString);
@@ -72,7 +72,7 @@ function formatDateTime(dateString: string): string {
   const day = d.getDate();
   const hh = d.getHours().toString().padStart(2, '0');
   const mm = d.getMinutes().toString().padStart(2, '0');
-  return `${m} ${day}, ${hh}:${mm}`;
+  return `${day} ${m}, ${hh}:${mm}`;
 }
 
 export function HistoryScreen() {
@@ -83,7 +83,7 @@ export function HistoryScreen() {
   const { data: sessions, isLoading: sessionsLoading, refetch: refetchSessions } = useQuery({
     queryKey: ['upcoming-sessions'],
     queryFn: async () => {
-      const res = await apiClient.get('/training/sessions');
+      const res = await apiClient.get('/athlete/sessions');
       const raw = res.data?.data ?? res.data?.sessions ?? [];
       const list: TrainingSession[] = Array.isArray(raw) ? (raw as TrainingSession[]) : [];
       const now = new Date();
@@ -109,7 +109,9 @@ export function HistoryScreen() {
         .getDate()
         .toString()
         .padStart(2, '0')}`;
-      const res = await apiClient.get(`/progress/summary?start_date=${startStr}&end_date=${endStr}`);
+      // TODO(api-consolidation): no Next.js equivalent yet for weekly progress summary
+      // (Go had /progress/summary). Needs `GET /api/athlete/progress/summary` route in apps/web.
+      const res = await apiClient.get(`/athlete/progress/summary?start_date=${startStr}&end_date=${endStr}`);
       return (res.data ?? {}) as ProgressSummary;
     },
     staleTime: 5 * 60 * 1000,
@@ -119,7 +121,7 @@ export function HistoryScreen() {
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['athlete-workouts'],
     queryFn: async () => {
-      const res = await apiClient.get('/workouts');
+      const res = await apiClient.get('/athlete/workouts');
       const raw = res.data?.data ?? res.data?.workouts ?? [];
       return (Array.isArray(raw) ? (raw as Workout[]) : []) as Workout[];
     },
@@ -151,16 +153,16 @@ export function HistoryScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
       >
-        <Text style={styles.eyebrow}>TRAINING PLAN</Text>
+        <Text style={styles.eyebrow}>PLAN DE ENTRENAMIENTO</Text>
         <Text style={styles.title}>Plan</Text>
 
-        {/* Upcoming Sessions */}
+        {/* Próximas sesiones */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Upcoming Sessions</Text>
+          <Text style={styles.sectionTitle}>Próximas Sesiones</Text>
           {sessionsLoading ? (
-            <EmptyState variant="loading" message="Loading sessions..." />
+            <EmptyState variant="loading" message="Cargando sesiones..." />
           ) : upcoming.length === 0 ? (
-            <EmptyState variant="empty" message="No upcoming sessions" />
+            <EmptyState variant="empty" message="Sin sesiones próximas" />
           ) : (
             upcoming.map((s) => (
               <Pressable
@@ -182,7 +184,7 @@ export function HistoryScreen() {
                         {formatDateTime(s.scheduledAt)}
                         {s.endAt ? ` — ${formatDateTime(s.endAt)}` : ''}
                       </Text>
-                      {s.location ? <Text style={styles.workoutMeta}>Location: {s.location}</Text> : null}
+                      {s.location ? <Text style={styles.workoutMeta}>Ubicación: {s.location}</Text> : null}
                     </View>
                     <Badge text={s.status} tone={toneForStatus(s.status)} />
                   </View>
@@ -192,47 +194,47 @@ export function HistoryScreen() {
           )}
         </View>
 
-        {/* Weekly Summary */}
+        {/* Resumen semanal */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Weekly Summary</Text>
+          <Text style={styles.sectionTitle}>Resumen Semanal</Text>
           {progressLoading ? (
-            <EmptyState variant="loading" message="Loading progress..." />
+            <EmptyState variant="loading" message="Cargando progreso..." />
           ) : !summary ? (
-            <EmptyState variant="empty" message="No progress data" />
+            <EmptyState variant="empty" message="Sin datos de progreso" />
           ) : (
             <Card style={styles.card}>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Workouts Completed</Text>
+                <Text style={styles.summaryLabel}>Entrenamientos Completados</Text>
                 <Text style={styles.summaryValue}>{summary.workoutsCompleted}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Total Volume</Text>
+                <Text style={styles.summaryLabel}>Volumen Total</Text>
                 <Text style={styles.summaryValue}>{summary.totalVolume.toFixed(0)} kg</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Average Completion</Text>
+                <Text style={styles.summaryLabel}>Promedio de Completado</Text>
                 <Text style={styles.summaryValue}>{summary.avgCompletionRate.toFixed(1)}%</Text>
               </View>
               <View style={styles.progressWrap}>
                 <ProgressBar progress={summary.avgCompletionRate / 100} />
               </View>
               <View style={styles.streakRow}>
-                <Text style={styles.streakLabel}>Streak</Text>
-                <Badge text={`${summary.streak} day${summary.streak === 1 ? '' : 's'}`} tone="primary" />
+                <Text style={styles.streakLabel}>Racha</Text>
+                <Badge text={`${summary.streak} día${summary.streak === 1 ? '' : 's'}`} tone="primary" />
               </View>
             </Card>
           )}
         </View>
 
-        {/* History */}
+        {/* Historial */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>History</Text>
+          <Text style={styles.sectionTitle}>Historial</Text>
 
-          {/* Segmented pills */}
+          {/* Filtros segmentados */}
           <View style={styles.segmentRow}>
             {(['all', 'completed', 'pending'] as Filter[]).map((f) => {
               const active = filter === f;
-              const label = f === 'all' ? 'All' : f === 'completed' ? 'Completed' : 'Pending';
+              const label = f === 'all' ? 'Todos' : f === 'completed' ? 'Completados' : 'Pendientes';
               return (
                 <Pressable
                   key={f}
@@ -248,7 +250,7 @@ export function HistoryScreen() {
           </View>
 
           {isLoading ? (
-            <EmptyState variant="loading" message="Loading workouts..." />
+            <EmptyState variant="loading" message="Cargando entrenamientos..." />
           ) : !data || data.length === 0 || isEmpty ? (
             <EmptyState variant="empty" />
           ) : (

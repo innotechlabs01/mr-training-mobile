@@ -1,148 +1,142 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../../infrastructure/api/client';
-import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
+import { colors, fontFamilies, radius, spacing, typography } from '../../../../shared/theme/tokens';
+import { ArrowLeftIcon, BellIcon, SearchIcon, UserIcon, FireIcon } from '../../../../shared/components/icons';
+import { SegmentedFilter } from '../../../../shared/components/ui/SegmentedFilter';
+import { StatGrid } from '../../../../shared/components/ui/StatGrid';
+import { EmptyState } from '../../../../shared/components/ui/EmptyState';
+import { Skeleton } from '../../../../shared/components/ui/Skeleton';
 
-type MealFilter = 'All' | 'Breakfast' | 'Lunch' | 'Dinner';
+type MealType = 'desayuno' | 'almuerzo' | 'cena';
+type Meal = { id: string; title: string; type: MealType; calories: number; time: string };
 
-type MealItem = {
-  id: string;
-  title: string;
-  type: Exclude<MealFilter, 'All'>;
-  calories: string;
-  time: string;
-  emoji: string;
+type NutritionData = {
+  macros?: { protein: number; carbs: number; fat: number; calories: number };
+  meals?: Meal[];
 };
 
-const FILTERS: MealFilter[] = ['All', 'Breakfast', 'Lunch', 'Dinner'];
+type MealFilterKey = 'all' | MealType;
 
-// TODO: replace with real nutrition API when available
-const MOCK_MEALS: MealItem[] = [
-  { id: '1', title: 'Avocado Egg Toast', type: 'Breakfast', calories: '320 Cal', time: '15 min', emoji: '\uD83E\uDD51' },
-  { id: '2', title: 'Greek Yogurt', type: 'Breakfast', calories: '200 Cal', time: '6 min', emoji: '\uD83C\uDF65' },
-  { id: '3', title: 'Grilled Chicken Salad', type: 'Lunch', calories: '450 Cal', time: '20 min', emoji: '\uD83E\uDD57' },
-  { id: '4', title: 'Salmon Bowl', type: 'Lunch', calories: '520 Cal', time: '25 min', emoji: '\uD83D\uDC1F' },
-  { id: '5', title: 'Protein Shake', type: 'Dinner', calories: '280 Cal', time: '5 min', emoji: '\uD83E\uDDC3' },
-  { id: '6', title: 'Turkey Wrap', type: 'Dinner', calories: '380 Cal', time: '10 min', emoji: '\uD83C\uDF2F' },
+const FILTERS: { key: MealFilterKey; label: string }[] = [
+  { key: 'all', label: 'Todo' },
+  { key: 'desayuno', label: 'Desayuno' },
+  { key: 'almuerzo', label: 'Almuerzo' },
+  { key: 'cena', label: 'Cena' },
 ];
 
-type Nav = NativeStackNavigationProp<RootStackParamList>;
+type Nav = NativeStackNavigationProp<RootStackParamList, 'Nutrition'>;
 
 export function NutritionScreen() {
   const navigation = useNavigation<Nav>();
-  const [filter, setFilter] = useState<MealFilter>('All');
+  const [filter, setFilter] = useState<MealFilterKey>('all');
 
-  // Graceful API attempt — fallback to mock if endpoint doesn't exist or returns no nutrition data
-  const { data: apiMeals } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['athlete-nutrition'],
     queryFn: async () => {
-      try {
-        const { data: today } = await apiClient.get('/athletes/today');
-        // Extract nutrition data if available from today response
-        if (today?.nutrition?.meals) {
-          return today.nutrition.meals as MealItem[];
-        }
-        return null;
-      } catch {
-        return null;
-      }
+      const { data: today } = await apiClient.get('/athlete/today');
+      const nutrition = today?.nutrition as NutritionData | undefined;
+      return nutrition ?? null;
     },
     staleTime: 60_000,
     retry: false,
   });
 
-  const meals = apiMeals ?? MOCK_MEALS;
+  const meals = useMemo(() => {
+    const list = data?.meals ?? [];
+    if (filter === 'all') return list;
+    return list.filter((m) => m.type === filter);
+  }, [data, filter]);
 
-  const filtered = useMemo(() => {
-    if (filter === 'All') return meals;
-    return meals.filter((m) => m.type === filter);
-  }, [filter, meals]);
+  const macros = data?.macros;
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.headerRow}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel="Volver"
           onPress={() => navigation.goBack()}
           hitSlop={12}
           style={styles.backButton}
         >
-          <Text style={styles.backChevron}>{'\u2039'}</Text>
+          <ArrowLeftIcon size={24} color={colors.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Nutrition</Text>
+        <Text style={styles.headerTitle}>Nutrición</Text>
         <View style={styles.headerRight}>
-          <Pressable accessibilityLabel="Search" onPress={() => undefined} style={styles.iconButton}>
-            <Text style={styles.iconButtonText}>{'\uD83D\uDD0D'}</Text>
+          <Pressable accessibilityLabel="Buscar" onPress={() => navigation.navigate('Search')} style={styles.iconButton}>
+            <SearchIcon size={18} color={colors.textSecondary} />
           </Pressable>
-          <Pressable accessibilityLabel="Notifications" onPress={() => undefined} style={styles.iconButton}>
-            <Text style={styles.iconButtonText}>{'\uD83D\uDD14'}</Text>
+          <Pressable accessibilityLabel="Notificaciones" onPress={() => navigation.navigate('Notifications')} style={styles.iconButton}>
+            <BellIcon size={18} color={colors.textSecondary} />
           </Pressable>
-          <Pressable accessibilityLabel="Profile" onPress={() => undefined} style={styles.iconButton}>
-            <Text style={styles.iconButtonText}>{'\uD83D\uDC64'}</Text>
+          <Pressable accessibilityLabel="Perfil" onPress={() => undefined} style={styles.iconButton}>
+            <UserIcon size={18} color={colors.textSecondary} />
           </Pressable>
         </View>
       </View>
 
-      {/* Filter pills */}
-      <View style={styles.filterRow}>
-        {FILTERS.map((f) => {
-          const selected = filter === f;
-          return (
-            <Pressable
-              key={f}
-              onPress={() => setFilter(f)}
-              style={[styles.pill, selected ? styles.pillSelected : styles.pillUnselected]}
-            >
-              <Text style={[styles.pillText, selected ? styles.pillTextSelected : styles.pillTextUnselected]}>
-                {f}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <SegmentedFilter
+        options={FILTERS}
+        value={filter}
+        onChange={(k) => setFilter(k as MealFilterKey)}
+      />
 
-      {/* Meal list */}
-      <ScrollView
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {filtered.length === 0 ? (
-          <View style={styles.emptyWrap}>
-            <Text style={styles.emptyText}>No meals found</Text>
-            <Text style={styles.emptySub}>Try a different filter.</Text>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {isLoading ? (
+          <View style={styles.loading}>
+            <Skeleton.Block height={112} radius={16} />
+            <Skeleton.List rows={3} height={72} />
           </View>
         ) : (
-          filtered.map((item) => (
-            <Pressable
-              key={item.id}
-              onPress={() => navigation.navigate('MealDetail', { name: item.title, calories: parseInt(item.calories, 10), time: item.time })}
-              style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
-            >
-              <View style={styles.cardLeft}>
-                <Text style={styles.cardTitle} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <View style={styles.metaRow}>
-                  <Text style={styles.metaText}>{'\uD83D\uDD25'} {item.calories}</Text>
-                  <Text style={styles.metaDot}>{'\u00B7'}</Text>
-                  <Text style={styles.metaText}>{'\u25F7'} {item.time}</Text>
-                </View>
-              </View>
-              <View style={styles.imageWrap}>
-                <Text style={styles.imageEmoji}>{item.emoji}</Text>
-                <View style={styles.starBadge}>
-                  <Text style={styles.star}>{'\u2605'}</Text>
-                </View>
-              </View>
-            </Pressable>
-          ))
+          <>
+            <StatGrid
+              metrics={[
+                { label: 'Calorías', value: macros?.calories != null ? String(macros.calories) : null, unit: 'kcal' },
+                { label: 'Proteínas', value: macros?.protein != null ? String(macros.protein) : null, unit: 'g' },
+                { label: 'Grasas', value: macros?.fat != null ? String(macros.fat) : null, unit: 'g' },
+                { label: 'Carbohidratos', value: macros?.carbs != null ? String(macros.carbs) : null, unit: 'g' },
+              ]}
+              cols={2}
+              emptyPlaceholder={null}
+            />
+
+            {meals.length === 0 ? (
+              <EmptyState
+                variant="empty"
+                title="Sin registro de comidas hoy"
+                message="Tus comidas aparecerán acá cuando las registres."
+              />
+            ) : (
+              meals.map((item) => (
+                <Pressable
+                  key={item.id}
+                  onPress={() =>
+                    navigation.navigate('MealDetail', { name: item.title, calories: item.calories, time: item.time })
+                  }
+                  style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+                >
+                  <View style={styles.cardIcon}>
+                    <FireIcon size={18} color={colors.textSecondary} />
+                  </View>
+                  <View style={styles.cardBody}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    <Text style={styles.cardMeta}>
+                      {item.calories} kcal · {item.time}
+                    </Text>
+                  </View>
+                  <Text style={styles.cardType}>{item.type}</Text>
+                </Pressable>
+              ))
+            )}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -159,13 +153,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     gap: spacing.sm,
   },
-  backButton: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backChevron: { color: colors.primary, fontSize: 32, lineHeight: 32, fontWeight: '400' },
+  backButton: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
@@ -185,67 +173,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconButtonText: { fontSize: 14 },
-  filterRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  pill: {
-    height: 36,
-    borderRadius: radius.full,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  pillSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  pillUnselected: { backgroundColor: colors.surface, borderColor: colors.border },
-  pillText: { fontFamily: fontFamilies.bodySemiBold, fontSize: 13, lineHeight: 16 },
-  pillTextSelected: { color: colors.base, fontWeight: '700' },
-  pillTextUnselected: { color: colors.textSecondary },
-  listContent: { padding: spacing.md, paddingBottom: 32, gap: spacing.md },
+  content: { padding: spacing.md, paddingBottom: 48, gap: spacing.md },
+  loading: { gap: spacing.md },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    overflow: 'hidden',
-    minHeight: 84,
+    padding: spacing.md,
+    minHeight: 48,
   },
-  cardLeft: { flex: 1, padding: spacing.md, gap: 6 },
-  cardTitle: { ...typography.bodyStrong, color: colors.text, fontSize: 14, lineHeight: 18 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-  metaText: { fontFamily: fontFamilies.bodyMedium, fontSize: 11, color: colors.textSecondary },
-  metaDot: { fontSize: 11, color: colors.textSecondary },
-  imageWrap: {
-    width: 90,
-    height: 90,
-    margin: 8,
+  pressed: { backgroundColor: colors.surfaceRaised },
+  cardIcon: {
+    width: 40,
+    height: 40,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceRaised,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'visible',
   },
-  imageEmoji: { fontSize: 28 },
-  starBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  star: { color: colors.primary, fontSize: 10, lineHeight: 12 },
-  emptyWrap: { alignItems: 'center', paddingVertical: spacing.xl, gap: 4 },
-  emptyText: { fontFamily: fontFamilies.bodySemiBold, fontSize: 14, color: colors.text },
-  emptySub: { ...typography.caption, color: colors.textSecondary },
+  cardBody: { flex: 1, gap: 2 },
+  cardTitle: { ...typography.bodyStrong, color: colors.text, fontSize: 15 },
+  cardMeta: { ...typography.caption, color: colors.textSecondary },
+  cardType: { ...typography.caption, color: colors.textSecondary, textTransform: 'capitalize' },
 });

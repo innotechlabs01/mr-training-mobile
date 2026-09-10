@@ -1,11 +1,25 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
+import {
+  SearchIcon,
+  BellIcon,
+  UserIcon,
+  ArrowLeftIcon,
+  StarIcon,
+  DumbbellIcon,
+  RunningIcon,
+  HeartPulseIcon,
+  YogaIcon,
+  FireIcon,
+  type IconProps,
+} from '../../../../shared/components/icons';
+import { Skeleton } from '../../../../shared/components/ui/Skeleton';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 
 type Level = 'All' | 'Beginner' | 'Intermediate' | 'Advanced';
@@ -21,12 +35,12 @@ type WorkoutItem = {
 
 const LEVELS: Level[] = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
-const MODALITY_EMOJI: Record<string, string> = {
-  strength: '\uD83C\uDFCB\uFE0F',
-  flexibility: '\uD83E\uDDD8',
-  cardio: '\uD83C\uDFC3',
-  conditioning: '\uD83D\uDCAA',
-  recovery: '\uD83D\uDCA4',
+const MODALITY_ICONS: Record<string, React.ComponentType<IconProps>> = {
+  strength: DumbbellIcon,
+  flexibility: YogaIcon,
+  cardio: RunningIcon,
+  conditioning: FireIcon,
+  recovery: HeartPulseIcon,
 };
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -38,7 +52,7 @@ export function WorkoutListScreen() {
   const { data: workouts, isLoading } = useQuery({
     queryKey: ['athlete-workouts'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/workouts');
+      const { data } = await apiClient.get('/athlete/workouts');
       // Go returns ListResponse {data: [...]} — unwrap
       return (data?.data ?? data) as WorkoutItem[];
     },
@@ -62,18 +76,18 @@ export function WorkoutListScreen() {
           hitSlop={12}
           style={styles.backButton}
         >
-          <Text style={styles.backChevron}>{'\u2039'}</Text>
+          <ArrowLeftIcon size={24} color={colors.primary} />
         </Pressable>
         <Text style={styles.headerTitle}>Workout</Text>
         <View style={styles.headerRight}>
           <Pressable accessibilityLabel="Search" onPress={() => undefined} style={styles.iconButton}>
-            <Text style={styles.iconButtonText}>{'\uD83D\uDD0D'}</Text>
+            <SearchIcon size={18} color={colors.textSecondary} />
           </Pressable>
           <Pressable accessibilityLabel="Notifications" onPress={() => undefined} style={styles.iconButton}>
-            <Text style={styles.iconButtonText}>{'\uD83D\uDD14'}</Text>
+            <BellIcon size={18} color={colors.textSecondary} />
           </Pressable>
           <Pressable accessibilityLabel="Profile" onPress={() => undefined} style={styles.iconButton}>
-            <Text style={styles.iconButtonText}>{'\uD83D\uDC64'}</Text>
+            <UserIcon size={18} color={colors.textSecondary} />
           </Pressable>
         </View>
       </View>
@@ -114,9 +128,7 @@ export function WorkoutListScreen() {
         </Pressable>
 
         {isLoading ? (
-          <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
+          <Skeleton.List rows={4} height={84} />
         ) : filtered.length === 0 ? (
           <View style={styles.emptyWrap}>
             <Text style={styles.emptyText}>No workouts assigned yet</Text>
@@ -124,7 +136,7 @@ export function WorkoutListScreen() {
           </View>
         ) : (
           filtered.map((item) => {
-            const emoji = MODALITY_EMOJI[item.modality?.toLowerCase()] ?? '\uD83C\uDFCB\uFE0F';
+            const ModalityIcon = MODALITY_ICONS[item.modality?.toLowerCase()] ?? DumbbellIcon;
             const progressPct = Math.round((item.progress ?? 0) * 100);
             return (
               <View key={item.id} style={styles.card}>
@@ -145,9 +157,9 @@ export function WorkoutListScreen() {
                   </View>
                 </View>
                 <View style={styles.imageWrap}>
-                  <Text style={styles.imageEmoji}>{emoji}</Text>
+                  <ModalityIcon size={28} color={colors.textSecondary} />
                   <View style={styles.starBadge}>
-                    <Text style={styles.star}>{'\u2605'}</Text>
+                    <StarIcon size={10} color={colors.primary} />
                   </View>
                 </View>
               </View>

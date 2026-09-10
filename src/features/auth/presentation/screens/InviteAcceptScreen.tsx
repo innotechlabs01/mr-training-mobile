@@ -7,6 +7,7 @@ import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, typography, radius } from '../../../../shared/theme/tokens';
+import { LockIcon, CheckIcon, CloseIcon } from '../../../../shared/components/icons';
 
 type InviteAcceptNavigationProp = NativeStackNavigationProp<RootStackParamList, 'InviteAccept'>;
 type InviteAcceptRouteProp = RouteProp<RootStackParamList, 'InviteAccept'>;
@@ -46,14 +47,14 @@ export function InviteAcceptScreen() {
     // Validate code format
     if (!coachCode.trim() || coachCode.length < 4) {
       setStatus('error');
-      setErrorMessage('Please enter a valid invite code');
+      setErrorMessage('Ingresa un código de invitación válido');
       return;
     }
 
     setStatus('loading');
 
     try {
-      const { data } = await apiClient.post('/invites/accept', {
+      const { data } = await apiClient.post('/athlete/accept-invite', {
         code: coachCode.trim(),
       });
 
@@ -64,7 +65,7 @@ export function InviteAcceptScreen() {
       }, 2000);
     } catch (err) {
       setStatus('error');
-      const message = err instanceof Error ? err.message : 'Failed to accept invitation';
+      const message = err instanceof Error ? err.message : 'No se pudo aceptar la invitación';
       setErrorMessage(message);
     }
   }, [isSignedIn, navigation]);
@@ -132,7 +133,7 @@ export function InviteAcceptScreen() {
         {status === 'needs_auth' && (
           <>
             <View style={styles.authIcon}>
-              <Text style={styles.authIconText}>🔐</Text>
+              <LockIcon size={28} color={colors.textSecondary} />
             </View>
             <Text style={styles.title}>Sign in required</Text>
             <Text style={styles.subtitle}>
@@ -150,7 +151,7 @@ export function InviteAcceptScreen() {
         {status === 'success' && (
           <>
             <View style={styles.successIcon}>
-              <Text style={styles.successText}>✓</Text>
+              <CheckIcon size={28} color={colors.text} />
             </View>
             <Text style={styles.title}>Welcome!</Text>
             <Text style={styles.subtitle}>
@@ -164,7 +165,7 @@ export function InviteAcceptScreen() {
         {status === 'error' && (
           <>
             <View style={styles.errorIcon}>
-              <Text style={styles.errorText}>✕</Text>
+              <CloseIcon size={28} color={colors.text} />
             </View>
             <Text style={styles.title}>Oops!</Text>
             <Text style={styles.subtitle}>{errorMessage}</Text>

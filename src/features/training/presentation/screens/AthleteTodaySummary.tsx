@@ -14,6 +14,7 @@ import { apiClient } from '../../../../infrastructure/api/client';
 import { colors, spacing, typography } from '../../../../shared/theme/tokens';
 import { Card } from '../../../../shared/components/ui/Card';
 import { Badge } from '../../../../shared/components/ui/Badge';
+import { InfoIcon } from '../../../../shared/components/icons';
 
 type HealthMetric = { metricType: string; value: number; unit: string; source: string; recordedAt: string };
 type SleepLog = { date: string; totalMinutes: number; deepMinutes?: number; remMinutes?: number };
@@ -67,9 +68,9 @@ export function AthleteTodaySummary({ athleteId }: { athleteId: string }) {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      apiClient.get('/health/metrics?days=8').then(r => r.data).catch(() => null),
-      apiClient.get('/health/sleep?days=8').then(r => r.data).catch(() => null),
-      apiClient.get('/athletes/today').then(r => r.data).catch(() => null),
+      apiClient.get('/athlete/health/metrics?days=8').then(r => r.data).catch(() => null),
+      apiClient.get('/athlete/health/sleep?days=8').then(r => r.data).catch(() => null),
+      apiClient.get('/athlete/today').then(r => r.data).catch(() => null),
     ]).then(([metricsRes, sleepRes, todayRes]) => {
       if (cancelled) return;
       const allMetrics: HealthMetric[] = metricsRes?.metrics ?? [];
@@ -106,9 +107,9 @@ export function AthleteTodaySummary({ athleteId }: { athleteId: string }) {
   if (readinessScore != null && readinessScore >= 80) {
     recommendation = 'Buen momento para sesión de alta intensidad';
   } else if (readinessScore != null && readinessScore >= 60) {
-    recommendation = 'Sesión moderada — escuchá a tu cuerpo';
+    recommendation = 'Sesión moderada — escucha a tu cuerpo';
   } else if (readinessScore != null) {
-    recommendation = 'Priorizá descanso y recuperación hoy';
+    recommendation = 'Prioriza descanso y recuperación hoy';
   } else if (hrvStat && hrvStat.deltaPct != null && hrvStat.deltaPct < -10) {
     recommendation = 'Tu HRV está bajo tu promedio — sesiones suaves';
   } else if (lastNight && lastNight.totalMinutes < 420) {
@@ -163,7 +164,8 @@ export function AthleteTodaySummary({ athleteId }: { athleteId: string }) {
       {/* Recommendation */}
       {recommendation ? (
         <View style={styles.recommendation}>
-          <Text style={styles.recommendationText}>💡 {recommendation}</Text>
+          <InfoIcon size={14} color={colors.primary} />
+          <Text style={styles.recommendationText}>{recommendation}</Text>
         </View>
       ) : null}
     </Card>
@@ -187,6 +189,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: spacing.sm,
     marginTop: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
   },
   recommendationText: { ...typography.caption, color: colors.primary, lineHeight: 18 },
 });

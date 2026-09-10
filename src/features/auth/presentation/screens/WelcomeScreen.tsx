@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, typography, radius, fontFamilies } from '../../../../shared/theme/tokens';
 import { welcomeImage } from '../../../../shared/theme/onboardingImages';
+import { ChevronRightIcon } from '../../../../shared/components/icons';
 
 type Props = {
   onNewUser: () => void;
@@ -22,9 +23,9 @@ export function WelcomeScreen({ onNewUser, onExistingUser }: Props) {
           <View style={styles.iconCircle}>
             <Text style={styles.iconText}>MR</Text>
           </View>
-          <Text style={styles.title}>Go beyond{'\n'}your limits</Text>
+          <Text style={styles.title}>Ve más allá{'\n'}de tus límites</Text>
           <Text style={styles.subtitle}>
-            Your personal coach in your pocket. Train smarter, recover better, reach your goals.
+            Tu entrenador personal en el bolsillo. Entrena mejor, recupérate mejor y alcanza tus metas.
           </Text>
         </View>
 
@@ -32,40 +33,42 @@ export function WelcomeScreen({ onNewUser, onExistingUser }: Props) {
           <Pressable
             style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
             onPress={onNewUser}
-            accessibilityLabel="I'm new here — Get a personalized plan"
+            accessibilityRole="button"
+            accessibilityLabel="Soy nuevo aquí — Obtener un plan personalizado"
           >
             <View style={styles.cardIcon}>
               <Text style={styles.cardMonogram}>MR</Text>
             </View>
             <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>I&apos;m new here</Text>
-              <Text style={styles.cardDesc}>Get a personalized plan based on your sport and goals</Text>
+              <Text style={styles.cardTitle}>Soy nuevo aquí</Text>
+              <Text style={styles.cardDesc}>Obtén un plan personalizado según tu deporte y objetivos</Text>
             </View>
-            <Text style={styles.cardArrow}>→</Text>
+            <ChevronRightIcon size={20} color={colors.primary} />
           </Pressable>
 
           <Pressable
             style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
             onPress={onExistingUser}
-            accessibilityLabel="I already train — Sign in to continue"
+            accessibilityRole="button"
+            accessibilityLabel="Ya entreno — Iniciar sesión para continuar"
           >
             <View style={styles.cardIcon}>
               <Text style={styles.cardMonogram}>+</Text>
             </View>
             <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>I already train</Text>
-              <Text style={styles.cardDesc}>Sign in and continue where you left off</Text>
+              <Text style={styles.cardTitle}>Ya entreno</Text>
+              <Text style={styles.cardDesc}>Inicia sesión y continúa donde lo dejaste</Text>
             </View>
-            <Text style={styles.cardArrow}>→</Text>
+            <ChevronRightIcon size={20} color={colors.primary} />
           </Pressable>
         </View>
 
         <Text style={styles.hint}>
-          Have a coach code? Enter it during sign up
+          ¿Tienes un código de entrenador? Ingresalo durante el registro.
         </Text>
 
         <Text style={styles.footer}>
-          By continuing you agree to our Terms of Service and Privacy Policy
+          Al continuar aceptas nuestros Términos de Servicio y Política de Privacidad.
         </Text>
       </View>
     </SafeAreaView>
@@ -73,7 +76,7 @@ export function WelcomeScreen({ onNewUser, onExistingUser }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: colors.base },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(11,15,14,0.55)',
@@ -103,7 +106,6 @@ const styles = StyleSheet.create({
   cardContent: { flex: 1 },
   cardTitle: { ...typography.title, fontSize: 17, color: colors.text, marginBottom: spacing.xs },
   cardDesc: { ...typography.caption, fontSize: 13, lineHeight: 18, color: colors.textSecondary },
-  cardArrow: { ...typography.bodyStrong, fontSize: 20, color: colors.primary },
   hint: { ...typography.caption, fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md },
   footer: { ...typography.caption, fontSize: 12, color: colors.textSecondary, textAlign: 'center' },
 });

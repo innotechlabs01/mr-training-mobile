@@ -30,20 +30,20 @@ const SLIDES: Slide[] = [
   {
     key: '1',
     image: onboardingSlides.slide1,
-    title: 'Train with purpose',
-    subtitle: 'Personalized programs built around your sport, goals, and schedule.',
+    title: 'Entrena con propósito',
+    subtitle: 'Programas personalizados según tu deporte, tus objetivos y tu agenda.',
   },
   {
     key: '2',
     image: onboardingSlides.slide2,
-    title: 'Coached to your level',
-    subtitle: 'From beginner to advanced, your plan evolves as you improve.',
+    title: 'Entrena a tu nivel',
+    subtitle: 'De principiante a avanzado, tu plan evoluciona a medida que mejoras.',
   },
   {
     key: '3',
     image: onboardingSlides.slide3,
-    title: 'Reach your peak',
-    subtitle: 'Track progress, build consistency, and hit your goals every week.',
+    title: 'Alcanza tu máximo',
+    subtitle: 'Registra tu progreso, construye constancia y alcanza tus metas cada semana.',
   },
 ];
 
@@ -95,7 +95,7 @@ export function OnboardingSlidersScreen({ navigation }: Props) {
       {/* Skip (top-right) */}
       {index < SLIDES.length - 1 && (
         <Pressable style={styles.skipBtn} onPress={() => navigation.replace('Welcome')} hitSlop={8}>
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={styles.skipText}>Omitir</Text>
         </Pressable>
       )}
 
@@ -111,9 +111,9 @@ export function OnboardingSlidersScreen({ navigation }: Props) {
           onPress={goNext}
           style={({ pressed }) => [styles.nextBtn, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel={last ? 'Get started' : 'Next'}
+          accessibilityLabel={last ? 'Comenzar' : 'Siguiente'}
         >
-          <Text style={styles.nextText}>{last ? 'Get Started' : 'Next'}</Text>
+          <Text style={styles.nextText}>{last ? 'Comenzar' : 'Siguiente'}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -121,7 +121,7 @@ export function OnboardingSlidersScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: colors.base },
   slide: { flex: 1 },
   overlay: {
     ...StyleSheet.absoluteFillObject,

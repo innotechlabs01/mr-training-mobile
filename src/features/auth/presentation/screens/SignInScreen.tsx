@@ -16,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
 import { colors, spacing, typography, radius, fontFamilies } from '../../../../shared/theme/tokens';
+import { MailIcon, UserIcon, LockIcon, TagIcon, ChevronLeftIcon } from '../../../../shared/components/icons';
 import { apiClient } from '../../../../infrastructure/api/client';
 import { showToast } from '../../../../shared/components/ui/Toast';
 import {
@@ -60,7 +61,7 @@ export function SignInScreen() {
 
   const postOnboard = async (onboarding: OnboardingPayload | null | undefined) => {
     try {
-      await apiClient.post('/athletes/onboard', {
+      await apiClient.post('/athlete/onboard', {
         sports: onboarding?.sports ?? [],
         modality: onboarding?.modality ?? '',
         experienceLevel: onboarding?.experienceLevel ?? '',
@@ -84,27 +85,27 @@ export function SignInScreen() {
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
-      showToast('error', 'Error', 'Please fill in all fields');
+      showToast('error', 'Error', 'Completa todos los campos');
       return;
     }
 
     if (!EMAIL_REGEX.test(email.trim())) {
-      showToast('error', 'Error', 'Please enter a valid email address');
+      showToast('error', 'Error', 'Ingresa un correo electrónico válido');
       return;
     }
 
     if (password.length < 8) {
-      showToast('error', 'Error', 'Password must be at least 8 characters');
+      showToast('error', 'Error', 'La contraseña debe tener al menos 8 caracteres');
       return;
     }
 
     if (mode === 'signup' && confirmPassword !== password) {
-      showToast('error', 'Error', 'Passwords do not match');
+      showToast('error', 'Error', 'Las contraseñas no coinciden');
       return;
     }
 
     if (mode === 'signup' && !coachCode.trim()) {
-      showToast('error', 'Error', 'El código de coach es obligatorio');
+      showToast('error', 'Error', 'El código del coach es obligatorio');
       return;
     }
 
@@ -112,7 +113,7 @@ export function SignInScreen() {
 
     if (mode === 'signin') {
       if (!signInLoaded) {
-        showToast('info', 'Please wait', 'Authentication is loading...');
+        showToast('info', 'Un momento', 'Autenticación en curso...');
         return;
       }
       setLoading(true);
@@ -127,21 +128,21 @@ export function SignInScreen() {
           await flushPendingOnboarding();
           if (normalizedCode) {
             try {
-              await apiClient.post('/invites/accept', { code: normalizedCode });
+              await apiClient.post('/athlete/accept-invite', { code: normalizedCode });
             } catch (err) {
               console.error('[Auth] accept-invite failed on sign-in:', err);
             }
           }
         }
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Sign in failed';
-        showToast('error', 'Sign in failed', message);
+        const message = err instanceof Error ? err.message : 'No se pudo iniciar sesión';
+        showToast('error', 'No se pudo iniciar sesión', message);
       } finally {
         setLoading(false);
       }
     } else {
       if (!signUpLoaded) {
-        showToast('info', 'Please wait', 'Authentication is loading...');
+        showToast('info', 'Un momento', 'Autenticación en curso...');
         return;
       }
       setLoading(true);
@@ -158,7 +159,7 @@ export function SignInScreen() {
           await postOnboard(onboarding);
           if (normalizedCode) {
             try {
-              await apiClient.post('/invites/accept', { code: normalizedCode });
+              await apiClient.post('/athlete/accept-invite', { code: normalizedCode });
             } catch (err) {
               console.error('[Auth] accept-invite failed on sign-up:', err);
             }
@@ -168,11 +169,11 @@ export function SignInScreen() {
           if (onboarding) {
             savePendingOnboarding(onboarding);
           }
-          showToast('success', 'Check your email', 'We sent you a verification link');
+          showToast('success', 'Revisa tu correo', 'Te enviamos un enlace de verificación');
         }
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Sign up failed';
-        showToast('error', 'Sign up failed', message);
+        const message = err instanceof Error ? err.message : 'No se pudo crear la cuenta';
+        showToast('error', 'No se pudo crear la cuenta', message);
       } finally {
         setLoading(false);
       }
@@ -202,24 +203,25 @@ export function SignInScreen() {
                 onPress={() => navigation.goBack()}
                 style={styles.backBtn}
                 hitSlop={12}
-                accessibilityLabel="Go back"
+                accessibilityRole="button"
+                accessibilityLabel="Volver"
               >
-                <Text style={styles.backIcon}>‹</Text>
+                <ChevronLeftIcon size={26} color={colors.primary} />
               </Pressable>
             ) : (
               <View style={styles.backBtnPlaceholder} />
             )}
-            <Text style={styles.topTitle}>{mode === 'signin' ? 'Log In' : 'Create Account'}</Text>
+            <Text style={styles.topTitle}>{mode === 'signin' ? 'Iniciar sesión' : 'Crear cuenta'}</Text>
             <View style={styles.backBtnPlaceholder} />
           </View>
 
           {/* ── Hero header — centered Welcome / Let's Start! ── */}
           <View style={styles.hero}>
-            <Text style={styles.heroTitle}>{mode === 'signin' ? 'Welcome' : "Let's Start!"}</Text>
+            <Text style={styles.heroTitle}>{mode === 'signin' ? 'Bienvenido' : '¡Comencemos!'}</Text>
             <Text style={styles.heroSubtitle}>
               {mode === 'signin'
-                ? 'Your training journey continues'
-                : 'Create your fitness journey today'}
+                ? 'Tu camino de entrenamiento continúa'
+                : 'Comienza tu camino fitness hoy'}
             </Text>
           </View>
 
@@ -227,9 +229,9 @@ export function SignInScreen() {
           <View style={styles.formBand}>
             {mode === 'signin' ? (
               <>
-                <Text style={styles.fieldLabel}>Username or email</Text>
+                <Text style={styles.fieldLabel}>Usuario o correo</Text>
                 <View style={styles.inputWrapper}>
-                  <Text style={styles.inputIcon}>✉</Text>
+                  <MailIcon size={18} color={colors.textSecondary} />
                   <TextInput
                     style={styles.input}
                     placeholder="example@example.com"
@@ -239,30 +241,30 @@ export function SignInScreen() {
                     autoCapitalize="none"
                     keyboardType="email-address"
                     autoComplete="email"
-                    accessibilityLabel="Email address"
+                    accessibilityLabel="Correo electrónico"
                   />
                 </View>
               </>
             ) : (
               <>
-                <Text style={styles.fieldLabel}>Full name</Text>
+                <Text style={styles.fieldLabel}>Nombre completo</Text>
                 <View style={styles.inputWrapper}>
-                  <Text style={styles.inputIcon}>👤</Text>
+                  <UserIcon size={18} color={colors.textSecondary} />
                   <TextInput
                     style={styles.input}
-                    placeholder="Your full name"
+                    placeholder="Tu nombre completo"
                     placeholderTextColor={colors.textSecondary}
                     value={fullName}
                     onChangeText={setFullName}
                     autoCapitalize="words"
                     autoComplete="name"
-                    accessibilityLabel="Full name"
+                    accessibilityLabel="Nombre completo"
                   />
                 </View>
 
-                <Text style={styles.fieldLabel}>Email or Mobile Number</Text>
+                <Text style={styles.fieldLabel}>Correo o número de móvil</Text>
                 <View style={styles.inputWrapper}>
-                  <Text style={styles.inputIcon}>✉</Text>
+                  <MailIcon size={18} color={colors.textSecondary} />
                   <TextInput
                     style={styles.input}
                     placeholder="example@example.com"
@@ -272,15 +274,15 @@ export function SignInScreen() {
                     autoCapitalize="none"
                     keyboardType="email-address"
                     autoComplete="email"
-                    accessibilityLabel="Email or mobile number"
+                    accessibilityLabel="Correo o número de móvil"
                   />
                 </View>
               </>
             )}
 
-            <Text style={styles.fieldLabel}>Password</Text>
+            <Text style={styles.fieldLabel}>Contraseña</Text>
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputIcon}>🔒</Text>
+              <LockIcon size={18} color={colors.textSecondary} />
               <TextInput
                 style={styles.input}
                 placeholder="••••••••••••"
@@ -289,15 +291,15 @@ export function SignInScreen() {
                 onChangeText={setPassword}
                 secureTextEntry
                 autoCapitalize="none"
-                accessibilityLabel="Password"
+                accessibilityLabel="Contraseña"
               />
             </View>
 
             {mode === 'signup' && (
               <>
-                <Text style={styles.fieldLabel}>Confirm Password</Text>
+                <Text style={styles.fieldLabel}>Confirmar contraseña</Text>
                 <View style={styles.inputWrapper}>
-                  <Text style={styles.inputIcon}>🔒</Text>
+                  <LockIcon size={18} color={colors.textSecondary} />
                   <TextInput
                     style={[styles.input, styles.inputDisabled]}
                     placeholder="••••••••••••"
@@ -306,42 +308,42 @@ export function SignInScreen() {
                     onChangeText={setConfirmPassword}
                     secureTextEntry
                     autoCapitalize="none"
-                    accessibilityLabel="Confirm password"
+                    accessibilityLabel="Confirmar contraseña"
                   />
                 </View>
               </>
             )}
 
             {/* Coach Code — required for sign-up; optional auto-fill for returning athletes */}
-            <Text style={styles.fieldLabel}>Coach Code{mode === 'signup' ? ' *' : ''}</Text>
+            <Text style={styles.fieldLabel}>Código del coach{mode === 'signup' ? ' *' : ''}</Text>
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputIcon}>🏷</Text>
+              <TagIcon size={18} color={colors.textSecondary} />
               <TextInput
                 style={styles.input}
-                placeholder="e.g. MR-YH9R"
+                placeholder="p. ej. MR-YH9R"
                 placeholderTextColor={colors.textSecondary}
                 value={coachCode}
                 onChangeText={setCoachCode}
                 autoCapitalize="characters"
                 autoCorrect={false}
                 maxLength={8}
-                accessibilityLabel="Coach invite code"
+                accessibilityLabel="Código de invitación del coach"
               />
             </View>
             <Text style={styles.codeHint}>
               {mode === 'signup'
-                ? 'Required — enter your coach\'s code to connect with your coach'
-                : 'Optional — saved on this device after first login'}
+                ? 'Obligatorio: ingresa el código de tu coach para conectarte'
+                : 'Opcional: se guarda en este dispositivo tras el primer inicio de sesión'}
             </Text>
 
             {/* Forgot Password link — right-aligned, only in sign-in mode (FitBody) */}
             {mode === 'signin' && (
               <Pressable
-                onPress={() => showToast('info', 'Coming soon', 'Password reset will be available soon')}
+                onPress={() => showToast('info', 'Próximamente', 'El restablecimiento de contraseña estará disponible pronto')}
                 style={styles.forgotBtn}
                 hitSlop={8}
               >
-                <Text style={styles.forgotText}>Forgot Password?</Text>
+                <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
               </Pressable>
             )}
           </View>
@@ -351,10 +353,10 @@ export function SignInScreen() {
             {/* Terms — only on sign-up, mirrors FitBody purple-band footer */}
             {mode === 'signup' && (
               <Text style={styles.termsText}>
-                By continuing, you agree to{'\n'}
-                <Text style={styles.termsAccent}>Terms of Use</Text>
-                <Text style={styles.termsText}> and </Text>
-                <Text style={styles.termsAccent}>Privacy Policy.</Text>
+                Al continuar, aceptas los{'\n'}
+                <Text style={styles.termsAccent}>Términos de uso</Text>
+                <Text style={styles.termsText}> y </Text>
+                <Text style={styles.termsAccent}>la Política de privacidad.</Text>
               </Text>
             )}
 
@@ -366,35 +368,35 @@ export function SignInScreen() {
               ]}
               onPress={handleSubmit}
               disabled={loading || !isLoaded}
-              accessibilityLabel={mode === 'signin' ? 'Log In' : 'Sign Up'}
+              accessibilityLabel={mode === 'signin' ? 'Iniciar sesión' : 'Crear cuenta'}
             >
               <Text style={styles.primaryBtnText}>
-                {loading ? 'Please wait...' : mode === 'signin' ? 'Log In' : 'Sign Up'}
+                {loading ? 'Espera...' : mode === 'signin' ? 'Iniciar sesión' : 'Crear cuenta'}
               </Text>
             </Pressable>
 
-            <Text style={styles.orText}>or {mode === 'signin' ? 'sign up' : 'sign in'} with</Text>
+            <Text style={styles.orText}>o {mode === 'signin' ? 'crear cuenta' : 'iniciar sesión'} con</Text>
 
             {/* Social row — FitBody G / f / fingerprint → MR surfaceRaised cards */}
             <View style={styles.socialRow}>
               <Pressable
                 style={({ pressed }) => [styles.socialBtn, pressed && styles.socialBtnPressed]}
-                onPress={() => showToast('info', 'Coming soon', 'Google sign-in coming soon')}
-                accessibilityLabel="Continue with Google"
+                onPress={() => showToast('info', 'Próximamente', 'Inicio de sesión con Google próximamente')}
+                accessibilityLabel="Continuar con Google"
               >
                 <Text style={styles.socialIcon}>G</Text>
               </Pressable>
               <Pressable
                 style={({ pressed }) => [styles.socialBtn, pressed && styles.socialBtnPressed]}
-                onPress={() => showToast('info', 'Coming soon', 'Facebook sign-in coming soon')}
-                accessibilityLabel="Continue with Facebook"
+                onPress={() => showToast('info', 'Próximamente', 'Inicio de sesión con Facebook próximamente')}
+                accessibilityLabel="Continuar con Facebook"
               >
                 <Text style={[styles.socialIcon, styles.socialIconFacebook]}>f</Text>
               </Pressable>
               <Pressable
                 style={({ pressed }) => [styles.socialBtn, pressed && styles.socialBtnPressed]}
-                onPress={() => showToast('info', 'Coming soon', 'Fingerprint sign-in coming soon')}
-                accessibilityLabel="Continue with fingerprint"
+                onPress={() => showToast('info', 'Próximamente', 'Inicio de sesión con huella próximamente')}
+                accessibilityLabel="Continuar con huella"
               >
                 <Text style={styles.socialIcon}>◉</Text>
               </Pressable>
@@ -406,8 +408,8 @@ export function SignInScreen() {
               hitSlop={8}
             >
               <Text style={styles.switchText}>
-                {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-                <Text style={styles.switchAccent}>{mode === 'signin' ? 'Sign Up' : 'Log in'}</Text>
+                {mode === 'signin' ? '¿No tienes una cuenta? ' : '¿Ya tienes una cuenta? '}
+                <Text style={styles.switchAccent}>{mode === 'signin' ? 'Crear cuenta' : 'Iniciar sesión'}</Text>
               </Text>
             </Pressable>
           </View>
@@ -439,13 +441,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backBtnPlaceholder: { width: 32, height: 32 },
-  backIcon: {
-    fontSize: 28,
-    lineHeight: 28,
-    color: colors.primary,
-    fontWeight: '700',
-    marginTop: -2,
-  },
   topTitle: {
     fontFamily: fontFamilies.display,
     fontSize: 18,
@@ -509,12 +504,6 @@ const styles = StyleSheet.create({
     height: 48,
     paddingHorizontal: spacing.md,
     gap: spacing.sm,
-  },
-  inputIcon: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    width: 18,
-    textAlign: 'center',
   },
   input: {
     flex: 1,

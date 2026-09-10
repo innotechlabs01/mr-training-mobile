@@ -36,7 +36,7 @@ import { CreateRoutineScreen } from '../features/training/presentation/screens/C
 import { DiscussionForumScreen } from '../features/community/presentation/screens/DiscussionForumScreen';
 import { ChallengeDetailScreen } from '../features/community/presentation/screens/ChallengeDetailScreen';
 import { AthleteTabs } from './AthleteTabs';
-import { darkTheme } from '../shared/theme';
+import { darkTheme } from '../shared/theme/navigationTheme';
 
 // --- Deep Linking ---
 function extractCodeFromUrl(url: string): string | null {

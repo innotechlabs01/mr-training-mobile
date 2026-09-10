@@ -1,138 +1,107 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { listFavorites, Favorite } from '@features/favorites/favoriteService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
+import { colors, fontFamilies, radius, spacing, typography } from '../../../../shared/theme/tokens';
+import { ArrowLeftIcon, BellIcon, PlayIcon, SearchIcon, StarIcon, UserIcon } from '../../../../shared/components/icons';
+import { SegmentedFilter } from '../../../../shared/components/ui/SegmentedFilter';
+import { ListCard } from '../../../../shared/components/ui/ListCard';
+import { Skeleton } from '../../../../shared/components/ui/Skeleton';
+import { EmptyState } from '../../../../shared/components/ui/EmptyState';
 
-type FavoriteFilter = 'All' | 'Video' | 'Article';
+type FavoriteType = 'all' | 'video' | 'article';
 
-const FILTERS: FavoriteFilter[] = ['All', 'Video', 'Article'];
+const FILTERS: { key: FavoriteType; label: string }[] = [
+  { key: 'all', label: 'Todo' },
+  { key: 'video', label: 'Video' },
+  { key: 'article', label: 'Artículo' },
+];
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function FavoritesScreen() {
   const navigation = useNavigation<Nav>();
-  const [filter, setFilter] = useState<FavoriteFilter>('All');
+  const [filter, setFilter] = useState<FavoriteType>('all');
 
-  const { data: favoritesData } = useQuery({
+  const { data: favoritesData, isLoading } = useQuery({
     queryKey: ['favorites'],
     queryFn: listFavorites,
     staleTime: 300_000,
   });
+
   const filtered = useMemo(() => {
     const list = favoritesData ?? [];
-    if (filter === 'All') return list;
-    return list.filter((item) => item.type === filter.toLowerCase());
+    if (filter === 'all') return list;
+    return list.filter((item) => item.type === filter);
   }, [filter, favoritesData]);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.headerRow}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel="Volver"
           onPress={() => navigation.goBack()}
           hitSlop={12}
           style={styles.backButton}
         >
-          <Text style={styles.backChevron}>{'\u2039'}</Text>
+          <ArrowLeftIcon size={24} color={colors.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Favorites</Text>
+        <Text style={styles.headerTitle}>Favoritos</Text>
         <View style={styles.headerRight}>
-          <Pressable accessibilityLabel="Search" onPress={() => undefined} style={styles.iconButton}>
-            <Text style={styles.iconButtonText}>{'\uD83D\uDD0D'}</Text>
+          <Pressable accessibilityLabel="Buscar" onPress={() => navigation.navigate('Search')} style={styles.iconButton}>
+            <SearchIcon size={18} color={colors.textSecondary} />
           </Pressable>
-          <Pressable accessibilityLabel="Notifications" onPress={() => undefined} style={styles.iconButton}>
-            <Text style={styles.iconButtonText}>{'\uD83D\uDD14'}</Text>
+          <Pressable accessibilityLabel="Notificaciones" onPress={() => navigation.navigate('Notifications')} style={styles.iconButton}>
+            <BellIcon size={18} color={colors.textSecondary} />
           </Pressable>
-          <Pressable accessibilityLabel="Profile" onPress={() => undefined} style={styles.iconButton}>
-            <Text style={styles.iconButtonText}>{'\uD83D\uDC64'}</Text>
+          <Pressable accessibilityLabel="Perfil" onPress={() => undefined} style={styles.iconButton}>
+            <UserIcon size={18} color={colors.textSecondary} />
           </Pressable>
         </View>
       </View>
 
-      {/* Filter pills */}
-      <View style={styles.filterRow}>
-        <Text style={styles.filterLabel}>Sort By</Text>
-        {FILTERS.map((f) => {
-          const selected = filter === f;
-          return (
-            <Pressable
-              key={f}
-              onPress={() => setFilter(f)}
-              style={[styles.pill, selected ? styles.pillSelected : styles.pillUnselected]}
-            >
-              <Text
-                style={[styles.pillText, selected ? styles.pillTextSelected : styles.pillTextUnselected]}
-              >
-                {f}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <SegmentedFilter options={FILTERS} value={filter} onChange={(k) => setFilter(k as FavoriteType)} />
 
-      {/* Card list */}
-      <ScrollView
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {filtered.length === 0 ? (
-          <View style={styles.emptyWrap}>
-            <Text style={styles.emptyText}>No favorites found</Text>
-          </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {isLoading ? (
+          <Skeleton.List rows={4} height={72} />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            variant="empty"
+            title="Sin favoritos"
+            message="Marca contenido con la estrella para verlo aquí."
+          />
         ) : (
-          filtered.map((item) => (
-            <View key={item.id} style={styles.card}>
-              <View style={styles.cardLeft}>
-                <Text style={styles.cardTitle} numberOfLines={2}>
-                  {item.title}
-                </Text>
-                {item.description ? (
-                  <Text style={styles.cardDescription} numberOfLines={2}>
-                    {item.description}
-                  </Text>
-                ) : null}
-                <View style={styles.metaRow}>
-                  {item.duration ? <Text style={styles.metaText}>{'\u25F7'} {item.duration}</Text> : null}
-                  {item.calories ? (
-                    <>
-                      <Text style={styles.metaDot}>{'\u00B7'}</Text>
-                      <Text style={styles.metaText}>{'\uD83D\uDD25'} {item.calories}</Text>
-                    </>
-                  ) : null}
-                  {item.exercises ? (
-                    <>
-                      <Text style={styles.metaDot}>{'\u00B7'}</Text>
-                      <Text style={styles.metaText}>{'\u2733'} {item.exercises}</Text>
-                    </>
-                  ) : null}
-                </View>
-              </View>
-              <View style={styles.imageWrap}>
-                <Text style={styles.imageEmoji}>
-                  {item.type === 'workout' ? '\uD83C\uDFCB' : item.type === 'video' ? '\uD83C\uDFA5' : '\uD83D\uDCF0'}
-                </Text>
-                <View style={styles.starBadge}>
-                  <Text style={styles.star}>{'\u2605'}</Text>
-                </View>
-                {item.type === 'workout' || item.type === 'video' ? (
-                  <View style={styles.playBadge}>
-                    <Text style={styles.play}>{'\u25B6'}</Text>
-                  </View>
-                ) : null}
-              </View>
-            </View>
+          filtered.map((item, idx) => (
+            <ListCard
+              key={item.id}
+              title={item.title}
+              subtitle={itemDescription(item)}
+              leadingIcon={<StarIcon size={20} color={colors.textSecondary} />}
+              trailing={isPlayable(item) ? <PlayIcon size={18} color={colors.primary} /> : undefined}
+              last={idx === filtered.length - 1}
+            />
           ))
         )}
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function isPlayable(item: Favorite): boolean {
+  return item.type === 'workout' || item.type === 'video';
+}
+
+function itemDescription(item: Favorite): string | undefined {
+  const parts = [item.duration, item.calories ? `${item.calories} kcal` : undefined, item.exercises].filter(
+    Boolean,
+  ) as string[];
+  return parts.length ? parts.join(' · ') : item.description;
 }
 
 const styles = StyleSheet.create({
@@ -145,13 +114,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     gap: spacing.sm,
   },
-  backButton: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backChevron: { color: colors.primary, fontSize: 32, lineHeight: 32, fontWeight: '400' },
+  backButton: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
@@ -171,81 +134,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconButtonText: { fontSize: 14 },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  filterLabel: { ...typography.bodyStrong, color: colors.textSecondary, marginRight: spacing.xs },
-  pill: {
-    height: 36,
-    borderRadius: radius.full,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  pillSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  pillUnselected: { backgroundColor: colors.surface, borderColor: colors.border },
-  pillText: { fontFamily: fontFamilies.bodySemiBold, fontSize: 13, lineHeight: 16 },
-  pillTextSelected: { color: colors.base, fontWeight: '700' },
-  pillTextUnselected: { color: colors.textSecondary },
-  listContent: { padding: spacing.md, paddingBottom: 32, gap: spacing.md },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    minHeight: 84,
-  },
-  cardLeft: { flex: 1, padding: spacing.md, gap: 6 },
-  cardTitle: { ...typography.bodyStrong, color: colors.text, fontSize: 14, lineHeight: 18 },
-  cardDescription: { ...typography.caption, color: colors.textSecondary, fontSize: 12 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-  metaText: { fontFamily: fontFamilies.bodyMedium, fontSize: 11, color: colors.textSecondary },
-  metaDot: { fontSize: 11, color: colors.textSecondary },
-  imageWrap: {
-    width: 90,
-    height: 90,
-    margin: 8,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceRaised,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'visible',
-  },
-  imageEmoji: { fontSize: 28 },
-  starBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  star: { color: colors.primary, fontSize: 10, lineHeight: 12 },
-  playBadge: {
-    position: 'absolute',
-    bottom: 6,
-    right: 6,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  play: { color: colors.text, fontSize: 10, marginLeft: 1 },
-  emptyWrap: { alignItems: 'center', paddingVertical: spacing.xl, gap: 4 },
-  emptyText: { fontFamily: fontFamilies.bodySemiBold, fontSize: 14, color: colors.text },
+  content: { padding: spacing.md, paddingBottom: 48, gap: spacing.md },
 });

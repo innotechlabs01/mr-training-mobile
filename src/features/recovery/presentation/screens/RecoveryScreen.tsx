@@ -15,6 +15,7 @@ import { Card } from '../../../../shared/components/ui/Card';
 import { EmptyState } from '../../../../shared/components/ui/EmptyState';
 import { Input } from '../../../../shared/components/ui/Input';
 import { PrimaryButton } from '../../../../shared/components/ui/PrimaryButton';
+import { CheckIcon } from '../../../../shared/components/icons';
 import { useRecoveryData, type RecoveryState } from '../../hooks/useRecoveryData';
 
 const PLATFORM_LABEL: Record<string, string> = {
@@ -99,7 +100,7 @@ export function RecoveryScreen() {
   // Recommendations derive only from measured signals.
   const recommendations: string[] = [];
   if (lastNight && lastNight.totalMinutes < 420) {
-    recommendations.push('Dormiste menos de 7 horas. Priorizá acostarte temprano hoy.');
+    recommendations.push('Dormiste menos de 7 horas. Prioriza acostarte temprano hoy.');
   }
   if (hrvToday != null && hrvBaseline != null && hrvToday < hrvBaseline * 0.85) {
     recommendations.push('Tu HRV está por debajo de tu promedio. Considerá una sesión suave.');
@@ -133,15 +134,15 @@ export function RecoveryScreen() {
           />
         }
       >
-        <Text style={styles.eyebrow}>RECOVERY LAB</Text>
-        <Text style={styles.title}>Readiness</Text>
+        <Text style={styles.eyebrow}>RECUPERACIÓN</Text>
+        <Text style={styles.title}>Recuperación</Text>
 
         {recovery.loading ? (
           <EmptyState variant="loading" message="Leyendo tus datos…" />
         ) : !recovery.bridgeAvailable && recovery.scoreSource === 'none' ? (
           <EmptyState
             variant="empty"
-            message="Sin reloj conectado. Conectá Apple Health o Health Connect para medir tu recuperación automáticamente."
+            message="Sin reloj conectado. Conecta Apple Health o Health Connect para medir tu recuperación automáticamente."
           />
         ) : recovery.error ? (
           <EmptyState variant="error" message={recovery.error} onRetry={() => recovery.syncNow()} />
@@ -159,7 +160,7 @@ export function RecoveryScreen() {
                 {recovery.scoreSource === 'automatic'
                   ? 'Basado en tu HRV, sueño y pulso en reposo'
                   : recovery.scoreSource === 'manual'
-                    ? 'Tu último auto-reporte — conectá tu reloj para el automático'
+                    ? 'Tu último auto-reporte — conecta tu reloj para el automático'
                     : 'Sin datos suficientes todavía'}
               </Text>
             </View>
@@ -226,7 +227,10 @@ export function RecoveryScreen() {
               </Card>
             ) : (
               <Card style={styles.manualCard}>
-                <Text style={styles.manualTitle}>✅ Auto-reporte guardado</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                  <CheckIcon size={16} color={colors.success} />
+                  <Text style={styles.manualTitle}>Auto-reporte guardado</Text>
+                </View>
               </Card>
             )}
 

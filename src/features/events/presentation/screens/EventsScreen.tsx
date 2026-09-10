@@ -65,7 +65,7 @@ function formatDate(dateStr: string): string {
   if (!dateStr) return '—';
   try {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return d.toLocaleDateString('es', { month: 'short', day: 'numeric', year: 'numeric' });
   } catch {
     return dateStr;
   }
@@ -73,7 +73,7 @@ function formatDate(dateStr: string): string {
 
 function formatHeaderDate(key: string): string {
   try {
-    return new Date(`${key}T12:00:00`).toLocaleDateString('en-US', {
+    return new Date(`${key}T12:00:00`).toLocaleDateString('es', {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
@@ -95,7 +95,7 @@ export function EventsScreen() {
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['athlete-events'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/athletes/events');
+      const { data } = await apiClient.get('/athlete/events');
       if (Array.isArray(data)) return data as EventItem[];
       if (Array.isArray(data.events)) return data.events as EventItem[];
       if (Array.isArray(data.data)) return data.data as EventItem[];
@@ -129,9 +129,9 @@ export function EventsScreen() {
       const key = toLocalKey(d);
       out.push({
         key,
-        weekday: d.toLocaleDateString('en-US', { weekday: 'short' }),
+        weekday: d.toLocaleDateString('es', { weekday: 'short' }),
         dayNumber: d.getDate(),
-        month: d.toLocaleDateString('en-US', { month: 'short' }),
+        month: d.toLocaleDateString('es', { month: 'short' }),
         eventCount: eventsByDay[key]?.length ?? 0,
         isToday: i === 0,
       });

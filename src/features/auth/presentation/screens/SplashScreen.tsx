@@ -127,7 +127,7 @@ export function SplashScreen({ navigation }: Props) {
         <Text style={styles.title}>MR TRAINING</Text>
         <View style={styles.subtitleRow}>
           <View style={styles.subtitleLine} />
-          <Text style={styles.subtitle}>Elite Performance</Text>
+          <Text style={styles.subtitle}>Rendimiento de élite</Text>
           <View style={styles.subtitleLine} />
         </View>
       </View>
@@ -139,7 +139,7 @@ export function SplashScreen({ navigation }: Props) {
           <Animated.View style={[styles.dot, { transform: [{ translateY: dotTranslate(dot2) }] }]} />
           <Animated.View style={[styles.dot, { transform: [{ translateY: dotTranslate(dot3) }] }]} />
         </View>
-        <Text style={styles.loadingText}>Preparing your experience</Text>
+        <Text style={styles.loadingText}>Preparando tu experiencia</Text>
       </View>
     </View>
   );
@@ -148,7 +148,7 @@ export function SplashScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#070A09',
+    backgroundColor: colors.base,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -171,11 +171,11 @@ const styles = StyleSheet.create({
     width: 132,
     height: 132,
     borderRadius: 66,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.glow,
-    shadowColor: '#16E37A',
+    shadowColor: colors.primary,
     // extra soft glow
     elevation: 10,
   },

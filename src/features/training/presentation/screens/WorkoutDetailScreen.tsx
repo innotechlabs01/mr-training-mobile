@@ -1,4 +1,4 @@
-import { Linking, Pressable, View, Text, StyleSheet, ScrollView, RefreshControl, Alert, ActivityIndicator } from 'react-native';
+import { Linking, Pressable, View, Text, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -66,7 +66,7 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
   const { data: workoutData, isLoading: loading1, isError: error1 } = useQuery({
     queryKey: ['workout-detail', workoutId],
     queryFn: async () => {
-      const { data } = await goApiClient.get(`/workouts/${workoutId}/detail`);
+      const { data } = await goApiClient.get(`/athlete/workouts/${workoutId}`);
       return data as { workout: Workout; exercises?: any[] };
     },
     staleTime: 5 * 60 * 1000,
@@ -79,7 +79,7 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
   } = useQuery({
     queryKey: ['workout-prescription', workoutId],
     queryFn: async () => {
-      const { data } = await goApiClient.get(`/workouts/${workoutId}/prescription`);
+      const { data } = await goApiClient.get(`/athlete/workouts/${workoutId}/prescription`);
       return data as { data: PrescriptionExercise[] };
     },
     staleTime: 5 * 60 * 1000,
@@ -103,7 +103,7 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
 
   const startSessionMutation = useMutation({
     mutationFn: async () => {
-      const { data } = await goApiClient.post(`/workouts/${workoutId}/session`);
+      const { data } = await goApiClient.post(`/athlete/workouts/${workoutId}/session`);
       return data.session as { id: string };
     },
     onSuccess: (session) => {
@@ -138,7 +138,7 @@ export function WorkoutDetailScreen({ route, navigation }: Props) {
           />
         }>
         {isLoading ? (
-          <ActivityIndicator size="large" color={colors.primary} />
+          <EmptyState variant="loading" />
         ) : workoutData === null || error1 || error2 ? (
           <EmptyState
             variant="error"

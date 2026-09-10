@@ -1,26 +1,27 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Switch } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
+import { colors, fontFamilies, radius, spacing, typography } from '../../../../shared/theme/tokens';
+import { ArrowLeftIcon, BarbellIcon, BellIcon, ChatIcon, ChartBarIcon, FireIcon } from '../../../../shared/components/icons';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 type NotificationType = {
   key: string;
-  icon: string;
+  icon: React.ReactNode;
   label: string;
-  description?: string;
+  description: string;
 };
 
 const NOTIFICATION_TYPES: NotificationType[] = [
-  { key: 'workoutReminders', icon: '\uD83D\uDCAA', label: 'Workout Reminders', description: 'Receive notifications when a workout is assigned' },
-  { key: 'weeklyChallenges', icon: '\uD83C\uDFC6', label: 'Weekly Challenges', description: 'Weekly training challenge notifications' },
-  { key: 'newArticles', icon: '\uD83D\uDCC4', label: 'New Articles', description: 'New blog/marketing articles' },
-  { key: 'communityUpdates', icon: '\uD83D\uDC65', label: 'Community Updates', description: 'Community forum and discussion updates' },
-  { key: 'progressReports', icon: '\uD83D\uDCCA', label: 'Progress Reports', description: 'Progress summary and achievement notifications' },
+  { key: 'workoutReminders', icon: <BarbellIcon size={18} color={colors.text} />, label: 'Recordatorios de entrenamiento', description: 'Recibe notificaciones cuando se asigna un entrenamiento' },
+  { key: 'weeklyChallenges', icon: <FireIcon size={18} color={colors.text} />, label: 'Desafíos semanales', description: 'Notificaciones de desafíos de entrenamiento semanales' },
+  { key: 'newArticles', icon: <ChartBarIcon size={18} color={colors.text} />, label: 'Nuevos artículos', description: 'Nuevos artículos de blog y marketing' },
+  { key: 'communityUpdates', icon: <ChatIcon size={18} color={colors.text} />, label: 'Actualizaciones de la comunidad', description: 'Actualizaciones del foro y discusiones de la comunidad' },
+  { key: 'progressReports', icon: <BellIcon size={18} color={colors.text} />, label: 'Informes de progreso', description: 'Resúmenes de progreso y notificaciones de logros' },
 ];
 
 export function NotificationSettingsScreen() {
@@ -40,37 +41,33 @@ export function NotificationSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.headerRow}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel="Volver"
           onPress={() => navigation.goBack()}
           hitSlop={12}
           style={styles.backButton}
         >
-          <Text style={styles.backChevron}>{'\u2039'}</Text>
+          <ArrowLeftIcon size={24} color={colors.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Notification Settings</Text>
+        <Text style={styles.headerTitle}>Configuración de notificaciones</Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* Toggle rows */}
       <View style={styles.contentWrap}>
         {NOTIFICATION_TYPES.map((item) => (
           <View key={item.key} style={styles.row}>
-            <View style={styles.iconCircle}>
-              <Text style={styles.iconText}>{item.icon}</Text>
-            </View>
-            <Text style={styles.rowLabel}>{item.label}</Text>
-            {item.description && (
+            <View style={styles.iconCircle}>{item.icon}</View>
+            <View style={styles.rowBody}>
+              <Text style={styles.rowLabel}>{item.label}</Text>
               <Text style={styles.rowDescription}>{item.description}</Text>
-            )}
+            </View>
             <Switch
               value={toggles[item.key]}
               onValueChange={() => handleToggle(item.key)}
               trackColor={{ true: colors.primary, false: colors.surfaceRaised }}
-              thumbColor="#FFFFFF"
+              thumbColor={colors.text}
               ios_backgroundColor={colors.surfaceRaised}
             />
           </View>
@@ -92,13 +89,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  backButton: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backChevron: { color: colors.primary, fontSize: 32, lineHeight: 32, fontWeight: '400' },
+  backButton: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
@@ -121,19 +112,14 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   iconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceRaised,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  iconText: { fontSize: 14, color: colors.text, textAlign: 'center' },
-  rowLabel: { flex: 1, ...typography.bodyStrong, color: colors.text },
-  rowDescription: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginLeft: spacing.sm,
-    marginTop: 2,
-  },
+  rowBody: { flex: 1, gap: 2 },
+  rowLabel: { ...typography.bodyStrong, color: colors.text, fontSize: 15 },
+  rowDescription: { ...typography.caption, color: colors.textSecondary, lineHeight: 16 },
 });

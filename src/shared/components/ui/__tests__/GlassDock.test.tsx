@@ -3,7 +3,7 @@ import { fireEvent, render } from '@testing-library/react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { GlassDock } from '../GlassDock';
 
-const TAB_LABELS: Record<string, string> = { Today: 'Hoy', Plan: 'Plan', Events: 'Eventos', Recovery: 'Recovery', Profile: 'Perfil' };
+const TAB_LABELS: Record<string, string> = { Today: 'Hoy', Plan: 'Plan', Events: 'Eventos', Recovery: 'Recuperación', Profile: 'Perfil' };
 
 function makeProps(active: string, nav?: { navigate?: jest.Mock }): BottomTabBarProps {
   const routes = [
@@ -29,7 +29,7 @@ describe('GlassDock', () => {
     expect(getByRole('tab', { name: 'Hoy' })).toBeTruthy();
     expect(getByRole('tab', { name: 'Plan' })).toBeTruthy();
     expect(getByRole('tab', { name: 'Eventos' })).toBeTruthy();
-    expect(getByRole('tab', { name: 'Recovery' })).toBeTruthy();
+    expect(getByRole('tab', { name: 'Recuperación' })).toBeTruthy();
     expect(getByRole('tab', { name: 'Perfil' })).toBeTruthy();
     expect(getByRole('tab', { name: 'Hoy' }).props.accessibilityState.selected).toBe(true);
   });

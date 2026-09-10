@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listMessages, sendMessage } from '../../communityService';
 import { colors, spacing, radius, typography, fontFamilies } from '../../../../shared/theme/tokens';
+import { ScreenHeader } from '../../../../shared/components/ui/ScreenHeader';
+import { Skeleton } from '../../../../shared/components/ui/Skeleton';
+import { EmptyState } from '../../../../shared/components/ui/EmptyState';
+import { ChatIcon } from '../../../../shared/components/icons';
 import type { RootStackParamList } from '../../../../navigation/Navigation';
-
-type Message = {
-  id: string;
-  name: string;
-  message: string;
-  time: string;
-};
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -36,58 +33,38 @@ export function DiscussionForumScreen() {
     },
   });
 
-  const messageList: Message[] = (messages ?? []).map((m) => ({
-    id: m.id,
-    name: m.userName,
-    message: m.message,
-    time: formatTimeAgo(m.createdAt),
-  }));
+  const canSend = inputText.trim().length > 0 && !sendMessageMut.isPending;
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          onPress={() => navigation.goBack()}
-          hitSlop={12}
-          style={styles.backButton}
-        >
-          <Text style={styles.backChevron}>{'\u2039'}</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>Discussion Forum</Text>
-        <View style={styles.headerRight} />
-      </View>
+      <ScreenHeader title="Foro de discusión" onBack={() => navigation.goBack()} />
 
-      {/* Topic Title */}
       <View style={styles.topicSection}>
-        <Text style={styles.topicTitle}>Strength Training Techniques</Text>
+        <ChatIcon size={16} color={colors.textSecondary} />
+        <Text style={styles.topicTitle}>Conversación</Text>
       </View>
 
-      {/* Messages */}
-      <ScrollView
-        contentContainerStyle={styles.messagesContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.messagesContent} showsVerticalScrollIndicator={false}>
         {isLoading ? (
-          <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : messageList.length === 0 ? (
-          <Text style={styles.emptyText}>No messages yet. Start the conversation!</Text>
+          <Skeleton.List rows={6} height={56} />
+        ) : (messages ?? []).length === 0 ? (
+          <EmptyState
+            variant="empty"
+            title="Sin mensajes todavía"
+            message="Iniciá la conversación con un mensaje."
+          />
         ) : (
-          messageList.map((msg) => (
-            <View key={msg.id} style={styles.messageRow}>
+          (messages ?? []).map((m) => (
+            <View key={m.id} style={styles.messageRow}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{msg.name.charAt(0)}</Text>
+                <Text style={styles.avatarText}>{m.userName.charAt(0).toUpperCase()}</Text>
               </View>
               <View style={styles.messageBody}>
                 <View style={styles.messageHeader}>
-                  <Text style={styles.messageName}>{msg.name}</Text>
-                  <Text style={styles.messageTime}>{msg.time}</Text>
+                  <Text style={styles.messageName}>{m.userName}</Text>
+                  <Text style={styles.messageTime}>{formatTimeAgo(m.createdAt)}</Text>
                 </View>
-                <Text style={styles.messageText}>{msg.message}</Text>
+                <Text style={styles.messageText}>{m.message}</Text>
               </View>
             </View>
           ))
@@ -99,19 +76,21 @@ export function DiscussionForumScreen() {
         <TextInput
           value={inputText}
           onChangeText={setInputText}
-          placeholder="Type a message..."
+          placeholder="Escribe un mensaje..."
           placeholderTextColor={colors.textSecondary}
           style={styles.inputField}
+          multiline={false}
         />
         <Pressable
-          style={({ pressed }) => [styles.sendButton, pressed && styles.sendButtonPressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Enviar"
+          disabled={!canSend}
+          style={({ pressed }) => [styles.sendButton, pressed && styles.sendButtonPressed, !canSend && styles.sendButtonDisabled]}
           onPress={() => {
-            if (inputText.trim()) {
-              sendMessageMut.mutate(inputText.trim());
-            }
+            if (canSend) sendMessageMut.mutate(inputText.trim());
           }}
         >
-          <Text style={styles.sendIcon}>{'\u27A4'}</Text>
+          <Text style={styles.sendIcon}>{'➤'}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -120,31 +99,10 @@ export function DiscussionForumScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.base },
-  headerRow: {
+  topicSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
     gap: spacing.sm,
-  },
-  backButton: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backChevron: { color: colors.primary, fontSize: 32, lineHeight: 32, fontWeight: '400' },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontFamily: fontFamilies.displayBold,
-    fontSize: 20,
-    lineHeight: 26,
-    color: colors.primary,
-  },
-  headerRight: { width: 32 },
-  topicSection: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
   },
@@ -154,15 +112,8 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: colors.text,
   },
-  messagesContent: {
-    padding: spacing.md,
-    paddingBottom: spacing.lg,
-    gap: spacing.md,
-  },
-  messageRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
+  messagesContent: { padding: spacing.md, paddingBottom: spacing.lg, gap: spacing.md },
+  messageRow: { flexDirection: 'row', gap: spacing.sm },
   avatar: {
     width: 32,
     height: 32,
@@ -171,36 +122,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: {
-    fontFamily: fontFamilies.bodyBold,
-    fontSize: 14,
-    color: colors.base,
-  },
-  messageBody: {
-    flex: 1,
-    gap: 4,
-  },
-  messageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  messageName: {
-    fontFamily: fontFamilies.bodyMedium,
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  messageTime: {
-    fontFamily: fontFamilies.bodyMedium,
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-  messageText: {
-    fontFamily: fontFamilies.body,
-    fontSize: 15,
-    lineHeight: 22,
-    color: colors.text,
-  },
+  avatarText: { fontFamily: fontFamilies.bodyBold, fontSize: 14, color: colors.base },
+  messageBody: { flex: 1, gap: 4 },
+  messageHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  messageName: { fontFamily: fontFamilies.bodyMedium, fontSize: 13, color: colors.textSecondary },
+  messageTime: { fontFamily: fontFamilies.bodyMedium, fontSize: 11, color: colors.textSecondary },
+  messageText: { fontFamily: fontFamilies.body, fontSize: 15, lineHeight: 22, color: colors.text },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -211,13 +138,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     paddingLeft: spacing.md,
     gap: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
-  inputField: {
-    flex: 1,
-    fontFamily: fontFamilies.body,
-    fontSize: 15,
-    color: colors.text,
-  },
+  inputField: { flex: 1, fontFamily: fontFamilies.body, fontSize: 15, color: colors.text },
   sendButton: {
     width: 36,
     height: 36,
@@ -228,29 +152,19 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   sendButtonPressed: { backgroundColor: colors.primaryPressed },
-  sendIcon: {
-    fontSize: 14,
-    color: colors.base,
-  },
-  loadingWrap: { alignItems: 'center', paddingVertical: spacing.xl },
-  emptyText: {
-    fontFamily: fontFamilies.bodyMedium,
-    fontSize: 13,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    paddingVertical: spacing.md,
-  },
+  sendButtonDisabled: { opacity: 0.4 },
+  sendIcon: { fontSize: 14, color: colors.base },
 });
 
-function formatTimeAgo(dateStr: string): string {
+export function formatTimeAgo(dateStr: string): string {
   const now = Date.now();
   const then = new Date(dateStr).getTime();
   const diffMs = now - then;
   const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins} min ago`;
+  if (mins < 1) return 'ahora mismo';
+  if (mins < 60) return `hace ${mins} min`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} hr ago`;
+  if (hrs < 24) return `hace ${hrs} h`;
   const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
+  return `hace ${days} d`;
 }

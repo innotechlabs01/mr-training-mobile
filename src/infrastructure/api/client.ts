@@ -2,26 +2,26 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosR
 import { getClerkToken } from '../auth/clerk';
 import Constants from 'expo-constants';
 
-const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl as string;
-const GO_API_URL = Constants.expoConfig?.extra?.goApiUrl as string || 'http://localhost:8080';
+// Backend authority: ACTIVE = Next.js (apps/web), served at `/api/*`.
+// See apps/api/AGENTS.md ("backend activo = Next.js API Routes") + apps/mobile/AGENTS.md ("contrato /api/coaching/*").
+// Decision A (executed): mobile targets Next.js `/api/*`. Go API (apps/api) is auxiliar/no-activo.
+const API_BASE_URL: string = Constants.expoConfig?.extra?.apiBaseUrl ?? '';
 
 /**
- * Next.js API Client — fallback for endpoints not in Go API.
- * Migrated domains now target Go API v1 base URL.
- * Used for: /api/coaching/*, /api/coach/*, /api/athlete/*, /api/marketing/*, /api/polar/*
+ * Primary API client → Next.js active backend (`/api/*`).
  */
 const apiClient: AxiosInstance = axios.create({
-  baseURL: `${GO_API_URL}/api/v1`,
+  baseURL: `${API_BASE_URL}/api`,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
 
 /**
- * Go API Client — primary source for business logic endpoints.
- * Used for: /api/v1/users, /api/v1/training, /api/v1/memberships, /api/v1/events, etc.
+ * Secondary client → same Next.js backend. Retained to minimize caller churn during the
+ * Go→Next.js consolidation; callers have been re-mapped to `/api/*` paths.
  */
 const goApiClient: AxiosInstance = axios.create({
-  baseURL: `${GO_API_URL}/api/v1`,
+  baseURL: `${API_BASE_URL}/api`,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });

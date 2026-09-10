@@ -6,8 +6,8 @@ describe('tokens', () => {
     expect(colors.surface).toBe('#151B19');
     expect(colors.surfaceRaised).toBe('#1C2320');
     expect(colors.border).toBe('#242B28');
-    expect(colors.primary).toBe('#16E37A');
-    expect(colors.primaryPressed).toBe('#12C66A');
+    expect(colors.primary).toBe('#C8FF00');
+    expect(colors.primaryPressed).toBe('#A8D900');
     expect(colors.secondary).toBe('#3B9EFF');
     expect(colors.text).toBe('#FFFFFF');
     expect(colors.textSecondary).toBe('#9CA3AF');

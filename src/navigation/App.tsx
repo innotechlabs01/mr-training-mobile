@@ -2,6 +2,9 @@ import React, { useEffect } from 'react';
 import { AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { persistQueryClient } from '@tanstack/react-query-persist-client';
+import type { PersistedClient } from '@tanstack/react-query-persist-client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ClerkProvider, useClerk } from '@clerk/clerk-expo';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SecureStore from 'expo-secure-store';
@@ -19,9 +22,27 @@ const queryClient = new QueryClient({
     queries: {
       retry: 2,
       staleTime: 5 * 60 * 1000,
+      gcTime: 1000 * 60 * 30,
     },
     mutations: { retry: 1 },
   },
+});
+
+persistQueryClient({
+  queryClient,
+  persister: {
+    persistClient: async (client) => {
+      await AsyncStorage.setItem('react-query-cache', JSON.stringify(client));
+    },
+    restoreClient: async () => {
+      const cache = await AsyncStorage.getItem('react-query-cache');
+      return cache ? (JSON.parse(cache) as PersistedClient) : undefined;
+    },
+    removeClient: async () => {
+      await AsyncStorage.removeItem('react-query-cache');
+    },
+  },
+  maxAge: 1000 * 60 * 60 * 24,
 });
 
 // Hold the native splash until FontGate hides it after fonts resolve.

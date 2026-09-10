@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { colors, radius, spacing, typography } from '../../theme/tokens';
 
 type Tone = 'neutral' | 'success' | 'warning' | 'error' | 'primary';
+type Size = 'sm' | 'md' | 'lg';
 
 const TONE_STYLES: Record<Tone, { bg: string; fg: string }> = {
   neutral: { bg: colors.surfaceRaised, fg: colors.textSecondary },
@@ -12,30 +13,52 @@ const TONE_STYLES: Record<Tone, { bg: string; fg: string }> = {
   primary: { bg: `${colors.primary}22`, fg: colors.primary },
 };
 
+// Visual pill heights (non-interactive) — never 44px on a plain status pill.
+const SIZE_HEIGHT: Record<Size, number> = { sm: 20, md: 24, lg: 28 };
+
 type Props = {
   text: string;
   tone?: Tone;
+  size?: Size;
+  /** Interactive badges get a 44px tap target; non-interactive pills stay compact. */
+  interactive?: boolean;
   onPress?: () => void;
   disabled?: boolean;
   selected?: boolean;
   loading?: boolean;
   error?: boolean;
   empty?: boolean;
+  icon?: React.ReactNode;
 };
 
-export function Badge({ text, tone = 'neutral', onPress, disabled = false, selected = false, loading = false, error = false, empty = false }: Props) {
+export function Badge({
+  text,
+  tone = 'neutral',
+  size = 'md',
+  interactive = false,
+  onPress,
+  disabled = false,
+  selected = false,
+  loading = false,
+  error = false,
+  empty = false,
+  icon,
+}: Props) {
   const { bg, fg } = TONE_STYLES[tone];
-  const Component = onPress ? Pressable : View;
+  const isInteractive = interactive || !!onPress;
+  const Component = isInteractive ? Pressable : View;
 
   return (
     <Component
-      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityRole={isInteractive ? 'button' : undefined}
       accessibilityState={{ disabled, selected, busy: loading }}
       onPress={onPress}
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.badge,
         { backgroundColor: bg },
+        { height: SIZE_HEIGHT[size] },
+        isInteractive && styles.interactive,
         onPress && !disabled && !loading && pressed && styles.pressed,
         disabled && styles.disabled,
         selected && styles.selected,
@@ -47,7 +70,20 @@ export function Badge({ text, tone = 'neutral', onPress, disabled = false, selec
       {loading ? (
         <ActivityIndicator size="small" color={fg} />
       ) : (
-        <Text style={[styles.text, { color: fg }, disabled && styles.textDisabled, selected && styles.textSelected]}>{text}</Text>
+        <>
+          {icon}
+          <Text
+            style={[
+              styles.text,
+              { color: fg },
+              size === 'lg' && styles.textLg,
+              disabled && styles.textDisabled,
+              selected && styles.textSelected,
+            ]}
+          >
+            {text}
+          </Text>
+        </>
       )}
     </Component>
   );
@@ -56,15 +92,16 @@ export function Badge({ text, tone = 'neutral', onPress, disabled = false, selec
 const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.sm + spacing.xs,
-    paddingVertical: spacing.xs,
-    minHeight: 44,
-    minWidth: 44,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 3,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm + spacing.xs,
   },
-  text: { ...typography.label },
+  interactive: { minHeight: 44, minWidth: 44, paddingHorizontal: spacing.md },
+  text: { ...typography.label, fontSize: 10, lineHeight: 14 },
+  textLg: { fontSize: 11 },
   textDisabled: { opacity: 0.5 },
   textSelected: { color: colors.primary },
   pressed: { opacity: 0.8 },

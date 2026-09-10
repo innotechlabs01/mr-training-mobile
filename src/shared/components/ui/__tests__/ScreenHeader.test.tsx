@@ -12,7 +12,7 @@ describe('ScreenHeader', () => {
   it('calls onBack when back control is pressed', () => {
     const onBack = jest.fn();
     const { getByLabelText } = render(<ScreenHeader title="Detail" onBack={onBack} />);
-    fireEvent.press(getByLabelText('Go back'));
+    fireEvent.press(getByLabelText('Volver'));
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 });

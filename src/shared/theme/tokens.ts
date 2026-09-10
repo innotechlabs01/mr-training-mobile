@@ -6,6 +6,8 @@
  * Style reference: uxpilot-export AthletePro (UX Pilot) — 13 screens.
  */
 
+import type { FontVariant } from 'react-native';
+
 export const colors = {
   base: '#0B0F0E', // App background, deepest layer
   surface: '#151B19', // Cards, lists, main content surfaces
@@ -60,6 +62,7 @@ export const typography = {
   // Component-specific aliases
   title: { fontFamily: fontFamilies.heading, fontSize: 20, lineHeight: 26, letterSpacing: 0 },
   bodyStrong: { fontFamily: fontFamilies.bodySemiBold, fontSize: 14, lineHeight: 22, letterSpacing: 0 },
+  bodyBold: { fontFamily: fontFamilies.bodyBold, fontSize: 14, lineHeight: 22, letterSpacing: 0 },
   label: {
     fontFamily: fontFamilies.heading,
     fontSize: 13,
@@ -69,10 +72,10 @@ export const typography = {
   },
   statsNumber: { fontFamily: fontFamilies.displayBlack, fontSize: 36, lineHeight: 36, letterSpacing: -0.02 },
   // v2 metric display scale (big scoreboard numerals, tabular-nums)
-  metricXL: { fontFamily: fontFamilies.displayBlack, fontSize: 56, lineHeight: 56, letterSpacing: -0.03, fontVariant: ['tabular-nums'] },
-  metricLG: { fontFamily: fontFamilies.displayBlack, fontSize: 44, lineHeight: 44, letterSpacing: -0.025, fontVariant: ['tabular-nums'] },
-  metricMD: { fontFamily: fontFamilies.displayBlack, fontSize: 32, lineHeight: 32, letterSpacing: -0.02, fontVariant: ['tabular-nums'] },
-  metricSM: { fontFamily: fontFamilies.displayBlack, fontSize: 24, lineHeight: 28, letterSpacing: -0.015, fontVariant: ['tabular-nums'] },
+  metricXL: { fontFamily: fontFamilies.displayBlack, fontSize: 56, lineHeight: 56, letterSpacing: -0.03, fontVariant: ['tabular-nums'] as FontVariant[] },
+  metricLG: { fontFamily: fontFamilies.displayBlack, fontSize: 44, lineHeight: 44, letterSpacing: -0.025, fontVariant: ['tabular-nums'] as FontVariant[] },
+  metricMD: { fontFamily: fontFamilies.displayBlack, fontSize: 32, lineHeight: 32, letterSpacing: -0.02, fontVariant: ['tabular-nums'] as FontVariant[] },
+  metricSM: { fontFamily: fontFamilies.displayBlack, fontSize: 24, lineHeight: 28, letterSpacing: -0.015, fontVariant: ['tabular-nums'] as FontVariant[] },
 } as const;
 
 export const spacing = {

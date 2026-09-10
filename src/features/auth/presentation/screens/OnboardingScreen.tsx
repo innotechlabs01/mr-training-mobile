@@ -14,6 +14,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '@clerk/clerk-expo';
 import { colors, radius, spacing, fontFamilies } from '../../../../shared/theme/tokens';
 import { onboardingHeroes } from '../../../../shared/theme/onboardingImages';
+import {
+  CheckIcon,
+  TargetIcon,
+  CalendarIcon,
+  UserIcon,
+  ChevronRightIcon,
+  PencilIcon,
+} from '../../../../shared/components/icons';
+import { OptionRow } from '../components/onboarding/OptionRow';
+import {
+  SPORTS,
+  MODALITIES,
+  GOALS,
+  LEVELS,
+  FREQUENCIES,
+  DURATIONS,
+  EQUIPMENT_OPTIONS,
+  STEP_TITLES,
+  HERO_HEADINGS,
+  type OptionIcon,
+} from '../components/onboarding/options';
 import { CoachScheduleModal } from './CoachScheduleModal';
 
 type Props = {
@@ -43,82 +64,8 @@ export type OnboardingData = {
   phone?: string;
 };
 
-const SPORTS = [
-  { id: 'gym', label: 'Gym', emoji: '🏋️', desc: 'Strength & hypertrophy' },
-  { id: 'running', label: 'Running', emoji: '🏃', desc: 'Speed & endurance' },
-  { id: 'crossfit', label: 'CrossFit', emoji: '💪', desc: 'Functional fitness' },
-  { id: 'swimming', label: 'Swimming', emoji: '🏊', desc: 'Full body cardio' },
-  { id: 'cycling', label: 'Cycling', emoji: '🚴', desc: 'Power & stamina' },
-  { id: 'tennis', label: 'Tennis', emoji: '🎾', desc: 'Agility & focus' },
-  { id: 'yoga', label: 'Yoga', emoji: '🧘', desc: 'Flexibility & mind' },
-  { id: 'soccer', label: 'Soccer', emoji: '⚽', desc: 'Speed & teamwork' },
-];
-
-const MODALITIES = [
-  { id: 'in-person', label: 'In Person', emoji: '🏢', desc: 'Train at the gym or with your coach in person' },
-  { id: 'hybrid', label: 'Hybrid', emoji: '🔄', desc: 'Mix of in-person sessions and remote coaching' },
-  { id: 'virtual', label: 'Virtual', emoji: '📱', desc: 'Fully remote with digital workout plans' },
-];
-
-const GOALS = [
-  { id: 'strength', label: 'Get Stronger', emoji: '💪', desc: 'Build muscle, increase your lifts, gain power' },
-  { id: 'weight-loss', label: 'Lose Weight', emoji: '🔥', desc: 'Burn fat, improve body composition, get lean' },
-  { id: 'endurance', label: 'Build Endurance', emoji: '🏃', desc: 'Run longer, swim farther, last longer' },
-  { id: 'performance', label: 'Performance', emoji: '🏆', desc: 'Compete, set PRs, reach peak condition' },
-  { id: 'health', label: 'General Health', emoji: '✨', desc: 'Stay active, feel better, prevent injury' },
-];
-
-const LEVELS = [
-  { id: 'beginner', label: 'Beginner', emoji: '🌱', desc: 'New to structured training or returning after a break' },
-  { id: 'intermediate', label: 'Intermediate', emoji: '🌿', desc: '1-2 years of consistent training experience' },
-  { id: 'advanced', label: 'Advanced', emoji: '🌳', desc: '3+ years, comfortable with complex programming' },
-];
-
-const FREQUENCIES = [2, 3, 4, 5, 6, 7];
-const DURATIONS = [30, 45, 60, 90];
-const EQUIPMENT_OPTIONS = [
-  { id: 'full-gym', label: 'Full Gym', emoji: '🏋️', desc: 'Barbells, machines, cables, everything' },
-  { id: 'basic', label: 'Basic', emoji: '🎱', desc: 'Dumbbells, bands, pull-up bar' },
-  { id: 'minimal', label: 'Minimal', emoji: '🏠', desc: 'Resistance bands, yoga mat' },
-  { id: 'bodyweight', label: 'Bodyweight', emoji: '🧘', desc: 'No equipment, just your body' },
-];
-
-// 13 steps: sports, modality/level, gender, weight, age, height, goal, activity, frequency/duration, equipment, fill profile, summary, choice
-const STEP_TITLES = [
-  'Your Sport',
-  'How & Level',
-  "What's Your Gender",
-  'What Is Your Weight?',
-  'How Old Are You?',
-  'What Is Your Height?',
-  'What Is Your Goal?',
-  'Physical Activity Level',
-  'Schedule',
-  'Equipment',
-  'Fill Your Profile',
-  'Your Plan',
-  'Your Choice',
-];
 const STEP_COUNT = 13;
 
-// FitBody-inspired hero headings — lime in Figma → orange (MR primary) in MR
-const HERO_HEADINGS = [
-  'CONSISTENCY IS THE KEY',
-  'BUILD YOUR PATH',
-  "WHAT'S YOUR GENDER",
-  'WHAT IS YOUR WEIGHT?',
-  'HOW OLD ARE YOU?',
-  'WHAT IS YOUR HEIGHT?',
-  'WHAT IS YOUR GOAL?',
-  'PHYSICAL ACTIVITY LEVEL',
-  'STAY CONSISTENT',
-  'TRAIN ANYWHERE',
-  'FILL YOUR PROFILE',
-  'YOUR PLAN AWAITS',
-  'START YOUR JOURNEY',
-];
-
-// Weight ruler constants — Figma shows 73-77 centered on 75
 const WEIGHT_MIN = 40;
 const WEIGHT_MAX = 150;
 const WEIGHT_DEFAULT = 75;
@@ -136,6 +83,22 @@ const HEIGHT_DEFAULT_CM = 165;
 const HEIGHT_MIN_FT = 4;
 const HEIGHT_MAX_FT = 7;
 const HEIGHT_RULER_ITEM_WIDTH = 52;
+
+/**
+ * Renders a summary row value with a leading option icon (replaces inline emoji).
+ */
+function SummaryOption({ option }: { option: { label: string; icon: OptionIcon } | undefined }) {
+  if (!option) {
+    return <Text style={styles.summaryVal}>—</Text>;
+  }
+  const Icon = option.icon;
+  return (
+    <View style={styles.summaryValRow}>
+      <Icon size={14} color={colors.textSecondary} />
+      <Text style={styles.summaryVal}>{option.label}</Text>
+    </View>
+  );
+}
 
 export function OnboardingScreen({ onComplete }: Props) {
   const { height: screenH, width: screenW } = useWindowDimensions();
@@ -355,83 +318,44 @@ export function OnboardingScreen({ onComplete }: Props) {
           {/* STEP 0: Sports */}
           {step === 0 && (
             <View style={styles.choicesInner}>
-              {SPORTS.map((s) => {
-                const active = sports.includes(s.id);
-                return (
-                  <Pressable
-                    key={s.id}
-                    onPress={() => toggle(sports, s.id, setSports)}
-                    style={[styles.choiceCard, active && styles.choiceCardActive]}
-                  >
-                    <Text style={styles.choiceEmoji}>{s.emoji}</Text>
-                    <View style={styles.choiceContent}>
-                      <Text style={[styles.choiceLabel, active && styles.choiceLabelActive]}>{s.label}</Text>
-                      <Text style={styles.choiceDesc}>{s.desc}</Text>
-                    </View>
-                    {active ? (
-                      <View style={styles.checkCircle}>
-                        <Text style={styles.checkText}>✓</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.checkCircleInactive} />
-                    )}
-                  </Pressable>
-                );
-              })}
+              {SPORTS.map((s) => (
+                <OptionRow
+                  key={s.id}
+                  icon={s.icon}
+                  label={s.label}
+                  desc={s.desc}
+                  active={sports.includes(s.id)}
+                  onPress={() => toggle(sports, s.id, setSports)}
+                />
+              ))}
             </View>
           )}
 
           {/* STEP 1: Modality + Level */}
           {step === 1 && (
             <View style={styles.choicesInner}>
-              <Text style={styles.sectionTitle}>How do you train?</Text>
-              {MODALITIES.map((m) => {
-                const active = modality === m.id;
-                return (
-                  <Pressable
-                    key={m.id}
-                    onPress={() => setModality(m.id)}
-                    style={[styles.choiceCard, active && styles.choiceCardActive]}
-                  >
-                    <Text style={styles.choiceEmoji}>{m.emoji}</Text>
-                    <View style={styles.choiceContent}>
-                      <Text style={[styles.choiceLabel, active && styles.choiceLabelActive]}>{m.label}</Text>
-                      <Text style={styles.choiceDesc}>{m.desc}</Text>
-                    </View>
-                    {active ? (
-                      <View style={styles.checkCircle}>
-                        <Text style={styles.checkText}>✓</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.checkCircleInactive} />
-                    )}
-                  </Pressable>
-                );
-              })}
-              <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Your experience level</Text>
-              {LEVELS.map((l) => {
-                const active = level === l.id;
-                return (
-                  <Pressable
-                    key={l.id}
-                    onPress={() => setLevel(l.id)}
-                    style={[styles.choiceCard, active && styles.choiceCardActive]}
-                  >
-                    <Text style={styles.choiceEmoji}>{l.emoji}</Text>
-                    <View style={styles.choiceContent}>
-                      <Text style={[styles.choiceLabel, active && styles.choiceLabelActive]}>{l.label}</Text>
-                      <Text style={styles.choiceDesc}>{l.desc}</Text>
-                    </View>
-                    {active ? (
-                      <View style={styles.checkCircle}>
-                        <Text style={styles.checkText}>✓</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.checkCircleInactive} />
-                    )}
-                  </Pressable>
-                );
-              })}
+              <Text style={styles.sectionTitle}>¿Cómo entrenás?</Text>
+              {MODALITIES.map((m) => (
+                <OptionRow
+                  key={m.id}
+                  icon={m.icon}
+                  label={m.label}
+                  desc={m.desc}
+                  active={modality === m.id}
+                  onPress={() => setModality(m.id)}
+                />
+              ))}
+              <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Tu nivel de experiencia</Text>
+              {LEVELS.map((l) => (
+                <OptionRow
+                  key={l.id}
+                  icon={l.icon}
+                  label={l.label}
+                  desc={l.desc}
+                  active={level === l.id}
+                  onPress={() => setLevel(l.id)}
+                />
+              ))}
             </View>
           )}
 
@@ -440,7 +364,8 @@ export function OnboardingScreen({ onComplete }: Props) {
             <View style={styles.choicesInner}>
               <View style={styles.fitBodySubtitleBar}>
                 <Text style={styles.fitBodySubtitleText}>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.
+                  Elige la opción con la que te identificas. Esta información nos ayuda a
+                  personalizar tu plan.
                 </Text>
               </View>
 
@@ -449,7 +374,7 @@ export function OnboardingScreen({ onComplete }: Props) {
                   onPress={() => setGender('male')}
                   style={styles.genderItem}
                   accessibilityRole="button"
-                  accessibilityLabel="Select Male"
+                  accessibilityLabel="Seleccionar masculino"
                 >
                   <View
                     style={[
@@ -457,14 +382,10 @@ export function OnboardingScreen({ onComplete }: Props) {
                       gender === 'male' ? styles.genderCircleSelected : styles.genderCircleUnselected,
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.genderSymbol,
-                        gender === 'male' ? styles.genderSymbolSelected : styles.genderSymbolUnselected,
-                      ]}
-                    >
-                      ♂
-                    </Text>
+                    <UserIcon
+                      size={64}
+                      color={gender === 'male' ? colors.base : colors.text}
+                    />
                   </View>
                   <Text
                     style={[
@@ -472,7 +393,7 @@ export function OnboardingScreen({ onComplete }: Props) {
                       gender === 'male' && styles.genderLabelSelected,
                     ]}
                   >
-                    Male
+                    Masculino
                   </Text>
                 </Pressable>
 
@@ -480,7 +401,7 @@ export function OnboardingScreen({ onComplete }: Props) {
                   onPress={() => setGender('female')}
                   style={styles.genderItem}
                   accessibilityRole="button"
-                  accessibilityLabel="Select Female"
+                  accessibilityLabel="Seleccionar femenino"
                 >
                   <View
                     style={[
@@ -488,14 +409,10 @@ export function OnboardingScreen({ onComplete }: Props) {
                       gender === 'female' ? styles.genderCircleSelected : styles.genderCircleUnselected,
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.genderSymbol,
-                        gender === 'female' ? styles.genderSymbolSelected : styles.genderSymbolUnselected,
-                      ]}
-                    >
-                      ♀
-                    </Text>
+                    <UserIcon
+                      size={64}
+                      color={gender === 'female' ? colors.base : colors.text}
+                    />
                   </View>
                   <Text
                     style={[
@@ -503,7 +420,7 @@ export function OnboardingScreen({ onComplete }: Props) {
                       gender === 'female' && styles.genderLabelSelected,
                     ]}
                   >
-                    Female
+                    Femenino
                   </Text>
                 </Pressable>
               </View>
@@ -515,7 +432,7 @@ export function OnboardingScreen({ onComplete }: Props) {
             <View style={styles.choicesInner}>
               <View style={styles.fitBodySubtitleBar}>
                 <Text style={styles.fitBodySubtitleText}>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Track your progress accurately.
+                  Registra tu peso para personalizar tu plan.
                 </Text>
               </View>
 
@@ -618,7 +535,7 @@ export function OnboardingScreen({ onComplete }: Props) {
             <View style={styles.choicesInner}>
               <View style={styles.fitBodySubtitleBar}>
                 <Text style={styles.fitBodySubtitleText}>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.
+                  Indica tu edad para adaptar la intensidad de tu plan de entrenamiento.
                 </Text>
               </View>
 
@@ -699,7 +616,7 @@ export function OnboardingScreen({ onComplete }: Props) {
             <View style={styles.choicesInner}>
               <View style={styles.fitBodySubtitleBar}>
                 <Text style={styles.fitBodySubtitleText}>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor magna aliqua.
+                  Indica tu altura para calcular tus métricas con precisión.
                 </Text>
               </View>
 
@@ -875,11 +792,12 @@ export function OnboardingScreen({ onComplete }: Props) {
             <View style={styles.choicesInner}>
               <View style={styles.fitBodySubtitleBar}>
                 <Text style={styles.fitBodySubtitleText}>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.
+                  Elige el objetivo principal que guiará tu entrenamiento.
                 </Text>
               </View>
               {GOALS.map((g) => {
                 const active = goal === g.id;
+                const GoalIcon = g.icon;
                 return (
                   <Pressable
                     key={g.id}
@@ -887,7 +805,7 @@ export function OnboardingScreen({ onComplete }: Props) {
                     style={[styles.goalPill, active && styles.goalPillActive]}
                   >
                     <View style={styles.goalPillLeft}>
-                      <Text style={styles.goalPillEmoji}>{g.emoji}</Text>
+                      <GoalIcon size={22} color={active ? colors.base : colors.primary} />
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.goalPillLabel, active && styles.goalPillLabelActive]}>{g.label}</Text>
                         <Text style={styles.goalPillDesc}>{g.desc}</Text>
@@ -907,18 +825,19 @@ export function OnboardingScreen({ onComplete }: Props) {
             <View style={styles.choicesInner}>
               <View style={styles.fitBodySubtitleBar}>
                 <Text style={styles.fitBodySubtitleText}>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.
+                  Selecciona tu nivel de actividad física habitual.
                 </Text>
               </View>
               {LEVELS.map((l) => {
                 const active = activityLevel === l.id;
+                const LevelIcon = l.icon;
                 return (
                   <Pressable
                     key={l.id}
                     onPress={() => setActivityLevel(l.id)}
                     style={[styles.activityPill, active && styles.activityPillActive]}
                   >
-                    <Text style={[styles.activityPillEmoji, active && styles.activityPillTextActive]}>{l.emoji}</Text>
+                    <LevelIcon size={22} color={active ? colors.base : colors.primary} />
                     <Text style={[styles.activityPillLabel, active && styles.activityPillTextActive]}>{l.label}</Text>
                     <Text style={[styles.activityPillDesc, active && styles.activityPillDescActive]}>{l.desc}</Text>
                   </Pressable>
@@ -977,20 +896,21 @@ export function OnboardingScreen({ onComplete }: Props) {
               <Text style={styles.sectionTitle}>What equipment do you have?</Text>
               {EQUIPMENT_OPTIONS.map((e) => {
                 const active = equipment === e.id;
+                const EquipmentIcon = e.icon;
                 return (
                   <Pressable
                     key={e.id}
                     onPress={() => setEquipment(e.id)}
                     style={[styles.choiceCard, active && styles.choiceCardActive]}
                   >
-                    <Text style={styles.choiceEmoji}>{e.emoji}</Text>
+                    <EquipmentIcon size={24} color={active ? colors.primary : colors.textSecondary} />
                     <View style={styles.choiceContent}>
                       <Text style={[styles.choiceLabel, active && styles.choiceLabelActive]}>{e.label}</Text>
                       <Text style={styles.choiceDesc}>{e.desc}</Text>
                     </View>
                     {active ? (
                       <View style={styles.checkCircle}>
-                        <Text style={styles.checkText}>✓</Text>
+                        <CheckIcon size={12} color={colors.base} />
                       </View>
                     ) : (
                       <View style={styles.checkCircleInactive} />
@@ -1006,22 +926,24 @@ export function OnboardingScreen({ onComplete }: Props) {
             <View style={styles.choicesInner}>
               <View style={styles.fitBodySubtitleBar}>
                 <Text style={styles.fitBodySubtitleText}>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.
+                  Completa tus datos para preparar tu plan personalizado.
                 </Text>
               </View>
 
               {/* Avatar placeholder — Figma shows photo with lime pencil badge → MR primary badge */}
               <View style={styles.avatarWrap}>
                 <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarInitials}>
-                    {(() => {
-                      const initials = `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase();
-                      return initials || '👤';
-                    })()}
-                  </Text>
+                  {(() => {
+                    const initials = `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase();
+                    return initials ? (
+                      <Text style={styles.avatarInitials}>{initials}</Text>
+                    ) : (
+                      <UserIcon size={40} color={colors.textSecondary} />
+                    );
+                  })()}
                 </View>
                 <View style={styles.avatarEditBadge}>
-                  <Text style={styles.avatarEditIcon}>✎</Text>
+                  <PencilIcon size={14} color={colors.base} />
                 </View>
               </View>
 
@@ -1086,7 +1008,9 @@ export function OnboardingScreen({ onComplete }: Props) {
           {step === 11 && (
             <View style={styles.choicesInner}>
               <View style={styles.summaryHero}>
-                <Text style={styles.summaryEmoji}>🎯</Text>
+                <View style={{ marginBottom: 12 }}>
+                  <TargetIcon size={48} color={colors.primary} />
+                </View>
                 <Text style={styles.summaryTitle}>Your Personalized Plan</Text>
               </View>
 
@@ -1096,11 +1020,11 @@ export function OnboardingScreen({ onComplete }: Props) {
                   <View style={styles.summaryChips}>
                     {sports.map((s) => {
                       const sport = SPORTS.find((x) => x.id === s);
+                      const SportIcon = sport?.icon;
                       return (
                         <View key={s} style={styles.miniChip}>
-                          <Text style={styles.miniChipText}>
-                            {sport?.emoji} {sport?.label}
-                          </Text>
+                          {SportIcon ? <SportIcon size={14} color={colors.primary} /> : null}
+                          <Text style={styles.miniChipText}>{sport?.label}</Text>
                         </View>
                       );
                     })}
@@ -1109,21 +1033,17 @@ export function OnboardingScreen({ onComplete }: Props) {
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryKey}>Modality</Text>
-                  <Text style={styles.summaryVal}>
-                    {MODALITIES.find((m) => m.id === modality)?.emoji} {MODALITIES.find((m) => m.id === modality)?.label}
-                  </Text>
+                  <SummaryOption option={MODALITIES.find((m) => m.id === modality)} />
                 </View>
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryKey}>Level</Text>
-                  <Text style={styles.summaryVal}>
-                    {LEVELS.find((l) => l.id === level)?.emoji} {LEVELS.find((l) => l.id === level)?.label}
-                  </Text>
+                  <SummaryOption option={LEVELS.find((l) => l.id === level)} />
                 </View>
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryKey}>Gender</Text>
-                  <Text style={styles.summaryVal}>{gender ? (gender === 'male' ? '♂ Male' : '♀ Female') : '—'}</Text>
+                  <Text style={styles.summaryVal}>{gender ? (gender === 'male' ? 'Masculino' : 'Femenino') : '—'}</Text>
                 </View>
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryRow}>
@@ -1147,16 +1067,12 @@ export function OnboardingScreen({ onComplete }: Props) {
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryKey}>Goal</Text>
-                  <Text style={styles.summaryVal}>
-                    {GOALS.find((g) => g.id === goal)?.emoji} {GOALS.find((g) => g.id === goal)?.label}
-                  </Text>
+                  <SummaryOption option={GOALS.find((g) => g.id === goal)} />
                 </View>
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryKey}>Activity</Text>
-                  <Text style={styles.summaryVal}>
-                    {LEVELS.find((l) => l.id === activityLevel)?.emoji} {LEVELS.find((l) => l.id === activityLevel)?.label ?? '—'}
-                  </Text>
+                  <SummaryOption option={LEVELS.find((l) => l.id === activityLevel)} />
                 </View>
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryRow}>
@@ -1168,10 +1084,7 @@ export function OnboardingScreen({ onComplete }: Props) {
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryKey}>Equipment</Text>
-                  <Text style={styles.summaryVal}>
-                    {EQUIPMENT_OPTIONS.find((e) => e.id === equipment)?.emoji}{' '}
-                    {EQUIPMENT_OPTIONS.find((e) => e.id === equipment)?.label}
-                  </Text>
+                  <SummaryOption option={EQUIPMENT_OPTIONS.find((e) => e.id === equipment)} />
                 </View>
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryRow}>
@@ -1196,24 +1109,24 @@ export function OnboardingScreen({ onComplete }: Props) {
                 style={[styles.choiceCard, { borderColor: `${colors.primary}30` }]}
               >
                 <View style={styles.choiceIconBox}>
-                  <Text style={styles.choiceEmojiLarge}>📅</Text>
+                  <CalendarIcon size={24} color={colors.primary} />
                 </View>
                 <View style={styles.choiceContent}>
                   <Text style={styles.choiceLabel}>Schedule with your Coach</Text>
                   <Text style={styles.choiceDesc}>Book a call to review and personalize your routine together</Text>
                 </View>
-                <Text style={styles.choiceArrow}>→</Text>
+                <ChevronRightIcon size={20} color={colors.primary} />
               </Pressable>
 
               <Pressable onPress={() => onComplete(buildData())} style={styles.choiceCard}>
                 <View style={styles.choiceIconBox}>
-                  <Text style={styles.choiceEmojiLarge}>✅</Text>
+                  <CheckIcon size={24} color={colors.primary} />
                 </View>
                 <View style={styles.choiceContent}>
                   <Text style={styles.choiceLabel}>Accept System Routine</Text>
                   <Text style={styles.choiceDesc}>Start training immediately with the AI-generated plan</Text>
                 </View>
-                <Text style={styles.choiceArrow}>→</Text>
+                <ChevronRightIcon size={20} color={colors.primary} />
               </Pressable>
             </View>
           )}
@@ -1710,8 +1623,23 @@ const styles = StyleSheet.create({
   summaryDivider: { height: 1, backgroundColor: colors.border },
   summaryKey: { fontSize: 14, color: colors.textSecondary, fontWeight: '600', width: 90 },
   summaryVal: { fontSize: 14, color: colors.text, fontWeight: '600', flex: 1, textAlign: 'right' },
+  summaryValRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 6,
+  },
   summaryChips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6 },
-  miniChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: `${colors.primary}14` },
+  miniChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: `${colors.primary}14`,
+  },
   miniChipText: { fontSize: 12, color: colors.primary, fontWeight: '600' },
   // Bottom pill button
   bottom: {

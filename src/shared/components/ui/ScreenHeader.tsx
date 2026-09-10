@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, layout, typography } from '../../theme/tokens';
+import { colors, layout, spacing, typography } from '../../theme/tokens';
+import { ArrowLeftIcon } from '../icons';
 
 type Props = {
   title: string;
@@ -8,33 +9,30 @@ type Props = {
   onBack?: () => void;
   action?: React.ReactNode;
   loading?: boolean;
+  /** Optional big numeral shown on the right for KPI headers. */
+  metric?: React.ReactNode;
 };
 
-export function ScreenHeader({ title, subtitle, onBack, action, loading = false }: Props) {
+export function ScreenHeader({ title, subtitle, onBack, action, loading = false, metric }: Props) {
   return (
     <View style={styles.header}>
       {onBack ? (
-        <View style={styles.backContainer}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            onPress={onBack}
-            hitSlop={12}
-            disabled={loading}
-            style={({ pressed }) => [
-              styles.backPressable,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={styles.back}>‹</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Volver"
+          onPress={onBack}
+          accessibilityHint="Volver a la pantalla anterior"
+          disabled={loading}
+          style={({ pressed }) => [styles.backPressable, pressed && styles.pressed]}
+        >
+          <ArrowLeftIcon size={22} color={colors.text} />
+        </Pressable>
       ) : null}
       <View style={styles.titles}>
         <Text style={styles.title}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
-      {action ?? null}
+      {metric ?? action ?? null}
     </View>
   );
 }
@@ -44,13 +42,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     minHeight: layout.headerHeight,
-    gap: 8,
+    gap: spacing.sm,
   },
   titles: { flex: 1 },
-  back: { color: colors.primary, fontSize: 32, lineHeight: 36 },
-  backContainer: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' },
-  backPressable: {},
-  pressed: { opacity: 0.8 },
+  backPressable: {
+    width: layout.touchTarget + 8,
+    height: layout.touchTarget + 8,
+    marginLeft: -spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: { opacity: 0.6 },
   title: { ...typography.h3, color: colors.text },
   subtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
 });

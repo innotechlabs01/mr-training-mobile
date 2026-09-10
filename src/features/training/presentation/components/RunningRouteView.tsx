@@ -12,6 +12,7 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import polyline from '@mapbox/polyline';
 import * as Location from 'expo-location';
 import { colors, spacing, typography, radius } from '../../../../shared/theme/tokens';
+import { MapPinIcon } from '../../../../shared/components/icons';
 
 type Props = {
   gpsRoute: string;
@@ -101,18 +102,16 @@ export function RunningRouteView({ gpsRoute, height = 320 }: Props) {
             pinColor={colors.textSecondary}
           />
           {livePosition ? (
-            <Marker
-              coordinate={livePosition}
-              title="Tú"
-              pinColor="#00A6FB"
-            />
+            <Marker coordinate={livePosition} title="Tú" anchor={{ x: 0.5, y: 1 }}>
+              <MapPinIcon size={32} color={colors.primary} />
+            </Marker>
           ) : null}
         </MapView>
       </View>
       <Text style={styles.caption}>
         {locationDenied
           ? 'Permite la ubicación para seguir tu recorrido en el mapa.'
-          : `${routePoints.length} puntos · Seguí la línea en el mapa.`}
+          : `${routePoints.length} puntos · Sigue la línea en el mapa.`}
       </Text>
     </View>
   );

@@ -34,7 +34,7 @@ export function MembershipGate({ children, athleteId }: { children: React.ReactN
     let cancelled = false;
     async function check() {
       try {
-        const { data } = await apiClient.get('/memberships');
+        const { data } = await apiClient.get('/athlete/membership');
         if (cancelled) return;
 
         // Go returns ListResponse {data:[...]} or single membership — handle both

@@ -24,7 +24,21 @@ import { colors, spacing, typography, radius } from '../../../../shared/theme/to
 import { Card } from '../../../../shared/components/ui/Card';
 import { Input } from '../../../../shared/components/ui/Input';
 import { PrimaryButton } from '../../../../shared/components/ui/PrimaryButton';
-import { MembershipIcon, StoreIcon, BarbellIcon } from '../../../../shared/components/icons';
+import {
+  MembershipIcon,
+  StoreIcon,
+  BarbellIcon,
+  UserIcon,
+  StarIcon,
+  LockIcon,
+  GearIcon,
+  HelpIcon,
+  LogoutIcon,
+  CheckIcon,
+  MapPinIcon,
+  ChatIcon,
+  ChevronRightIcon,
+} from '../../../../shared/components/icons';
 
 type AthleteProfile = {
   id: string;
@@ -63,10 +77,10 @@ function normalizeModality(value: unknown): Modality {
   return 'virtual';
 }
 
-const MODALITY_OPTIONS: Array<{ key: Modality; label: string; icon: string }> = [
-  { key: 'virtual', label: 'Virtual', icon: '🌐' },
-  { key: 'hibrido', label: 'Híbrido', icon: '🔄' },
-  { key: 'presencial', label: 'Presencial', icon: '🏢' },
+const MODALITY_OPTIONS: Array<{ key: Modality; label: string; icon: React.ReactElement }> = [
+  { key: 'virtual', label: 'Virtual', icon: <ChatIcon size={18} color={colors.primary} /> },
+  { key: 'hibrido', label: 'Híbrido', icon: <StarIcon size={18} color={colors.primary} /> },
+  { key: 'presencial', label: 'Presencial', icon: <MapPinIcon size={18} color={colors.primary} /> },
 ];
 
 type ProfileNav = CompositeNavigationProp<
@@ -99,33 +113,36 @@ export function ProfileScreen() {
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['athlete-profile'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/users/me');
+      const { data } = await apiClient.get('/athlete/profile');
       // Go backend returns { user: {...}, athlete_profile: {...} } — unwrap
       return (data?.athlete_profile ?? data?.profile ?? data?.user ?? data ?? null) as AthleteProfile | null;
     },
     staleTime: 10 * 60 * 1000,
   });
 
-  // Derived header data — keep MR colors, FitBody layout
+  // Derived header data — real values only; '—' when missing (no invented fallbacks)
   const displayName =
     (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : null) ??
     (profile?.name || '') ??
-    'Madison Smith';
-  const displayEmail = email || profile?.email || 'madisons@example.com';
+    '—';
+  const displayEmail = email || profile?.email || '—';
   const birthdayRaw = (profile as AthleteProfile | null)?.birthday ?? null;
-  // Only show birthday if available; no fake data
-  const birthdayText = birthdayRaw ? `Birthday: ${birthdayRaw}` : null;
+  const birthdayText = birthdayRaw ? `Cumpleaños: ${birthdayRaw}` : null;
 
-  // Stats — pull from profile if available, else mock per spec
+  // Stats — pull from profile if available, else honest '—' (never mock values)
   const weightRaw = (profile as unknown as Record<string, unknown>)?.weight as number | string | undefined;
   const ageRaw = (profile as unknown as Record<string, unknown>)?.age as number | string | undefined;
   const heightRaw = (profile as unknown as Record<string, unknown>)?.height as number | string | undefined;
-  const statsWeight = weightRaw != null && weightRaw !== '' ? `${weightRaw}${typeof weightRaw === 'number' || String(weightRaw).match(/^\d/) ? ' Kg' : ''}`.replace(' Kg Kg', ' Kg') : '75 Kg';
-  // Ensure weight has Kg suffix once
-  const statsWeightLabel = statsWeight.includes('Kg') ? statsWeight : `${statsWeight} Kg`;
-  const statsAge = ageRaw != null && ageRaw !== '' ? String(ageRaw) : '28';
-  const statsAgeSub = 'Years Old';
-  const statsHeight = heightRaw != null && heightRaw !== '' ? `${heightRaw}${String(heightRaw).includes('CM') || String(heightRaw).includes('cm') ? '' : ' CM'}` : '1.65 CM';
+  const statsWeight =
+    weightRaw != null && weightRaw !== ''
+      ? String(weightRaw).replace(/\s?[Kk][Gg]\s?$/i, '').trim() + ' Kg'
+      : '—';
+  const statsAge = ageRaw != null && ageRaw !== '' ? String(ageRaw) : '—';
+  const statsAgeSub = 'Años';
+  const statsHeight =
+    heightRaw != null && heightRaw !== ''
+      ? String(heightRaw).replace(/\s?[Cc][Mm]\s?$/i, '').trim() + ' cm'
+      : '—';
 
   // Personal info local state
   const [firstName, setFirstName] = useState(user?.firstName ?? '');
@@ -179,11 +196,11 @@ export function ProfileScreen() {
     const fn = firstName.trim();
     const ln = lastName.trim();
     if (!fn || !ln) {
-      Alert.alert('Error', 'First name and last name are required');
+      Alert.alert('Error', 'El nombre y el apellido son obligatorios');
       return;
     }
     if (fn.length < 2 || ln.length < 2) {
-      Alert.alert('Error', 'Name must be at least 2 characters');
+      Alert.alert('Error', 'El nombre debe tener al menos 2 caracteres');
       return;
     }
     setSaving(true);
@@ -191,11 +208,11 @@ export function ProfileScreen() {
       if (user) {
         await user.update({ firstName: fn, lastName: ln });
       }
-      await apiClient.put('/users/me', { name: `${fn} ${ln}`.trim() });
+      await apiClient.put('/athlete/profile', { firstName: fn, lastName: ln });
       await queryClient.invalidateQueries({ queryKey: ['athlete-profile'] });
-      Alert.alert('Success', 'Your profile has been updated');
+      Alert.alert('Éxito', 'Tu perfil se ha actualizado');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to update profile';
+      const msg = err instanceof Error ? err.message : 'No se pudo actualizar el perfil';
       Alert.alert('Error', msg);
     } finally {
       setSaving(false);
@@ -208,11 +225,11 @@ export function ProfileScreen() {
     setModality(next);
     setModalitySaving(next);
     try {
-      await apiClient.put('/athletes/me', { modality: next });
+      await apiClient.put('/athlete/profile', { modality: next });
       await queryClient.invalidateQueries({ queryKey: ['athlete-profile'] });
     } catch (err: unknown) {
       setModality(prev);
-      const msg = err instanceof Error ? err.message : 'Failed to update training mode';
+      const msg = err instanceof Error ? err.message : 'No se pudo actualizar el modo de entrenamiento';
       Alert.alert('Error', msg);
     } finally {
       setModalitySaving(null);
@@ -222,11 +239,11 @@ export function ProfileScreen() {
   const handleSaveEmergency = async () => {
     setEmergencySaving(true);
     try {
-      await apiClient.put('/athletes/me', { emergency_contact: emergencyContact });
+      await apiClient.put('/athlete/profile', { emergencyContact });
       await queryClient.invalidateQueries({ queryKey: ['athlete-profile'] });
       Alert.alert('Guardado', 'Contacto de emergencia actualizado');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to update';
+      const msg = err instanceof Error ? err.message : 'No se pudo actualizar';
       Alert.alert('Error', msg);
     } finally {
       setEmergencySaving(false);
@@ -246,11 +263,11 @@ export function ProfileScreen() {
     setScheduleSaving(true);
     try {
       const daysStr = Array.from(scheduleDays).join(',');
-      await apiClient.put('/athletes/me', { schedule_days: daysStr, schedule_time: scheduleTime });
+      await apiClient.put('/athlete/profile', { scheduleDays: daysStr, scheduleTime: scheduleTime });
       await queryClient.invalidateQueries({ queryKey: ['athlete-profile'] });
       Alert.alert('Guardado', 'Horario de entrenamiento actualizado');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to update';
+      const msg = err instanceof Error ? err.message : 'No se pudo actualizar';
       Alert.alert('Error', msg);
     } finally {
       setScheduleSaving(false);
@@ -258,9 +275,9 @@ export function ProfileScreen() {
   };
 
   const handleSignOut = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
+    Alert.alert('Cerrar Sesión', '¿Seguro que deseas cerrar sesión?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Cerrar Sesión', style: 'destructive', onPress: () => signOut() },
     ]);
   };
 
@@ -269,9 +286,9 @@ export function ProfileScreen() {
     try {
       const canOpen = await Linking.canOpenURL(url);
       if (canOpen) await Linking.openURL(url);
-      else Alert.alert('Privacy Policy', 'Coming soon');
+      else Alert.alert('Política de Privacidad', 'Próximamente');
     } catch {
-      Alert.alert('Privacy Policy', 'Coming soon');
+      Alert.alert('Política de Privacidad', 'Próximamente');
     }
   };
 
@@ -290,7 +307,7 @@ export function ProfileScreen() {
         >
           {/* Header: solid primary background — FitBody layout, MR palette */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>My Profile</Text>
+            <Text style={styles.headerTitle}>Mi Perfil</Text>
             <View style={styles.avatarLarge}>
               <Text style={styles.avatarLargeText}>{initials}</Text>
             </View>
@@ -311,9 +328,9 @@ export function ProfileScreen() {
           <View style={styles.statsCard}>
             <View style={styles.statsCol}>
               <Text style={styles.statsValue} numberOfLines={1}>
-                {statsWeightLabel}
+                {statsWeight}
               </Text>
-              <Text style={styles.statsLabel}>Weight</Text>
+              <Text style={styles.statsLabel}>Peso</Text>
             </View>
             <View style={styles.statsDivider} />
             <View style={styles.statsCol}>
@@ -327,7 +344,7 @@ export function ProfileScreen() {
               <Text style={styles.statsValue} numberOfLines={1}>
                 {statsHeight}
               </Text>
-              <Text style={styles.statsLabel}>Height</Text>
+              <Text style={styles.statsLabel}>Altura</Text>
             </View>
           </View>
 
@@ -335,80 +352,80 @@ export function ProfileScreen() {
           <Card style={styles.menuCard}>
             <Pressable
               style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
-              onPress={() => Alert.alert('Profile', 'Personal Info section below')}
+              onPress={() => Alert.alert('Perfil', 'Sección de información personal más abajo')}
               accessibilityRole="button"
-              accessibilityLabel="Profile"
+              accessibilityLabel="Perfil"
             >
               <View style={styles.menuIconCircle}>
-                <Text style={styles.menuIconText}>👤</Text>
+                <UserIcon size={18} color={colors.base} />
               </View>
-              <Text style={styles.menuLabel}>Profile</Text>
-              <Text style={styles.menuChevron}>›</Text>
+              <Text style={styles.menuLabel}>Perfil</Text>
+              <ChevronRightIcon size={20} color={colors.textSecondary} />
             </Pressable>
             <View style={styles.menuSeparator} />
             <Pressable
               style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
               onPress={openFavorites}
               accessibilityRole="button"
-              accessibilityLabel="Favorite"
+              accessibilityLabel="Favoritos"
             >
               <View style={styles.menuIconCircle}>
-                <Text style={styles.menuIconText}>⭐</Text>
+                <StarIcon size={18} color={colors.base} />
               </View>
-              <Text style={styles.menuLabel}>Favorite</Text>
-              <Text style={styles.menuChevron}>›</Text>
+              <Text style={styles.menuLabel}>Favoritos</Text>
+              <ChevronRightIcon size={20} color={colors.textSecondary} />
             </Pressable>
             <View style={styles.menuSeparator} />
             <Pressable
               style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
               onPress={handlePrivacyPolicy}
               accessibilityRole="button"
-              accessibilityLabel="Privacy Policy"
+              accessibilityLabel="Política de Privacidad"
             >
               <View style={styles.menuIconCircle}>
-                <Text style={styles.menuIconText}>🔒</Text>
+                <LockIcon size={18} color={colors.base} />
               </View>
-              <Text style={styles.menuLabel}>Privacy Policy</Text>
-              <Text style={styles.menuChevron}>›</Text>
+              <Text style={styles.menuLabel}>Política de Privacidad</Text>
+              <ChevronRightIcon size={20} color={colors.textSecondary} />
             </Pressable>
             <View style={styles.menuSeparator} />
             <Pressable
               style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
               onPress={openSettings}
               accessibilityRole="button"
-              accessibilityLabel="Settings"
+              accessibilityLabel="Ajustes"
             >
               <View style={styles.menuIconCircle}>
-                <Text style={styles.menuIconText}>⚙️</Text>
+                <GearIcon size={18} color={colors.base} />
               </View>
-              <Text style={styles.menuLabel}>Settings</Text>
-              <Text style={styles.menuChevron}>›</Text>
+              <Text style={styles.menuLabel}>Ajustes</Text>
+              <ChevronRightIcon size={20} color={colors.textSecondary} />
             </Pressable>
             <View style={styles.menuSeparator} />
             <Pressable
               style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
               onPress={openHelp}
               accessibilityRole="button"
-              accessibilityLabel="Help"
+              accessibilityLabel="Ayuda"
             >
               <View style={styles.menuIconCircle}>
-                <Text style={styles.menuIconText}>💬</Text>
+                <HelpIcon size={18} color={colors.base} />
               </View>
-              <Text style={styles.menuLabel}>Help</Text>
-              <Text style={styles.menuChevron}>›</Text>
+              <Text style={styles.menuLabel}>Ayuda</Text>
+              <ChevronRightIcon size={20} color={colors.textSecondary} />
             </Pressable>
             <View style={styles.menuSeparator} />
             <Pressable
               style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}
               onPress={handleSignOut}
               accessibilityRole="button"
-              accessibilityLabel="Logout"
+              accessibilityLabel="Cerrar Sesión"
             >
               <View style={styles.menuIconCircle}>
-                <Text style={styles.menuIconText}>🚪</Text>
+                <LogoutIcon size={18} color={colors.base} />
               </View>
-              <Text style={styles.menuLabel}>Logout</Text>
-              <Text style={styles.menuChevron}>›</Text>
+              <Text style={styles.menuLabel}>Cerrar Sesión</Text>
+              <ChevronRightIcon size={20} color={colors.textSecondary} />
             </Pressable>
           </Card>
 
@@ -418,58 +435,58 @@ export function ProfileScreen() {
             <Card style={styles.entryCard}>
               <MembershipIcon size={24} color={colors.primary} />
               <View style={styles.entryText}>
-                <Text style={styles.entryTitle}>Membership</Text>
-                <Text style={styles.entrySub}>Manage your plan, payments and status</Text>
+                <Text style={styles.entryTitle}>Membresía</Text>
+                <Text style={styles.entrySub}>Administra tu plan, pagos y estado</Text>
               </View>
-              <Pressable accessibilityRole="button" accessibilityLabel="Open membership" onPress={openMembership} style={styles.entryCta}>
-                <Text style={styles.entryCtaText}>Open</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Abrir membresía" onPress={openMembership} style={styles.entryCta}>
+                <Text style={styles.entryCtaText}>Abrir</Text>
               </Pressable>
             </Card>
             <Card style={styles.entryCard}>
               <StoreIcon size={24} color={colors.primary} />
               <View style={styles.entryText}>
-                <Text style={styles.entryTitle}>Store</Text>
-                <Text style={styles.entrySub}>Browse coach-curated gear</Text>
+                <Text style={styles.entryTitle}>Tienda</Text>
+                <Text style={styles.entrySub}>Explora el equipo seleccionado por tu coach</Text>
               </View>
-              <Pressable accessibilityRole="button" accessibilityLabel="Open store" onPress={openStore} style={styles.entryCta}>
-                <Text style={styles.entryCtaText}>Open</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Abrir tienda" onPress={openStore} style={styles.entryCta}>
+                <Text style={styles.entryCtaText}>Abrir</Text>
               </Pressable>
             </Card>
             <Card style={styles.entryCard}>
               <BarbellIcon size={24} color={colors.primary} />
               <View style={styles.entryText}>
                 <Text style={styles.entryTitle}>Importar historial</Text>
-                <Text style={styles.entrySub}>Traé tus entrenamientos de Strong, Hevy o FitNotes</Text>
+                <Text style={styles.entrySub}>Importa tus entrenamientos de Strong, Hevy o FitNotes</Text>
               </View>
-              <Pressable accessibilityRole="button" accessibilityLabel="Open history import" onPress={openImport} style={styles.entryCta}>
-                <Text style={styles.entryCtaText}>Open</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Abrir importación de historial" onPress={openImport} style={styles.entryCta}>
+                <Text style={styles.entryCtaText}>Abrir</Text>
               </Pressable>
             </Card>
 
             {/* Card 1: Personal Info */}
             <Card style={styles.card}>
-              <Text style={styles.cardTitle}>Personal Info</Text>
-              <Text style={styles.cardSubtitle}>Update your personal details</Text>
+              <Text style={styles.cardTitle}>Información Personal</Text>
+              <Text style={styles.cardSubtitle}>Actualiza tus datos personales</Text>
 
-              <Text style={styles.label}>First Name</Text>
+              <Text style={styles.label}>Nombre</Text>
               <Input
-                placeholder="John"
+                placeholder="Juan"
                 value={firstName}
                 onChangeText={setFirstName}
                 autoCapitalize="words"
                 autoCorrect={false}
-                accessibilityLabel="First name"
+                accessibilityLabel="Nombre"
                 returnKeyType="next"
               />
 
-              <Text style={styles.label}>Last Name</Text>
+              <Text style={styles.label}>Apellido</Text>
               <Input
                 placeholder="Doe"
                 value={lastName}
                 onChangeText={setLastName}
                 autoCapitalize="words"
                 autoCorrect={false}
-                accessibilityLabel="Last name"
+                accessibilityLabel="Apellido"
                 returnKeyType="next"
               />
 
@@ -478,16 +495,16 @@ export function ProfileScreen() {
                 <Text style={styles.readOnlyText} numberOfLines={1}>
                   {email || '—'}
                 </Text>
-                <Text style={styles.readOnlyHint}>Read-only</Text>
+                <Text style={styles.readOnlyHint}>Solo lectura</Text>
               </View>
 
-              <PrimaryButton label="Save" onPress={handleSavePersonalInfo} disabled={saving} />
+              <PrimaryButton label="Guardar" onPress={handleSavePersonalInfo} disabled={saving} />
             </Card>
 
             {/* Card 2: Training Mode */}
             <Card style={styles.card}>
-              <Text style={styles.cardTitle}>Training Mode</Text>
-              <Text style={styles.cardSubtitle}>Choose how you train with your coach</Text>
+              <Text style={styles.cardTitle}>Modo de Entrenamiento</Text>
+              <Text style={styles.cardSubtitle}>Elige cómo entrenas con tu coach</Text>
 
               <View style={styles.segmentedRow}>
                 {MODALITY_OPTIONS.map((opt) => {
@@ -503,17 +520,17 @@ export function ProfileScreen() {
                       ]}
                       onPress={() => handleModalitySelect(opt.key)}
                       disabled={!!modalitySaving}
-                      accessibilityLabel={`Training mode ${opt.label}`}
+                      accessibilityLabel={`Modalidad ${opt.label}`}
                       accessibilityState={{ selected }}
                     >
-                      <Text style={styles.pillIcon}>{opt.icon}</Text>
+                      <View style={styles.pillIconView}>{opt.icon}</View>
                       <Text style={[styles.pillText, selected ? styles.pillTextSelected : styles.pillTextUnselected]}>
                         {opt.label}
                       </Text>
                       {isSaving ? (
                         <ActivityIndicator size="small" color={selected ? colors.base : colors.primary} style={styles.pillLoader} />
                       ) : selected ? (
-                        <Text style={styles.pillCheck}>✓</Text>
+                        <CheckIcon size={14} color={selected ? colors.base : colors.primary} />
                       ) : null}
                     </Pressable>
                   );
@@ -521,14 +538,14 @@ export function ProfileScreen() {
               </View>
 
               <Text style={styles.modalityHint}>
-                Current: <Text style={styles.modalityHintStrong}>{MODALITY_OPTIONS.find((o) => o.key === modality)?.label ?? 'Virtual'}</Text>
+                Actual: <Text style={styles.modalityHintStrong}>{MODALITY_OPTIONS.find((o) => o.key === modality)?.label ?? 'Virtual'}</Text>
               </Text>
             </Card>
 
             {/* Card: Training Schedule */}
             <Card style={styles.card}>
               <Text style={styles.cardTitle}>Horario de Entrenamiento</Text>
-              <Text style={styles.cardSubtitle}>Seleccioná los días y horario</Text>
+              <Text style={styles.cardSubtitle}>Elige los días y el horario</Text>
 
               <View style={styles.dayRow}>
                 {DAY_KEYS.map((day) => {
@@ -560,7 +577,7 @@ export function ProfileScreen() {
                 onChangeText={setScheduleTime}
                 keyboardType="numbers-and-punctuation"
                 maxLength={5}
-                accessibilityLabel="Training time"
+                accessibilityLabel="Horario"
               />
 
               <PrimaryButton label="Guardar Horario" onPress={handleSaveSchedule} disabled={scheduleSaving} />
@@ -577,7 +594,7 @@ export function ProfileScreen() {
                 onChangeText={setEmergencyContact}
                 autoCapitalize="words"
                 autoCorrect={false}
-                accessibilityLabel="Emergency contact"
+                accessibilityLabel="Contacto de emergencia"
               />
 
               <PrimaryButton label="Guardar Contacto" onPress={handleSaveEmergency} disabled={emergencySaving} />
@@ -585,24 +602,24 @@ export function ProfileScreen() {
 
             {/* Card 3: Membership / Plan */}
             <Card style={styles.card}>
-              <Text style={styles.cardTitle}>Membership</Text>
-              <Text style={styles.cardSubtitle}>Your current plan</Text>
+              <Text style={styles.cardTitle}>Membresía</Text>
+              <Text style={styles.cardSubtitle}>Tu plan actual</Text>
               {profileLoading ? (
                 <ActivityIndicator color={colors.primary} style={styles.membershipLoader} />
               ) : profile ? (
                 <View style={styles.membershipContent}>
                   <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>Plan</Text>
-                    <Text style={styles.infoValue}>{profile.plan?.name || 'No plan'}</Text>
+                    <Text style={styles.infoValue}>{profile.plan?.name || 'Sin plan'}</Text>
                   </View>
                   <View style={styles.divider} />
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Sport</Text>
+                    <Text style={styles.infoLabel}>Deporte</Text>
                     <Text style={styles.infoValue}>{profile.sport || '—'}</Text>
                   </View>
                   <View style={styles.divider} />
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Schedule</Text>
+                    <Text style={styles.infoLabel}>Horario</Text>
                     <Text style={styles.infoValue}>
                       {(() => {
                         const days = profile.schedule_days ?? profile.schedule?.days ?? '';
@@ -618,32 +635,32 @@ export function ProfileScreen() {
                   </View>
                   <View style={styles.divider} />
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Emergency</Text>
+                    <Text style={styles.infoLabel}>Emergencia</Text>
                     <Text style={styles.infoValue}>{profile.emergency_contact || '—'}</Text>
                   </View>
                   <View style={styles.divider} />
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Readiness</Text>
+                    <Text style={styles.infoLabel}>Recuperación</Text>
                     <Text style={[styles.infoValue, { color: colors.primary }]}>
                       {profile.readiness?.score ?? '—'}
                     </Text>
                   </View>
                 </View>
               ) : (
-                <Text style={styles.emptyText}>No membership information available</Text>
+                <Text style={styles.emptyText}>No hay información de membresía</Text>
               )}
             </Card>
 
             {/* Card 4: Actions */}
             <Card style={styles.card}>
-              <Text style={styles.cardTitle}>Actions</Text>
+              <Text style={styles.cardTitle}>Acciones</Text>
               <Pressable
                 style={({ pressed }) => [styles.signOutButton, pressed && styles.pressed]}
                 onPress={handleSignOut}
-                accessibilityLabel="Sign out of your account"
+                accessibilityLabel="Cerrar sesión de tu cuenta"
                 accessibilityRole="button"
               >
-                <Text style={styles.signOutText}>Sign Out</Text>
+                <Text style={styles.signOutText}>Cerrar Sesión</Text>
               </Pressable>
             </Card>
           </View>
@@ -765,7 +782,7 @@ const styles = StyleSheet.create({
   },
   pillSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   pillUnselected: { backgroundColor: colors.surfaceRaised, borderColor: colors.border },
-  pillIcon: { fontSize: 18 },
+  pillIconView: { marginBottom: 2 },
   pillText: { ...typography.caption, fontWeight: '700', textAlign: 'center' },
   pillTextSelected: { color: colors.base },
   pillTextUnselected: { color: colors.text },
@@ -780,8 +797,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   dayChip: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
